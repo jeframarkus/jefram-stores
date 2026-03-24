@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jefram Stores</title>
+  <style>
+    body { font-family: Arial; margin:0; }
+    header { background:#111; color:#fff; padding:15px; display:flex; justify-content:space-between; }
+    input { padding:8px; }
+    .container { display:flex; }
+    .sidebar { width:200px; background:#f4f4f4; padding:10px; }
+    .products { flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; }
+    .card { border:1px solid #ddd; padding:10px; }
+    img { width:100%; height:150px; object-fit:cover; }
+    button { background:#28a745; color:#fff; border:none; padding:8px; cursor:pointer; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h2>Jefram Stores</h2>
+  <input id="search" placeholder="Search..." onkeyup="searchProducts()">
+</header>
+
+<div style="padding:10px;">
+  <input id="phone" placeholder="Enter Phone Number">
+  <button onclick="saveUser()">Start Shopping</button>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <h3>Cart</h3>
+    <div id="cart"></div>
+    <button onclick="checkout()">Checkout</button>
+  </div>
+
+  <div class="products" id="products"></div>
+</div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycby3UPHH1526LrIoHe3cPM7mfiI8jwqzPO1v3hn01vai-QLN2f9tVE2Kzjt67CkGGV6qtg/exec";
+
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let products = [];
+
+async function loadProducts(){
+  let res = await fetch(API + "?action=getProducts");
+  products = await res.json();
+  displayProducts(products);
+}
+
+function displayProducts(data){
+  let html = "";
+
+  data.forEach(p => {
+    html += `
+      <div class="card">
+        <img src="${p.image}">
+        <h4>${p.name}</h4>
+        <p>${p.price}</p>
+        <button onclick='addToCart(${JSON.stringify(p)})'>Add</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("products").innerHTML = html;
+}
+
+function searchProducts(){
+  let q = document.getElementById("search").value.toLowerCase();
+  let filtered = products.filter(p => p.name.toLowerCase().includes(q));
+  displayProducts(filtered);
+}
+
+function addToCart(p){
+  cart.push(p);
+  localStorage.setItem("cart", JSON.stringify(cart));
+  renderCart();
+}
+
+function renderCart(){
+  let html = "";
+  let total = 0;
+
+  cart.forEach(c=>{
+    html += `${c.name} - ${c.price}<br>`;
+    total += Number(c.price);
+  });
+
+  html += `<hr>Total: ${total}`;
+
+  document.getElementById("cart").innerHTML = html;
+}
+
+function saveUser(){
+  let phone = document.getElementById("phone").value;
+  fetch(API + "?action=saveUser&phone=" + phone);
+  localStorage.setItem("phone", phone);
+  alert("Registered!");
+}
+
+function checkout(){
+  let phone = localStorage.getItem("phone");
+
+  if(!phone){
+    alert("Enter phone first");
+    return;
+  }
+
+  let msg = "Hello Jefram Stores,%0AOrder:%0A";
+  let total = 0;
+
+  cart.forEach(c=>{
+    msg += `${c.name} - ${c.price}%0A`;
+    total += Number(c.price);
+  });
+
+  msg += `%0ATotal: ${total}`;
+
+  fetch(API + `?action=saveOrder&phone=${phone}&items=${encodeURIComponent(JSON.stringify(cart))}&total=${total}`);
+
+  window.open("https://wa.me/256XXXXXXXXX?text=" + msg);
+}
+
+renderCart();
+loadProducts();
+</script>
+
+</body>
+</html>
