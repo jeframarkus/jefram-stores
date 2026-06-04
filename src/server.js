@@ -6,6 +6,7 @@ import productsRouter from './routes/products.js';
 import ordersRouter from './routes/orders.js';
 import customersRouter from './routes/customers.js';
 import adminRouter from './routes/admin.js';
+import dashboardRouter from './routes/dashboard.js';
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/customers', customersRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // 404 for unknown API routes.
 app.use((req, res) => {

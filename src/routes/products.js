@@ -30,14 +30,14 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/products - admin only, create a product.
 router.post('/', requireAuth, async (req, res, next) => {
   try {
-    const { name, price, category, subcategory, image_url, description } = req.body;
+    const { name, price, stock, category, subcategory, image_url, description } = req.body;
     if (!name) {
       return res.status(400).json({ success: false, error: 'name is required' });
     }
     const { rows } = await query(
-      `INSERT INTO products (name, price, category, subcategory, image_url, description)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, price || 0, category, subcategory, image_url, description],
+      `INSERT INTO products (name, price, stock, category, subcategory, image_url, description)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name, price || 0, stock || 0, category, subcategory, image_url, description],
     );
     res.status(201).json({ success: true, product: rows[0] });
   } catch (err) {
@@ -48,18 +48,19 @@ router.post('/', requireAuth, async (req, res, next) => {
 // PUT /api/products/:id - admin only, update a product.
 router.put('/:id', requireAuth, async (req, res, next) => {
   try {
-    const { name, price, category, subcategory, image_url, description } = req.body;
+    const { name, price, stock, category, subcategory, image_url, description } = req.body;
     const { rows } = await query(
       `UPDATE products
          SET name = COALESCE($1, name),
              price = COALESCE($2, price),
-             category = COALESCE($3, category),
-             subcategory = COALESCE($4, subcategory),
-             image_url = COALESCE($5, image_url),
-             description = COALESCE($6, description)
-       WHERE id = $7
+             stock = COALESCE($3, stock),
+             category = COALESCE($4, category),
+             subcategory = COALESCE($5, subcategory),
+             image_url = COALESCE($6, image_url),
+             description = COALESCE($7, description)
+       WHERE id = $8
        RETURNING *`,
-      [name, price, category, subcategory, image_url, description, req.params.id],
+      [name, price, stock, category, subcategory, image_url, description, req.params.id],
     );
     if (rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Product not found' });

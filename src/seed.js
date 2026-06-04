@@ -7,6 +7,7 @@ const sampleProducts = [
   {
     name: 'Samsung Galaxy A15',
     price: 750000,
+    stock: 25,
     category: 'Phones',
     subcategory: 'Smartphones',
     image_url: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400',
@@ -15,6 +16,7 @@ const sampleProducts = [
   {
     name: 'HP Pavilion Laptop',
     price: 2800000,
+    stock: 10,
     category: 'Laptops',
     subcategory: 'Notebooks',
     image_url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400',
@@ -23,6 +25,7 @@ const sampleProducts = [
   {
     name: 'Wireless Earbuds',
     price: 120000,
+    stock: 50,
     category: 'Electronics',
     subcategory: 'Audio',
     image_url: 'https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=400',
@@ -31,6 +34,7 @@ const sampleProducts = [
   {
     name: "Men's Cotton T-Shirt",
     price: 35000,
+    stock: 100,
     category: 'Clothing',
     subcategory: 'Tops',
     image_url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400',
@@ -39,6 +43,7 @@ const sampleProducts = [
   {
     name: 'Blender 1.5L',
     price: 95000,
+    stock: 30,
     category: 'Home',
     subcategory: 'Kitchen',
     image_url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400',
@@ -47,6 +52,7 @@ const sampleProducts = [
   {
     name: 'Facial Cleanser',
     price: 28000,
+    stock: 40,
     category: 'Beauty',
     subcategory: 'Skincare',
     image_url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
@@ -62,9 +68,9 @@ async function seed() {
   if (rows[0].count === 0) {
     for (const p of sampleProducts) {
       await pool.query(
-        `INSERT INTO products (name, price, category, subcategory, image_url, description)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [p.name, p.price, p.category, p.subcategory, p.image_url, p.description],
+        `INSERT INTO products (name, price, stock, category, subcategory, image_url, description)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [p.name, p.price, p.stock, p.category, p.subcategory, p.image_url, p.description],
       );
     }
     console.log(`Seeded ${sampleProducts.length} products.`);

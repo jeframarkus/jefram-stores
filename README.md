@@ -27,6 +27,7 @@ The old prototype HTML files are kept under [`legacy/`](./legacy) for reference.
 | POST   | `/api/orders`         | —     | Place an order                   |
 | GET    | `/api/orders`         | admin | List orders                      |
 | PATCH  | `/api/orders/:id`     | admin | Update order status              |
+| GET    | `/api/dashboard/stats`| admin | Dashboard summary stats          |
 | POST   | `/api/admin/login`    | —     | Admin login → returns JWT        |
 | GET    | `/api/admin/me`       | admin | Verify token                     |
 
