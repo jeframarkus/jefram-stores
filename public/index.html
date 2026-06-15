@@ -473,25 +473,89 @@
         .order-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
             padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .order-status {
             font-weight: bold;
-            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
         }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-on_way { background: #cce5ff; color: #004085; }
+        .status-delivered { background: #d1ecf1; color: #0c5460; }
 
         .order-items {
             font-size: 14px;
             color: #666;
+            margin: 10px 0;
         }
 
         .order-total {
             font-weight: bold;
             margin-top: 10px;
             text-align: right;
+        }
+
+        .delivery-info {
+            background: #e8f0fe;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .delivery-contact {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .contact-btn {
+            background: #25D366;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .rated-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+
+        .rating-section {
+            margin: 15px 0;
+        }
+
+        .rating {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .rating i {
+            font-size: 28px;
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.3s;
+        }
+
+        .rating i:hover,
+        .rating i.active {
+            color: #ffc107;
         }
 
         .tabs {
@@ -683,6 +747,37 @@
         </div>
     </div>
 
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal">
+        <div class="modal-content">
+            <h3>⭐ Rate Your Order</h3>
+            <div id="ratingOrderInfo" style="margin: 15px 0; padding: 10px; background: #f5f5f5; border-radius: 8px;"></div>
+            <div class="rating-section">
+                <p><strong>📦 Product Quality:</strong></p>
+                <div class="rating" id="productRating">
+                    <i class="far fa-star" data-value="1"></i>
+                    <i class="far fa-star" data-value="2"></i>
+                    <i class="far fa-star" data-value="3"></i>
+                    <i class="far fa-star" data-value="4"></i>
+                    <i class="far fa-star" data-value="5"></i>
+                </div>
+            </div>
+            <div class="rating-section">
+                <p><strong>🚚 Delivery Service:</strong></p>
+                <div class="rating" id="deliveryRating">
+                    <i class="far fa-star" data-value="1"></i>
+                    <i class="far fa-star" data-value="2"></i>
+                    <i class="far fa-star" data-value="3"></i>
+                    <i class="far fa-star" data-value="4"></i>
+                    <i class="far fa-star" data-value="5"></i>
+                </div>
+            </div>
+            <textarea id="ratingComment" placeholder="Your feedback (optional)" style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;"></textarea>
+            <button onclick="submitRating()" style="background:#667eea; color:white; padding:12px; border:none; border-radius:8px; width:100%;">Submit Rating</button>
+            <button onclick="closeRatingModal()" style="margin-top:10px; width:100%; padding:10px; background:#f5f5f5; border:none; border-radius:8px;">Close</button>
+        </div>
+    </div>
+
     <!-- Registration Modal -->
     <div id="registerModal" class="modal">
         <div class="modal-content">
@@ -730,6 +825,12 @@
         let currentUser = null;
         let currentCategory = 'all';
         let currentUserDocId = null;
+        
+        // Rating variables
+        let currentRatingOrder = null;
+        let currentRatingOrderId = null;
+        let currentProductRating = 0;
+        let currentDeliveryRating = 0;
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -739,6 +840,92 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
+
+        // Initialize rating stars
+        function initRatingStars() {
+            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
+                star.removeEventListener('click', starClickHandler);
+                star.addEventListener('click', starClickHandler);
+            });
+        }
+        
+        function starClickHandler() {
+            const value = parseInt(this.dataset.value);
+            const parent = this.parentElement;
+            const isProduct = parent.id === 'productRating';
+            
+            parent.querySelectorAll('i').forEach((s, idx) => {
+                if (idx < value) {
+                    s.className = 'fas fa-star active';
+                } else {
+                    s.className = 'far fa-star';
+                }
+            });
+            
+            if (isProduct) {
+                currentProductRating = value;
+            } else {
+                currentDeliveryRating = value;
+            }
+        }
+
+        window.openRatingModal = async function(orderId, orderData) {
+            currentRatingOrderId = orderId;
+            currentRatingOrder = orderData;
+            currentProductRating = 0;
+            currentDeliveryRating = 0;
+            
+            // Reset stars
+            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
+                star.className = 'far fa-star';
+            });
+            document.getElementById('ratingComment').value = '';
+            
+            document.getElementById('ratingOrderInfo').innerHTML = `
+                <p><strong>Order #${orderId.slice(-6)}</strong></p>
+                <p>Total: UGX ${orderData.total.toLocaleString()}</p>
+                <p>Items: ${orderData.items.map(i => i.name).join(', ')}</p>
+            `;
+            
+            document.getElementById('ratingModal').style.display = 'flex';
+            initRatingStars();
+        };
+
+        window.closeRatingModal = function() {
+            document.getElementById('ratingModal').style.display = 'none';
+        };
+
+        window.submitRating = async function() {
+            if (currentProductRating === 0) {
+                showToast('Please rate the product quality', 'error');
+                return;
+            }
+            if (currentDeliveryRating === 0) {
+                showToast('Please rate the delivery service', 'error');
+                return;
+            }
+            
+            try {
+                const orderRef = doc(db, 'orders', currentRatingOrderId);
+                await updateDoc(orderRef, {
+                    product_rating: currentProductRating,
+                    delivery_rating: currentDeliveryRating,
+                    rating_comment: document.getElementById('ratingComment').value,
+                    rated_at: new Date().toISOString()
+                });
+                
+                showToast('Thank you for your rating! ⭐', 'success');
+                closeRatingModal();
+                
+                // Refresh orders
+                if (document.getElementById('profileModal').style.display === 'flex') {
+                    loadOrders();
+                }
+            } catch (error) {
+                console.error('Rating error:', error);
+                showToast('Failed to submit rating', 'error');
+            }
+        };
 
         window.filterByCategory = function(category) {
             currentCategory = category;
@@ -877,13 +1064,11 @@
             }
             
             try {
-                // Check if user already exists
                 const customersRef = collection(db, 'customers');
                 const q = query(customersRef, where("phone", "==", phone));
                 const existing = await getDocs(q);
                 
                 if (!existing.empty) {
-                    // User exists - sign them in
                     const userDoc = existing.docs[0];
                     currentUser = userDoc.data();
                     currentUserDocId = userDoc.id;
@@ -891,7 +1076,6 @@
                     localStorage.setItem('jefram_user_id', currentUserDocId);
                     showToast('Welcome back!', 'success');
                 } else {
-                    // New user - create account
                     const newUser = {
                         name: name,
                         phone: phone,
@@ -910,7 +1094,6 @@
                 
                 document.getElementById('registerModal').style.display = 'none';
                 
-                // Clear form
                 document.getElementById('customerName').value = '';
                 document.getElementById('customerPhone').value = '';
                 document.getElementById('customerWhatsapp').value = '';
@@ -1037,27 +1220,78 @@
                 }
                 
                 let ordersHtml = '';
+                const ordersArray = [];
                 snapshot.forEach(doc => {
-                    const order = doc.data();
+                    ordersArray.push({ id: doc.id, ...doc.data() });
+                });
+                ordersArray.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                for (const order of ordersArray) {
+                    const statusClass = getStatusClass(order.status);
+                    const deliveryFee = order.delivery_fee || 0;
+                    const totalWithDelivery = order.total + deliveryFee;
+                    
                     ordersHtml += `
                         <div class="order-card">
                             <div class="order-header">
-                                <span>Order #${doc.id.slice(-6)}</span>
-                                <span class="order-status">${order.status}</span>
+                                <span><strong>Order #${order.id.slice(-6)}</strong></span>
+                                <span class="order-status ${statusClass}">${order.status.toUpperCase()}</span>
+                                ${order.product_rating ? `<span class="rated-badge">⭐ Rated ${order.product_rating}/5</span>` : ''}
                             </div>
                             <div class="order-items">
                                 ${order.items.map(item => `${item.name} x${item.quantity}`).join(', ')}
                             </div>
-                            <div class="order-total">Total: UGX ${order.total.toLocaleString()}</div>
-                            <div style="font-size: 12px; color: #999; margin-top: 8px;">${new Date(order.createdAt).toLocaleString()}</div>
-                        </div>
+                            <div class="order-total">
+                                Subtotal: UGX ${order.total.toLocaleString()}<br>
+                                Delivery Fee: ${deliveryFee > 0 ? `UGX ${deliveryFee.toLocaleString()}` : 'FREE'}
+                                ${deliveryFee > 0 ? `<br><strong>Total: UGX ${totalWithDelivery.toLocaleString()}</strong>` : ''}
+                            </div>
                     `;
-                });
+                    
+                    // Show delivery agent if assigned
+                    if (order.delivery_agent) {
+                        ordersHtml += `
+                            <div class="delivery-info">
+                                <strong>🚚 Delivery Agent:</strong> ${order.delivery_agent.name}<br>
+                                <div class="delivery-contact">
+                                    <span>📞 ${order.delivery_agent.phone}</span>
+                                    <a href="https://wa.me/${order.delivery_agent.phone.replace(/^0+/, '')}" target="_blank" class="contact-btn">
+                                        <i class="fab fa-whatsapp"></i> Contact
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    ordersHtml += `<div style="font-size: 12px; color: #999; margin-top: 8px;">${new Date(order.createdAt).toLocaleString()}</div>`;
+                    
+                    // Show rating button if delivered and not rated
+                    if (order.status === 'delivered' && !order.product_rating) {
+                        ordersHtml += `
+                            <button onclick="openRatingModal('${order.id}', ${JSON.stringify(order).replace(/</g, '\\u003c')})" 
+                                style="margin-top: 10px; background:#667eea; color:white; padding:8px; border:none; border-radius:8px; width:100%;">
+                                ⭐ Rate This Order
+                            </button>
+                        `;
+                    }
+                    
+                    ordersHtml += `</div>`;
+                }
                 ordersList.innerHTML = ordersHtml;
             } catch (error) {
                 console.error('Error loading orders:', error);
                 ordersList.innerHTML = '<div style="text-align: center; padding: 2rem;">Failed to load orders</div>';
             }
+        }
+        
+        function getStatusClass(status) {
+            const classes = {
+                'pending': 'status-pending',
+                'confirmed': 'status-confirmed',
+                'on_way': 'status-on_way',
+                'delivered': 'status-delivered'
+            };
+            return classes[status] || 'status-pending';
         }
 
         window.logout = function() {
@@ -1232,7 +1466,6 @@
             }
         };
         
-        // Close modals with Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 document.querySelectorAll('.modal').forEach(modal => {

@@ -157,11 +157,15 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            overflow-x: auto;
+            display: block;
         }
 
         th, td {
@@ -187,11 +191,15 @@
         .status-on_way { background: #cce5ff; color: #004085; }
         .status-delivered { background: #d1ecf1; color: #0c5460; }
 
-        select, button {
+        select, button, input {
             padding: 6px 12px;
             border-radius: 6px;
             border: 1px solid #ddd;
             cursor: pointer;
+        }
+
+        input {
+            cursor: text;
         }
 
         .btn-primary {
@@ -203,6 +211,12 @@
         .btn-danger {
             background: #dc3545;
             color: white;
+            border: none;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
             border: none;
         }
 
@@ -253,10 +267,24 @@
         .stock-in { background: #d4edda; color: #155724; }
         .stock-out { background: #f8d7da; color: #721c24; }
 
+        .rating-stars {
+            color: #ffc107;
+            font-size: 14px;
+        }
+
+        .delivery-fee-input {
+            width: 80px;
+        }
+
+        .agent-select {
+            min-width: 120px;
+        }
+
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
             .sidebar span { display: none; }
             .main-content { margin-left: 70px; }
+            th, td { font-size: 12px; padding: 8px; }
         }
 
         .modal {
@@ -289,6 +317,16 @@
             border-radius: 20px;
             font-size: 11px;
         }
+
+        .whatsapp-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -302,6 +340,9 @@
         </div>
         <div class="nav-item" data-section="orders" id="navOrders">
             <i class="fas fa-shopping-cart"></i> <span>Orders</span>
+        </div>
+        <div class="nav-item" data-section="delivery-agents" id="navDeliveryAgents">
+            <i class="fas fa-truck"></i> <span>Delivery Agents</span>
         </div>
         <div class="nav-item" data-section="users" id="navUsers">
             <i class="fas fa-users"></i> <span>Users</span>
@@ -364,40 +405,62 @@
             </div>
         </div>
 
-        <!-- Orders Section (Master Only) -->
+        <!-- Orders Section -->
         <div id="orders" class="section">
             <div class="section-title">
                 <span>Order Management</span>
             </div>
-            <table id="ordersTable">
-                <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="ordersList"></tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table id="ordersTable">
+                    <thead>
+                        <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Delivery Fee</th><th>Total</th><th>Status</th><th>Agent</th><th>Ratings</th><th>Action</th>
+                        </thead>
+                    <tbody id="ordersList"></tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- Users Section (Master Only) -->
+        <!-- Delivery Agents Section -->
+        <div id="delivery-agents" class="section">
+            <div class="section-title">
+                <span>Delivery Agent Management</span>
+                <button class="btn-primary" onclick="showAddAgentModal()">+ Add Agent</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="agentsTable">
+                    <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Deliveries</th><th>Avg Rating</th><th>Action</th></tr></thead>
+                    <tbody id="agentsList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Users Section -->
         <div id="users" class="section">
             <div class="section-title">
                 <span>Customer Management</span>
             </div>
-            <table id="usersTable">
-                <thead><tr><th>Name</th><th>Phone</th><th>WhatsApp</th><th>Location</th><th>Orders</th><th>Action</th></tr></thead>
-                <tbody id="usersList"></tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table id="usersTable">
+                    <thead><tr><th>Name</th><th>Phone</th><th>WhatsApp</th><th>Location</th><th>Orders</th><th>Action</th></tr></thead>
+                    <tbody id="usersList"></tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- Products Section (Both Master and Sub Admin) -->
+        <!-- Products Section -->
         <div id="products" class="section">
             <div class="section-title">
                 <span>Product Management</span>
             </div>
-            <table id="productsTable">
-                <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Stock</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="productsList"></tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table id="productsTable">
+                    <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Stock</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody id="productsList"></tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- Add Product Section (Both Master and Sub Admin) -->
+        <!-- Add Product Section -->
         <div id="add-product" class="section">
             <div class="section-title">
                 <span>Add New Product</span>
@@ -419,7 +482,7 @@
             </div>
         </div>
 
-        <!-- Sales Summary Section (Master Only) -->
+        <!-- Sales Summary Section -->
         <div id="sales" class="section">
             <div class="section-title">
                 <span>Sales Summary</span>
@@ -427,16 +490,18 @@
             <canvas id="salesChart" style="max-height: 400px;"></canvas>
         </div>
 
-        <!-- Admins Section (Master Only) -->
+        <!-- Admins Section -->
         <div id="admins" class="section">
             <div class="section-title">
                 <span>Admin Management</span>
                 <button class="btn-primary" onclick="showAddAdminModal()">Add Admin</button>
             </div>
-            <table id="adminsTable">
-                <thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Action</th></tr></thead>
-                <tbody id="adminsList"></tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table id="adminsTable">
+                    <thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Action</th></tr></thead>
+                    <tbody id="adminsList"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -449,7 +514,7 @@
         </div>
     </div>
 
-    <!-- Add Admin Modal (Master Only) -->
+    <!-- Add Admin Modal -->
     <div id="addAdminModal" class="modal">
         <div class="modal-content">
             <h3>Add New Admin</h3>
@@ -461,6 +526,17 @@
             </select>
             <button class="btn-primary" onclick="addNewAdmin()">Create Admin</button>
             <button onclick="closeAddAdminModal()" style="margin-top:10px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Add Agent Modal -->
+    <div id="addAgentModal" class="modal">
+        <div class="modal-content">
+            <h3>Add Delivery Agent</h3>
+            <input type="text" id="agentName" placeholder="Agent Name" style="width:100%; margin-bottom:10px; padding:10px;">
+            <input type="tel" id="agentPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" style="width:100%; margin-bottom:10px; padding:10px;">
+            <button class="btn-primary" onclick="addDeliveryAgent()">Add Agent</button>
+            <button onclick="closeAddAgentModal()" style="margin-top:10px;">Cancel</button>
         </div>
     </div>
 
@@ -492,6 +568,7 @@
 
         let currentAdmin = null;
         let currentImageBase64 = null;
+        let deliveryAgents = [];
 
         // Check authentication
         const isLoggedIn = localStorage.getItem('admin_logged_in');
@@ -507,22 +584,18 @@
 
         // Show/hide menu items based on role
         if (isSubAdmin) {
-            // Sub admins only see Products and Add Product
             document.getElementById('navOverview').style.display = 'none';
             document.getElementById('navOrders').style.display = 'none';
+            document.getElementById('navDeliveryAgents').style.display = 'none';
             document.getElementById('navUsers').style.display = 'none';
             document.getElementById('navSales').style.display = 'none';
             document.getElementById('navAdmins').style.display = 'none';
             
-            // Show Products section by default
             document.getElementById('pageTitle').innerText = 'Product Management';
             document.getElementById('permissionBadge').innerHTML = '🔒 Products Only';
             
-            // Hide overview section, show products
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById('products').classList.add('active');
-            
-            // Update active nav
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             document.getElementById('navProducts').classList.add('active');
         } else {
@@ -538,9 +611,8 @@
                 const section = item.dataset.section;
                 if (!section) return;
                 
-                // Check permission for subadmin
                 if (isSubAdmin && !['products', 'add-product'].includes(section)) {
-                    alert('You do not have permission to access this section. Sub Admins can only manage products.');
+                    alert('You do not have permission to access this section.');
                     return;
                 }
                 
@@ -550,17 +622,15 @@
                 document.getElementById(section).classList.add('active');
                 
                 const titles = { 
-                    overview: 'Dashboard Overview', 
-                    orders: 'Order Management', 
-                    users: 'Customer Management', 
-                    products: 'Product Management', 
-                    'add-product': 'Add Product', 
-                    sales: 'Sales Summary', 
-                    admins: 'Admin Management' 
+                    overview: 'Dashboard Overview', orders: 'Order Management', 
+                    'delivery-agents': 'Delivery Agents', users: 'Customer Management', 
+                    products: 'Product Management', 'add-product': 'Add Product', 
+                    sales: 'Sales Summary', admins: 'Admin Management' 
                 };
                 document.getElementById('pageTitle').innerText = titles[section];
                 
                 if (section === 'orders' && isMaster) loadOrders();
+                if (section === 'delivery-agents' && isMaster) loadDeliveryAgents();
                 if (section === 'users' && isMaster) loadUsers();
                 if (section === 'products') loadProducts();
                 if (section === 'overview' && isMaster) loadStats();
@@ -576,7 +646,10 @@
             const productsSnap = await getDocs(collection(db, 'products'));
             
             let totalRevenue = 0;
-            ordersSnap.forEach(doc => totalRevenue += doc.data().total);
+            ordersSnap.forEach(doc => {
+                const order = doc.data();
+                totalRevenue += order.total + (order.delivery_fee || 0);
+            });
             
             document.getElementById('totalOrders').innerText = ordersSnap.size;
             document.getElementById('totalRevenue').innerText = `UGX ${totalRevenue.toLocaleString()}`;
@@ -584,43 +657,222 @@
             document.getElementById('totalProducts').innerText = productsSnap.size;
         }
 
+        async function loadDeliveryAgents() {
+            if (!isMaster) return;
+            const agentsSnap = await getDocs(collection(db, 'delivery_agents'));
+            deliveryAgents = [];
+            agentsSnap.forEach(doc => {
+                deliveryAgents.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Get delivery counts and ratings
+            const ordersSnap = await getDocs(collection(db, 'orders'));
+            const agentStats = {};
+            ordersSnap.forEach(doc => {
+                const order = doc.data();
+                if (order.delivery_agent && order.delivery_agent.id) {
+                    if (!agentStats[order.delivery_agent.id]) {
+                        agentStats[order.delivery_agent.id] = { deliveries: 0, totalRating: 0, ratedCount: 0 };
+                    }
+                    agentStats[order.delivery_agent.id].deliveries++;
+                    if (order.delivery_rating) {
+                        agentStats[order.delivery_agent.id].totalRating += order.delivery_rating;
+                        agentStats[order.delivery_agent.id].ratedCount++;
+                    }
+                }
+            });
+            
+            const agentsList = document.getElementById('agentsList');
+            agentsList.innerHTML = '';
+            for (const agent of deliveryAgents) {
+                const stats = agentStats[agent.id] || { deliveries: 0, totalRating: 0, ratedCount: 0 };
+                const avgRating = stats.ratedCount > 0 ? (stats.totalRating / stats.ratedCount).toFixed(1) : 'N/A';
+                agentsList.innerHTML += `
+                    <tr>
+                        <td>${escapeHtml(agent.name)}</td>
+                        <td>${agent.phone}</td>
+                        <td><span class="status-badge status-confirmed">Active</span></td>
+                        <td>${stats.deliveries}</td>
+                        <td>${avgRating !== 'N/A' ? '⭐ ' + avgRating + '/5' : 'No ratings'}</td>
+                        <td><button class="btn-danger" onclick="deleteAgent('${agent.id}')">Delete</button></td>
+                    </tr>
+                `;
+            }
+        }
+
+        window.showAddAgentModal = function() {
+            document.getElementById('addAgentModal').style.display = 'flex';
+        };
+
+        window.closeAddAgentModal = function() {
+            document.getElementById('addAgentModal').style.display = 'none';
+            document.getElementById('agentName').value = '';
+            document.getElementById('agentPhone').value = '';
+        };
+
+        window.addDeliveryAgent = async function() {
+            const name = document.getElementById('agentName').value.trim();
+            const phone = document.getElementById('agentPhone').value.trim();
+            
+            if (!name || !phone) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            await addDoc(collection(db, 'delivery_agents'), {
+                name: name,
+                phone: phone,
+                status: 'active',
+                createdAt: new Date().toISOString()
+            });
+            closeAddAgentModal();
+            loadDeliveryAgents();
+            showToast('Delivery agent added!', 'success');
+        };
+
+        window.deleteAgent = async function(agentId) {
+            if (confirm('Delete this delivery agent?')) {
+                await deleteDoc(doc(db, 'delivery_agents', agentId));
+                loadDeliveryAgents();
+                showToast('Agent deleted', 'success');
+            }
+        };
+
         async function loadOrders() {
             if (!isMaster) return;
             const ordersSnap = await getDocs(collection(db, 'orders'));
+            const agentsSnap = await getDocs(collection(db, 'delivery_agents'));
+            const agents = [];
+            agentsSnap.forEach(doc => agents.push({ id: doc.id, ...doc.data() }));
+            
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '';
             
-            for (const doc of ordersSnap.docs) {
-                const order = doc.data();
+            for (const docSnap of ordersSnap.docs) {
+                const order = docSnap.data();
+                const orderId = docSnap.id;
+                const deliveryFee = order.delivery_fee || 0;
+                const totalWithDelivery = order.total + deliveryFee;
+                
+                const productRatingStars = order.product_rating ? '⭐ '.repeat(order.product_rating) : '-';
+                const deliveryRatingStars = order.delivery_rating ? '⭐ '.repeat(order.delivery_rating) : '-';
+                
                 ordersList.innerHTML += `
                     <tr>
-                        <td>${doc.id.slice(-6)}</td>
-                        <td>${order.customer.name}</td>
-                        <td>${order.items.map(i => i.name).join(', ')}</td>
+                        <td>${orderId.slice(-6)}</td>
+                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small></td>
+                        <td><small>${order.items.map(i => i.name).join(', ')}</small></td>
                         <td>UGX ${order.total.toLocaleString()}</td>
-                        <td><span class="status-badge status-${order.status}">${order.status}</span></td>
+                        <td><input type="number" id="deliveryFee_${orderId}" value="${deliveryFee}" style="width:70px;" placeholder="Fee" onchange="updateDeliveryFee('${orderId}', this.value)"></td>
+                        <td><strong>UGX ${totalWithDelivery.toLocaleString()}</strong></td>
                         <td>
-                            <select onchange="updateOrderStatus('${doc.id}', this.value)">
+                            <select onchange="updateOrderStatus('${orderId}', this.value, document.getElementById('deliveryFee_${orderId}').value)">
                                 <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
                                 <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
                                 <option value="on_way" ${order.status === 'on_way' ? 'selected' : ''}>On Way</option>
                                 <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
                             </select>
                         </td>
+                        <td>
+                            <select id="agentSelect_${orderId}" onchange="assignDeliveryAgent('${orderId}', this.value)" class="agent-select">
+                                <option value="">Select Agent</option>
+                                ${agents.map(agent => `<option value="${agent.id}" ${order.delivery_agent && order.delivery_agent.id === agent.id ? 'selected' : ''}>${agent.name}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td>
+                            ${order.product_rating ? `<span title="Product Rating">📦 ${order.product_rating}/5</span><br>` : ''}
+                            ${order.delivery_rating ? `<span title="Delivery Rating">🚚 ${order.delivery_rating}/5</span>` : ''}
+                            ${!order.product_rating && order.status === 'delivered' ? '<span class="status-badge status-pending">Awaiting rating</span>' : ''}
+                        </td>
+                        <td>
+                            ${order.customer.whatsapp || order.customer.phone ? `<button class="whatsapp-btn" onclick="contactCustomer('${order.customer.phone}', '${order.customer.name}')"><i class="fab fa-whatsapp"></i> Chat</button>` : ''}
+                        </td>
                     </tr>
                 `;
             }
         }
 
-        window.updateOrderStatus = async function(orderId, newStatus) {
+        window.updateDeliveryFee = async function(orderId, fee) {
+            if (!isMaster) return;
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, { delivery_fee: parseInt(fee) || 0 });
+            showToast('Delivery fee updated!', 'success');
+            loadOrders();
+            loadStats();
+        };
+
+        window.assignDeliveryAgent = async function(orderId, agentId) {
+            if (!isMaster) return;
+            if (!agentId) return;
+            const agent = deliveryAgents.find(a => a.id === agentId);
+            if (!agent) return;
+            
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, {
+                delivery_agent: { id: agent.id, name: agent.name, phone: agent.phone },
+                delivery_agent_assigned_at: new Date().toISOString()
+            });
+            showToast(`Agent ${agent.name} assigned!`, 'success');
+        };
+
+        window.contactCustomer = function(phone, name) {
+            const whatsappUrl = `https://wa.me/256${phone.replace(/^0+/, '')}?text=Hello ${encodeURIComponent(name)}, this is Jefram Stores regarding your order.`;
+            window.open(whatsappUrl, '_blank');
+        };
+
+        async function sendCustomerWhatsApp(order, deliveryFee, status) {
+            const customerPhone = order.customer.phone.replace(/^0+/, '');
+            const totalWithDelivery = order.total + (parseInt(deliveryFee) || 0);
+            
+            let statusMessage = '';
+            if (status === 'confirmed') {
+                statusMessage = '✅ Your order has been *CONFIRMED*!';
+            } else if (status === 'on_way') {
+                const agent = order.delivery_agent;
+                statusMessage = `🚚 Your order is *OUT FOR DELIVERY*!${agent ? `\n\n*Delivery Agent:* ${agent.name}\n*Contact:* ${agent.phone}` : ''}`;
+            }
+            
+            const itemsList = order.items.map(item => 
+                `• ${item.name} x${item.quantity} - UGX ${(item.price * item.quantity).toLocaleString()}`
+            ).join('%0A');
+            
+            const message = `*JEFRAM STORES* 🛍️%0A%0A` +
+                `Dear ${order.customer.name},%0A%0A` +
+                `${statusMessage}%0A%0A` +
+                `*Order #:* ${order.id?.slice(-6)}%0A` +
+                `*Items:*%0A${itemsList}%0A%0A` +
+                `*Subtotal:* UGX ${order.total.toLocaleString()}%0A` +
+                `*Delivery Fee:* ${parseInt(deliveryFee) > 0 ? `UGX ${parseInt(deliveryFee).toLocaleString()}` : 'FREE'}%0A` +
+                `*Total:* UGX ${totalWithDelivery.toLocaleString()}%0A` +
+                `*Payment:* ${order.payment_method === 'cash' ? 'Cash on Delivery 💵' : 'Mobile Money 📱'}%0A%0A` +
+                `Thank you for shopping with Jefram Stores! 🎉`;
+            
+            const whatsappUrl = `https://wa.me/${customerPhone}?text=${message}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
+        window.updateOrderStatus = async function(orderId, newStatus, deliveryFee) {
             if (!isMaster) return;
             try {
                 const orderRef = doc(db, 'orders', orderId);
-                await updateDoc(orderRef, { status: newStatus });
+                const orderDoc = await getDoc(orderRef);
+                const order = orderDoc.data();
+                
+                await updateDoc(orderRef, { 
+                    status: newStatus,
+                    delivery_fee: parseInt(deliveryFee) || 0,
+                    status_updated_at: new Date().toISOString()
+                });
+                
+                if (newStatus === 'confirmed' || newStatus === 'on_way') {
+                    await sendCustomerWhatsApp(order, deliveryFee, newStatus);
+                }
+                
                 showToast('Order status updated!', 'success');
                 loadOrders();
                 loadStats();
             } catch (error) {
+                console.error('Error:', error);
                 showToast('Failed to update status', 'error');
             }
         };
@@ -641,7 +893,7 @@
                 const user = doc.data();
                 usersList.innerHTML += `
                     <tr>
-                        <td>${user.name}</td>
+                        <td>${escapeHtml(user.name)}</td>
                         <td>${user.phone}</td>
                         <td>${user.whatsapp || user.phone}</td>
                         <td>${user.location}</td>
@@ -661,7 +913,7 @@
             const userOrders = [];
             ordersSnap.forEach(doc => {
                 if (doc.data().customer.phone === user.phone) {
-                    userOrders.push(doc.data());
+                    userOrders.push({ id: doc.id, ...doc.data() });
                 }
             });
             
@@ -674,7 +926,7 @@
                 <p><strong>Registered:</strong> ${new Date(user.registeredAt).toLocaleDateString()}</p>
                 <hr>
                 <h4>Order History (${userOrders.length} orders)</h4>
-                ${userOrders.map(o => `<p>Order: UGX ${o.total.toLocaleString()} - Status: ${o.status}</p>`).join('')}
+                ${userOrders.map(o => `<p><strong>#${o.id.slice(-6)}</strong> - UGX ${o.total.toLocaleString()} - Status: ${o.status}${o.product_rating ? ` | ⭐ Rated ${o.product_rating}/5` : ''}</p>`).join('')}
             `;
             document.getElementById('userModal').style.display = 'flex';
         };
@@ -692,7 +944,7 @@
                 productsList.innerHTML += `
                     <tr>
                         <td><img src="${product.image_url}" style="width:50px; height:50px; object-fit:cover;"></td>
-                        <td>${product.name}</td>
+                        <td>${escapeHtml(product.name)}</td>
                         <td>UGX ${product.price.toLocaleString()}</td>
                         <td>${product.stock}</td>
                         <td><span class="stock-badge ${product.stock > 0 ? 'stock-in' : 'stock-out'}">${product.stock > 0 ? 'In Stock' : 'Out of Stock'}</span></td>
@@ -781,8 +1033,10 @@
             const ordersSnap = await getDocs(collection(db, 'orders'));
             const dailySales = {};
             ordersSnap.forEach(doc => {
-                const date = new Date(doc.data().createdAt).toLocaleDateString();
-                dailySales[date] = (dailySales[date] || 0) + doc.data().total;
+                const order = doc.data();
+                const date = new Date(order.createdAt).toLocaleDateString();
+                const totalWithDelivery = order.total + (order.delivery_fee || 0);
+                dailySales[date] = (dailySales[date] || 0) + totalWithDelivery;
             });
             
             const labels = Object.keys(dailySales).slice(-7);
@@ -807,7 +1061,7 @@
                         <td>${admin.username}</td>
                         <td>${admin.role}</td>
                         <td>${new Date(admin.createdAt).toLocaleDateString()}</td>
-                        <td>${admin.username !== currentAdmin.username ? `<button onclick="deleteAdmin('${doc.id}')">Delete</button>` : 'Current'}</td>
+                        <td>${admin.username !== currentAdmin.username ? `<button class="btn-danger" onclick="deleteAdmin('${doc.id}')">Delete</button>` : 'Current'}</td>
                     </tr>
                 `;
             });
@@ -820,14 +1074,15 @@
 
         window.closeAddAdminModal = function() {
             document.getElementById('addAdminModal').style.display = 'none';
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
         };
 
         window.addNewAdmin = async function() {
             if (!isMaster) return;
             const username = document.getElementById('adminUsername').value.trim();
             const password = document.getElementById('adminPassword').value.trim();
-            const roleSelect = document.getElementById('adminRole');
-            const role = roleSelect ? roleSelect.value : 'subadmin';
+            const role = document.getElementById('adminRole').value;
             
             if (!username || !password) {
                 alert('Please fill all fields');
@@ -836,16 +1091,12 @@
             
             try {
                 await addDoc(collection(db, 'admins'), {
-                    username: username,
-                    password: password,
-                    role: role,
+                    username, password, role,
                     createdAt: new Date().toISOString()
                 });
                 closeAddAdminModal();
                 loadAdmins();
                 showToast('Admin created!', 'success');
-                document.getElementById('adminUsername').value = '';
-                document.getElementById('adminPassword').value = '';
             } catch (error) {
                 showToast('Failed to create admin: ' + error.message, 'error');
             }
@@ -859,6 +1110,13 @@
                 showToast('Admin deleted', 'success');
             }
         };
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         function showToast(message, type) {
             const toast = document.createElement('div');
@@ -874,10 +1132,20 @@
             window.location.href = 'login.html';
         };
 
-        // Initial load based on role
+        // Add missing function for getDoc
+        window.getDoc = async function(docRef) {
+            const { getDoc: firestoreGetDoc } = await import("firebase/firestore");
+            return firestoreGetDoc(docRef);
+        };
+        
+        // Override getDoc usage
+        const originalGetDoc = window.getDoc;
+        
+        // Initial load
         if (isMaster) {
             loadStats();
             loadOrders();
+            loadDeliveryAgents();
             loadUsers();
             loadSalesSummary();
             loadAdmins();
