@@ -18,6 +18,30 @@
             background: #f8f9fa;
         }
 
+        /* Language Switcher */
+        .language-switcher {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 999;
+            background: white;
+            border-radius: 30px;
+            padding: 8px 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            gap: 10px;
+        }
+        .lang-option {
+            padding: 4px 8px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .lang-option.active {
+            background: #667eea;
+            color: white;
+        }
+
         .toast {
             position: fixed;
             bottom: 20px;
@@ -31,14 +55,29 @@
         }
 
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Push Notification Permission */
+        .notification-prompt {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 9998;
+            display: none;
+            max-width: 280px;
+        }
+        .notification-prompt button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
 
         .header {
@@ -109,7 +148,7 @@
             align-items: center;
         }
 
-        .profile-icon {
+        .wishlist-icon, .profile-icon, .cart-icon {
             cursor: pointer;
             background: #f5f5f5;
             padding: 10px;
@@ -118,42 +157,20 @@
             position: relative;
         }
 
-        .profile-icon:hover {
+        .wishlist-icon:hover, .profile-icon:hover, .cart-icon:hover {
             background: #667eea;
         }
 
-        .profile-icon:hover i {
+        .wishlist-icon:hover i, .profile-icon:hover i, .cart-icon:hover i {
             color: white;
         }
 
-        .profile-icon i {
+        .wishlist-icon i, .profile-icon i, .cart-icon i {
             font-size: 1.3rem;
             color: #667eea;
         }
 
-        .cart-icon {
-            position: relative;
-            cursor: pointer;
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 50%;
-            transition: all 0.3s;
-        }
-
-        .cart-icon:hover {
-            background: #667eea;
-        }
-
-        .cart-icon i {
-            font-size: 1.3rem;
-            color: #667eea;
-        }
-
-        .cart-icon:hover i {
-            color: white;
-        }
-
-        .cart-count {
+        .wishlist-count, .cart-count {
             position: absolute;
             top: -5px;
             right: -5px;
@@ -238,6 +255,9 @@
             font-size: 1.8rem;
             margin-bottom: 1.5rem;
             color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .categories-grid {
@@ -287,13 +307,34 @@
             overflow: hidden;
             transition: all 0.3s;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            cursor: pointer;
+            position: relative;
         }
 
         .product-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 5px 25px rgba(0,0,0,0.2);
         }
+
+        .wishlist-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        .wishlist-btn i {
+            color: #ff4757;
+            font-size: 1.2rem;
+        }
+        .wishlist-btn i.far { color: #ccc; }
 
         .product-image {
             width: 100%;
@@ -347,6 +388,36 @@
             cursor: not-allowed;
         }
 
+        /* Reviews Section */
+        .reviews-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .review-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .review-rating {
+            color: #ffc107;
+            font-size: 12px;
+        }
+        .review-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .write-review-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            margin-top: 10px;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -395,6 +466,35 @@
             cursor: pointer;
         }
 
+        .coupon-section {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .coupon-input {
+            display: flex;
+            gap: 10px;
+        }
+        .coupon-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .apply-coupon {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .discount-amount {
+            color: #28a745;
+            font-size: 14px;
+        }
+
         .whatsapp-checkout {
             background: #25D366;
             color: white;
@@ -406,6 +506,21 @@
             font-weight: bold;
             cursor: pointer;
             margin-top: 1rem;
+        }
+
+        .mobile-money-form {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .mobile-money-form input, .mobile-money-form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
 
         .register-form, .profile-form {
@@ -580,6 +695,18 @@
             border-bottom: 2px solid #667eea;
         }
 
+        /* Tracking Map */
+        .tracking-map {
+            height: 300px;
+            width: 100%;
+            border-radius: 12px;
+            margin: 10px 0;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .loader {
             text-align: center;
             padding: 2rem;
@@ -638,10 +765,28 @@
             .hero {
                 padding: 2rem;
             }
+            .language-switcher {
+                bottom: 70px;
+                left: 10px;
+                padding: 4px 8px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Language Switcher -->
+    <div class="language-switcher">
+        <span class="lang-option active" data-lang="en">EN</span>
+        <span class="lang-option" data-lang="lg">LU</span>
+    </div>
+
+    <!-- Push Notification Prompt -->
+    <div class="notification-prompt" id="notificationPrompt">
+        <p>🔔 Receive order updates instantly!</p>
+        <button onclick="enableNotifications()">Enable</button>
+        <button onclick="closeNotificationPrompt()">Later</button>
+    </div>
+
     <div class="header">
         <div class="header-content">
             <div class="logo" onclick="window.location.reload()">
@@ -653,6 +798,10 @@
                 <i class="fas fa-search"></i>
             </div>
             <div class="header-actions">
+                <div class="wishlist-icon" onclick="openWishlist()">
+                    <i class="far fa-heart"></i>
+                    <span class="wishlist-count" id="wishlistCount">0</span>
+                </div>
                 <div class="profile-icon" onclick="openProfileModal()">
                     <i class="fas fa-user"></i>
                 </div>
@@ -675,21 +824,21 @@
 
     <div class="main-content">
         <div class="hero">
-            <h2>Welcome to Jefram Stores</h2>
-            <p>Quality products delivered to your doorstep anywhere in Uganda</p>
+            <h2 id="welcomeText">Welcome to Jefram Stores</h2>
+            <p id="heroText">Quality products delivered to your doorstep anywhere in Uganda</p>
             <div class="hero-badge">
-                <i class="fas fa-truck"></i> Free Delivery in Kampala | 
-                <i class="fab fa-whatsapp"></i> Order via WhatsApp
+                <i class="fas fa-truck"></i> Quick & Cheap Delivery | 
+                <i class="fab fa-whatsapp"></i> Thank you for visiting us
             </div>
         </div>
 
         <div class="categories-section">
-            <h2 class="section-title">Shop by Category</h2>
+            <h2 class="section-title" id="shopByCategory">Shop by Category</h2>
             <div class="categories-grid" id="categoriesGrid"></div>
         </div>
 
         <div id="productsContainer">
-            <h2 class="section-title">Our Products</h2>
+            <h2 class="section-title" id="ourProducts">Our Products</h2>
             <div class="products-grid" id="productsGrid"></div>
         </div>
     </div>
@@ -699,21 +848,44 @@
         <div class="modal-content">
             <h2>Your Cart</h2>
             <div id="cartItems"></div>
+            <div class="coupon-section" id="couponSection">
+                <div class="coupon-input">
+                    <input type="text" id="couponCode" placeholder="Enter coupon code">
+                    <button class="apply-coupon" onclick="applyCoupon()">Apply</button>
+                </div>
+                <div id="couponMessage" class="discount-amount" style="margin-top:5px;"></div>
+            </div>
             <div class="cart-total" id="cartTotal">Total: UGX 0</div>
             <div class="payment-options">
                 <label>
-                    <input type="radio" name="paymentMethod" value="cash" checked>
+                    <input type="radio" name="paymentMethod" value="cash" checked onchange="togglePaymentForm()">
                     Cash on Delivery
                 </label>
                 <label>
-                    <input type="radio" name="paymentMethod" value="mobile_money">
+                    <input type="radio" name="paymentMethod" value="mobile_money" onchange="togglePaymentForm()">
                     Mobile Money (Pay First)
                 </label>
             </div>
-            <button class="whatsapp-checkout" onclick="proceedToWhatsApp()">
-                <i class="fab fa-whatsapp"></i> Confirm Order on WhatsApp
+            <div class="mobile-money-form" id="mobileMoneyForm">
+                <select id="mobileMoneyProvider">
+                    <option value="mtn">MTN Mobile Money</option>
+                    <option value="airtel">Airtel Money</option>
+                </select>
+                <input type="tel" id="mobileMoneyNumber" placeholder="Phone Number (e.g., 077XXXXXXX)">
+            </div>
+            <button class="whatsapp-checkout" onclick="proceedToCheckout()">
+                <i class="fab fa-whatsapp"></i> Confirm Order
             </button>
             <button onclick="closeCart()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Wishlist Modal -->
+    <div id="wishlistModal" class="modal">
+        <div class="modal-content">
+            <h2>My Wishlist</h2>
+            <div id="wishlistItems"></div>
+            <button onclick="closeWishlist()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
         </div>
     </div>
 
@@ -724,6 +896,7 @@
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('profile')">Profile</button>
                 <button class="tab" onclick="switchTab('orders')">My Orders</button>
+                <button class="tab" onclick="switchTab('tracking')">Track Order</button>
             </div>
             <div id="profileTab">
                 <div class="profile-info" id="profileInfo"></div>
@@ -733,6 +906,7 @@
                         <input type="tel" id="editPhone" placeholder="Phone Number">
                         <input type="text" id="editWhatsapp" placeholder="WhatsApp Number">
                         <input type="text" id="editLocation" placeholder="Location">
+                        <input type="email" id="editEmail" placeholder="Email">
                         <button onclick="updateProfile()" style="background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px;">Save Changes</button>
                         <button onclick="cancelEdit()" style="background: #666; color: white; padding: 12px; border: none; border-radius: 8px;">Cancel</button>
                     </div>
@@ -743,7 +917,31 @@
             <div id="ordersTab" style="display: none;">
                 <div id="ordersList"></div>
             </div>
+            <div id="trackingTab" style="display: none;">
+                <div id="trackingInfo"></div>
+            </div>
             <button onclick="closeProfileModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="reviewModal" class="modal">
+        <div class="modal-content">
+            <h3>Write a Review</h3>
+            <div id="reviewProductInfo"></div>
+            <div class="rating-section">
+                <p><strong>Your Rating:</strong></p>
+                <div class="rating" id="reviewRating">
+                    <i class="far fa-star" data-value="1"></i>
+                    <i class="far fa-star" data-value="2"></i>
+                    <i class="far fa-star" data-value="3"></i>
+                    <i class="far fa-star" data-value="4"></i>
+                    <i class="far fa-star" data-value="5"></i>
+                </div>
+            </div>
+            <textarea id="reviewText" placeholder="Share your experience with this product..." style="width:100%; margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px; min-height:100px;"></textarea>
+            <button onclick="submitReview()" style="background:#667eea; color:white; padding:12px; border:none; border-radius:8px; width:100%;">Submit Review</button>
+            <button onclick="closeReviewModal()" style="margin-top:10px; width:100%; padding:10px; background:#f5f5f5; border:none; border-radius:8px;">Cancel</button>
         </div>
     </div>
 
@@ -805,7 +1003,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, deleteDoc, getDoc, orderBy, limit } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -819,18 +1017,138 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Global variables
         let products = [];
         let cart = [];
+        let wishlist = [];
         let categories = [];
         let currentUser = null;
         let currentCategory = 'all';
         let currentUserDocId = null;
+        let appliedCoupon = null;
+        let currentLanguage = 'en';
         
         // Rating variables
         let currentRatingOrder = null;
         let currentRatingOrderId = null;
         let currentProductRating = 0;
         let currentDeliveryRating = 0;
+        
+        // Review variables
+        let currentReviewProduct = null;
+        let reviewRating = 0;
+
+        // Language translations
+        const translations = {
+            en: {
+                welcome: "Welcome to Jefram Stores",
+                heroText: "Quality products delivered to your doorstep anywhere in Uganda",
+                shopByCategory: "Shop by Category",
+                ourProducts: "Our Products",
+                addToCart: "Add to Cart",
+                outOfStock: "Out of Stock",
+                inStock: "In Stock",
+                noProducts: "No products found",
+                register: "Register / Sign In",
+                myAccount: "My Account",
+                profile: "Profile",
+                myOrders: "My Orders",
+                trackOrder: "Track Order",
+                signOut: "Sign Out",
+                orderPlaced: "Order placed! Check WhatsApp to confirm.",
+                cartEmpty: "Your cart is empty",
+                total: "Total",
+                confirmOrder: "Confirm Order",
+                freeDelivery: "Free Delivery in Kampala",
+                orderViaWhatsApp: "Order via WhatsApp"
+            },
+            lg: {
+                welcome: "Kaabwo ku Jefram Stores",
+                heroText: "Ebintu ebirungi ebituusibwa ku luggi lwo mu Uganda yonna",
+                shopByCategory: "Gula ku Bikula",
+                ourProducts: "Ebintu Byaffe",
+                addToCart: "Yongera mu Katiiji",
+                outOfStock: "Tekiri mu Matuuka",
+                inStock: "Kiri mu Matuuka",
+                noProducts: "Tewali bintu bibadde",
+                register: "Yewandiise / Yingira",
+                myAccount: "Akaawunti Yange",
+                profile: "Endabirwamu",
+                myOrders: "Ebintu Byange",
+                trackOrder: "Erata Order",
+                signOut: "Va mu Akaawunti",
+                orderPlaced: "Order ekwasiddwa! Laba WhatsApp okukakasa.",
+                cartEmpty: "Katiiji yo eri busa",
+                total: "Omuwaalo",
+                confirmOrder: "Kakasa Order",
+                freeDelivery: "Obwereere mu Kampala",
+                orderViaWhatsApp: "Lagisa ku WhatsApp"
+            }
+        };
+
+        function t(key) {
+            return translations[currentLanguage][key] || translations.en[key] || key;
+        }
+
+        function updateLanguage() {
+            document.getElementById('welcomeText').innerText = t('welcome');
+            document.getElementById('heroText').innerText = t('heroText');
+            document.getElementById('shopByCategory').innerText = t('shopByCategory');
+            document.getElementById('ourProducts').innerText = t('ourProducts');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.innerText = t(el.dataset.i18n);
+            });
+        }
+
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.lang-option').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                currentLanguage = opt.dataset.lang;
+                updateLanguage();
+                renderProducts();
+            });
+        });
+
+        // Push Notifications
+        let pushSubscription = null;
+
+        async function enableNotifications() {
+            if ('Notification' in window && 'serviceWorker' in navigator) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    showToast('Notifications enabled!', 'success');
+                    document.getElementById('notificationPrompt').style.display = 'none';
+                    await registerServiceWorker();
+                }
+            }
+        }
+
+        async function registerServiceWorker() {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('Service Worker registered');
+            } catch (error) {
+                console.log('Service Worker failed:', error);
+            }
+        }
+
+        function sendPushNotification(title, body) {
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body, icon: '/favicon.ico' });
+            }
+        }
+
+        function closeNotificationPrompt() {
+            document.getElementById('notificationPrompt').style.display = 'none';
+        }
+
+        // Check if notifications should be prompted
+        setTimeout(() => {
+            if (Notification && Notification.permission === 'default') {
+                document.getElementById('notificationPrompt').style.display = 'block';
+            }
+        }, 3000);
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -843,7 +1161,7 @@
 
         // Initialize rating stars
         function initRatingStars() {
-            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
+            document.querySelectorAll('#productRating i, #deliveryRating i, #reviewRating i').forEach(star => {
                 star.removeEventListener('click', starClickHandler);
                 star.addEventListener('click', starClickHandler);
             });
@@ -853,6 +1171,7 @@
             const value = parseInt(this.dataset.value);
             const parent = this.parentElement;
             const isProduct = parent.id === 'productRating';
+            const isReview = parent.id === 'reviewRating';
             
             parent.querySelectorAll('i').forEach((s, idx) => {
                 if (idx < value) {
@@ -864,66 +1183,378 @@
             
             if (isProduct) {
                 currentProductRating = value;
+            } else if (isReview) {
+                reviewRating = value;
             } else {
                 currentDeliveryRating = value;
             }
         }
 
-        window.openRatingModal = async function(orderId, orderData) {
-            currentRatingOrderId = orderId;
-            currentRatingOrder = orderData;
-            currentProductRating = 0;
-            currentDeliveryRating = 0;
-            
-            // Reset stars
-            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
-                star.className = 'far fa-star';
-            });
-            document.getElementById('ratingComment').value = '';
-            
-            document.getElementById('ratingOrderInfo').innerHTML = `
-                <p><strong>Order #${orderId.slice(-6)}</strong></p>
-                <p>Total: UGX ${orderData.total.toLocaleString()}</p>
-                <p>Items: ${orderData.items.map(i => i.name).join(', ')}</p>
-            `;
-            
-            document.getElementById('ratingModal').style.display = 'flex';
-            initRatingStars();
-        };
-
-        window.closeRatingModal = function() {
-            document.getElementById('ratingModal').style.display = 'none';
-        };
-
-        window.submitRating = async function() {
-            if (currentProductRating === 0) {
-                showToast('Please rate the product quality', 'error');
+        // Wishlist functions
+        window.openWishlist = function() {
+            if (!currentUser) {
+                openRegisterModal();
                 return;
             }
-            if (currentDeliveryRating === 0) {
-                showToast('Please rate the delivery service', 'error');
+            renderWishlist();
+            document.getElementById('wishlistModal').style.display = 'flex';
+        };
+
+        window.closeWishlist = function() {
+            document.getElementById('wishlistModal').style.display = 'none';
+        };
+
+        function renderWishlist() {
+            const wishlistDiv = document.getElementById('wishlistItems');
+            if (wishlist.length === 0) {
+                wishlistDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Your wishlist is empty</div>';
+                return;
+            }
+            
+            wishlistDiv.innerHTML = wishlist.map(item => `
+                <div class="cart-item">
+                    <div>
+                        <strong>${escapeHtml(item.name)}</strong><br>
+                        UGX ${item.price.toLocaleString()}
+                    </div>
+                    <div>
+                        <button onclick="addToCartFromWishlist('${item.id}')" style="background:#28a745; color:white; padding:5px 10px; margin-right:5px;">Add to Cart</button>
+                        <button onclick="removeFromWishlist('${item.id}')" style="color: red; padding:5px 10px;">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('wishlistCount').innerText = wishlist.length;
+        }
+
+        window.addToCartFromWishlist = function(productId) {
+            addToCart(productId);
+            removeFromWishlist(productId);
+        };
+
+        window.removeFromWishlist = function(productId) {
+            wishlist = wishlist.filter(i => i.id != productId);
+            localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist));
+            renderWishlist();
+            updateWishlistButtons();
+            showToast('Removed from wishlist', 'success');
+        };
+
+        function toggleWishlist(product) {
+            const exists = wishlist.find(i => i.id == product.id);
+            if (exists) {
+                wishlist = wishlist.filter(i => i.id != product.id);
+                showToast(`${product.name} removed from wishlist`, 'info');
+            } else {
+                wishlist.push({ id: product.id, name: product.name, price: product.price, image_url: product.image_url });
+                showToast(`${product.name} added to wishlist`, 'success');
+            }
+            localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist));
+            renderWishlist();
+            updateWishlistButtons();
+        }
+
+        function updateWishlistButtons() {
+            document.querySelectorAll('.wishlist-btn').forEach(btn => {
+                const productId = btn.dataset.id;
+                const inWishlist = wishlist.find(i => i.id == productId);
+                const icon = btn.querySelector('i');
+                if (inWishlist) {
+                    icon.className = 'fas fa-heart';
+                } else {
+                    icon.className = 'far fa-heart';
+                }
+            });
+            document.getElementById('wishlistCount').innerText = wishlist.length;
+        }
+
+        // Coupon functions
+        async function applyCoupon() {
+            const code = document.getElementById('couponCode').value.trim().toUpperCase();
+            if (!code) {
+                showToast('Enter a coupon code', 'error');
                 return;
             }
             
             try {
-                const orderRef = doc(db, 'orders', currentRatingOrderId);
-                await updateDoc(orderRef, {
-                    product_rating: currentProductRating,
-                    delivery_rating: currentDeliveryRating,
-                    rating_comment: document.getElementById('ratingComment').value,
-                    rated_at: new Date().toISOString()
+                const couponsRef = collection(db, 'coupons');
+                const q = query(couponsRef, where("code", "==", code), where("active", "==", true));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    showToast('Invalid or expired coupon', 'error');
+                    return;
+                }
+                
+                let coupon = null;
+                snapshot.forEach(doc => { coupon = { id: doc.id, ...doc.data() }; });
+                
+                if (coupon.expiryDate && new Date(coupon.expiryDate) < new Date()) {
+                    showToast('Coupon has expired', 'error');
+                    return;
+                }
+                
+                if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+                    showToast('Coupon usage limit reached', 'error');
+                    return;
+                }
+                
+                appliedCoupon = coupon;
+                document.getElementById('couponMessage').innerHTML = `Coupon applied! ${coupon.discountType === 'percentage' ? coupon.discountValue + '% off' : 'UGX ' + coupon.discountValue.toLocaleString() + ' off'}`;
+                showToast('Coupon applied successfully!', 'success');
+                renderCart();
+            } catch (error) {
+                console.error('Coupon error:', error);
+                showToast('Failed to apply coupon', 'error');
+            }
+        }
+
+        function calculateDiscount(amount) {
+            if (!appliedCoupon) return 0;
+            if (appliedCoupon.discountType === 'percentage') {
+                return (amount * appliedCoupon.discountValue) / 100;
+            } else {
+                return Math.min(appliedCoupon.discountValue, amount);
+            }
+        }
+
+        // Review functions
+        window.openReviewModal = function(productId, productName) {
+            if (!currentUser) {
+                openRegisterModal();
+                return;
+            }
+            currentReviewProduct = { id: productId, name: productName };
+            reviewRating = 0;
+            document.querySelectorAll('#reviewRating i').forEach(star => {
+                star.className = 'far fa-star';
+            });
+            document.getElementById('reviewText').value = '';
+            document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`;
+            document.getElementById('reviewModal').style.display = 'flex';
+            initRatingStars();
+        };
+
+        window.closeReviewModal = function() {
+            document.getElementById('reviewModal').style.display = 'none';
+        };
+
+        window.submitReview = async function() {
+            if (reviewRating === 0) {
+                showToast('Please select a rating', 'error');
+                return;
+            }
+            
+            try {
+                const reviewsRef = collection(db, 'reviews');
+                await addDoc(reviewsRef, {
+                    productId: currentReviewProduct.id,
+                    productName: currentReviewProduct.name,
+                    userId: currentUserDocId,
+                    userName: currentUser.name,
+                    rating: reviewRating,
+                    comment: document.getElementById('reviewText').value,
+                    createdAt: new Date().toISOString()
+                });
+                showToast('Review submitted! Thank you for your feedback.', 'success');
+                closeReviewModal();
+            } catch (error) {
+                console.error('Review error:', error);
+                showToast('Failed to submit review', 'error');
+            }
+        };
+
+        async function loadProductReviews(productId) {
+            try {
+                const reviewsRef = collection(db, 'reviews');
+                const q = query(reviewsRef, where("productId", "==", productId), orderBy("createdAt", "desc"), limit(5));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) return '';
+                
+                let reviewsHtml = '<div class="reviews-section"><strong>Customer Reviews:</strong>';
+                snapshot.forEach(doc => {
+                    const review = doc.data();
+                    reviewsHtml += `
+                        <div class="review-item">
+                            <div class="review-rating">${'⭐'.repeat(review.rating)}</div>
+                            <div class="review-text">"${escapeHtml(review.comment)}"</div>
+                            <small style="color:#999;">- ${escapeHtml(review.userName)}</small>
+                        </div>
+                    `;
+                });
+                reviewsHtml += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '${escapeHtml(currentReviewProduct?.name || '')}')">Write a Review</button></div>`;
+                return reviewsHtml;
+            } catch (error) {
+                return '';
+            }
+        }
+
+        // Tracking functions
+        window.switchTab = async function(tab) {
+            const profileTab = document.getElementById('profileTab');
+            const ordersTab = document.getElementById('ordersTab');
+            const trackingTab = document.getElementById('trackingTab');
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'profile') {
+                profileTab.style.display = 'block';
+                ordersTab.style.display = 'none';
+                trackingTab.style.display = 'none';
+                tabs[0].classList.add('active');
+                loadProfileData();
+            } else if (tab === 'orders') {
+                profileTab.style.display = 'none';
+                ordersTab.style.display = 'block';
+                trackingTab.style.display = 'none';
+                tabs[1].classList.add('active');
+                loadOrders();
+            } else {
+                profileTab.style.display = 'none';
+                ordersTab.style.display = 'none';
+                trackingTab.style.display = 'block';
+                tabs[2].classList.add('active');
+                await loadTrackingOrders();
+            }
+        };
+
+        async function loadTrackingOrders() {
+            const trackingDiv = document.getElementById('trackingInfo');
+            trackingDiv.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+            
+            try {
+                const ordersRef = collection(db, 'orders');
+                const q = query(ordersRef, where("customer.phone", "==", currentUser.phone), where("status", "in", ["on_way", "confirmed"]));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    trackingDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">No active orders to track</div>';
+                    return;
+                }
+                
+                let trackingHtml = '';
+                for (const docSnap of snapshot.docs) {
+                    const order = docSnap.data();
+                    trackingHtml += `
+                        <div class="order-card">
+                            <div class="order-header">
+                                <span>Order #${docSnap.id.slice(-6)}</span>
+                                <span class="order-status status-${order.status}">${order.status.toUpperCase()}</span>
+                            </div>
+                            <div class="order-items">${order.items.map(i => i.name).join(', ')}</div>
+                            <div class="order-total">Total: UGX ${order.total.toLocaleString()}</div>
+                            <div class="tracking-map" id="map_${docSnap.id}">
+                                <i class="fas fa-map-marker-alt" style="font-size: 30px; color: #667eea;"></i>
+                                <p style="margin-top: 10px;">Order is ${order.status === 'on_way' ? 'on the way!' : 'being prepared'}</p>
+                                <p><small>Delivery agent will contact you shortly</small></p>
+                            </div>
+                        </div>
+                    `;
+                }
+                trackingDiv.innerHTML = trackingHtml;
+            } catch (error) {
+                trackingDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Failed to load tracking</div>';
+            }
+        }
+
+        // Mobile Money payment
+        function togglePaymentForm() {
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const form = document.getElementById('mobileMoneyForm');
+            form.style.display = paymentMethod === 'mobile_money' ? 'block' : 'none';
+        }
+
+        async function processMobileMoneyPayment(amount, phone, provider) {
+            // Simulate payment - in production, integrate with actual Mobile Money API
+            return new Promise((resolve) => {
+                showToast(`Initiating ${provider} payment for UGX ${amount.toLocaleString()}...`, 'info');
+                setTimeout(() => {
+                    resolve(true);
+                }, 2000);
+            });
+        }
+
+        // Checkout
+        window.proceedToCheckout = async function() {
+            if (cart.length === 0) {
+                showToast('Your cart is empty!', 'error');
+                return;
+            }
+            
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            let subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const discount = calculateDiscount(subtotal);
+            const total = subtotal - discount;
+            
+            if (paymentMethod === 'mobile_money') {
+                const provider = document.getElementById('mobileMoneyProvider').value;
+                const phone = document.getElementById('mobileMoneyNumber').value;
+                if (!phone) {
+                    showToast('Enter your Mobile Money number', 'error');
+                    return;
+                }
+                const paid = await processMobileMoneyPayment(total, phone, provider);
+                if (!paid) {
+                    showToast('Payment failed. Please try again.', 'error');
+                    return;
+                }
+            }
+            
+            const itemsList = cart.map(item => 
+                `• ${item.name} x${item.quantity} - UGX ${(item.price * item.quantity).toLocaleString()}`
+            ).join('\n');
+            
+            const customerWhatsapp = currentUser.whatsapp || currentUser.phone;
+            const discountText = discount > 0 ? `\n*Discount:* UGX ${discount.toLocaleString()}` : '';
+            
+            const message = `*NEW ORDER FROM JEFRAM STORES* 🛍️\n\n` +
+                `*Customer Details:*\n` +
+                `Name: ${currentUser.name}\n` +
+                `Phone: ${currentUser.phone}\n` +
+                `WhatsApp: ${customerWhatsapp}\n` +
+                `Location: ${currentUser.location}\n` +
+                `Email: ${currentUser.email || 'Not provided'}\n\n` +
+                `*Order Details:*\n` +
+                `${itemsList}\n\n` +
+                `*Subtotal:* UGX ${subtotal.toLocaleString()}${discountText}\n` +
+                `*Total Amount:* UGX ${total.toLocaleString()}\n` +
+                `*Payment Method:* ${paymentMethod === 'cash' ? 'Cash on Delivery 💵' : 'Mobile Money 📱'}\n\n` +
+                `*Delivery:* ${currentUser.location === 'Kampala' ? 'Free Delivery 🚚' : 'Delivery fee to be confirmed'}\n\n` +
+                `_Please confirm this order and provide payment instructions._`;
+            
+            try {
+                const ordersRef = collection(db, 'orders');
+                await addDoc(ordersRef, {
+                    customer: currentUser,
+                    items: cart,
+                    subtotal: subtotal,
+                    discount: discount,
+                    coupon_code: appliedCoupon?.code || null,
+                    total: total,
+                    payment_method: paymentMethod,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
                 });
                 
-                showToast('Thank you for your rating! ⭐', 'success');
-                closeRatingModal();
-                
-                // Refresh orders
-                if (document.getElementById('profileModal').style.display === 'flex') {
-                    loadOrders();
+                if (appliedCoupon) {
+                    const couponRef = doc(db, 'coupons', appliedCoupon.id);
+                    await updateDoc(couponRef, { usedCount: (appliedCoupon.usedCount || 0) + 1 });
                 }
+                
+                const whatsappUrl = `https://wa.me/256742533656?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+                
+                cart = [];
+                appliedCoupon = null;
+                updateCartCount();
+                closeCart();
+                showToast('Order placed! Check WhatsApp to confirm.');
+                
+                // Send push notification
+                sendPushNotification('Order Placed!', 'Your order has been received and will be confirmed soon.');
             } catch (error) {
-                console.error('Rating error:', error);
-                showToast('Failed to submit rating', 'error');
+                console.error('Error saving order:', error);
+                showToast('Failed to save order. Please try again.', 'error');
             }
         };
 
@@ -994,58 +1625,6 @@
             showToast(`${product.name} added to cart!`);
         };
 
-        window.proceedToWhatsApp = async function() {
-            if (cart.length === 0) {
-                showToast('Your cart is empty!', 'error');
-                return;
-            }
-            
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const itemsList = cart.map(item => 
-                `• ${item.name} x${item.quantity} - UGX ${(item.price * item.quantity).toLocaleString()}`
-            ).join('\n');
-            
-            const customerWhatsapp = currentUser.whatsapp || currentUser.phone;
-            
-            const message = `*NEW ORDER FROM JEFRAM STORES* 🛍️\n\n` +
-                `*Customer Details:*\n` +
-                `Name: ${currentUser.name}\n` +
-                `Phone: ${currentUser.phone}\n` +
-                `WhatsApp: ${customerWhatsapp}\n` +
-                `Location: ${currentUser.location}\n` +
-                `Email: ${currentUser.email || 'Not provided'}\n\n` +
-                `*Order Details:*\n` +
-                `${itemsList}\n\n` +
-                `*Total Amount:* UGX ${total.toLocaleString()}\n` +
-                `*Payment Method:* ${paymentMethod === 'cash' ? 'Cash on Delivery 💵' : 'Mobile Money 📱'}\n\n` +
-                `*Delivery:* ${currentUser.location === 'Kampala' ? 'Free Delivery 🚚' : 'Delivery fee to be confirmed'}\n\n` +
-                `_Please confirm this order and provide payment instructions._`;
-            
-            try {
-                const ordersRef = collection(db, 'orders');
-                await addDoc(ordersRef, {
-                    customer: currentUser,
-                    items: cart,
-                    total: total,
-                    payment_method: paymentMethod,
-                    status: 'pending',
-                    createdAt: new Date().toISOString()
-                });
-                
-                const whatsappUrl = `https://wa.me/256742533656?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
-                
-                cart = [];
-                updateCartCount();
-                closeCart();
-                showToast('Order placed! Check WhatsApp to confirm.');
-            } catch (error) {
-                console.error('Error saving order:', error);
-                showToast('Failed to save order. Please try again.', 'error');
-            }
-        };
-
         window.registerUser = async function() {
             const name = document.getElementById('customerName').value;
             const phone = document.getElementById('customerPhone').value;
@@ -1090,6 +1669,11 @@
                     localStorage.setItem('jefram_user', JSON.stringify(currentUser));
                     localStorage.setItem('jefram_user_id', currentUserDocId);
                     showToast('Registration successful! Start shopping!');
+                    
+                    // Send welcome email (simulated)
+                    if (email) {
+                        console.log('Welcome email sent to:', email);
+                    }
                 }
                 
                 document.getElementById('registerModal').style.display = 'none';
@@ -1099,6 +1683,13 @@
                 document.getElementById('customerWhatsapp').value = '';
                 document.getElementById('customerEmail').value = '';
                 document.getElementById('customerLocation').value = '';
+                
+                // Load wishlist from localStorage
+                const savedWishlist = localStorage.getItem('jefram_wishlist');
+                if (savedWishlist) {
+                    wishlist = JSON.parse(savedWishlist);
+                    renderWishlist();
+                }
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -1119,26 +1710,6 @@
             document.getElementById('profileModal').style.display = 'none';
         };
 
-        window.switchTab = function(tab) {
-            const profileTab = document.getElementById('profileTab');
-            const ordersTab = document.getElementById('ordersTab');
-            const tabs = document.querySelectorAll('.tab');
-            
-            tabs.forEach(t => t.classList.remove('active'));
-            
-            if (tab === 'profile') {
-                profileTab.style.display = 'block';
-                ordersTab.style.display = 'none';
-                tabs[0].classList.add('active');
-                loadProfileData();
-            } else {
-                profileTab.style.display = 'none';
-                ordersTab.style.display = 'block';
-                tabs[1].classList.add('active');
-                loadOrders();
-            }
-        };
-
         async function loadProfileData() {
             if (!currentUser) return;
             
@@ -1156,6 +1727,7 @@
             document.getElementById('editPhone').value = currentUser.phone;
             document.getElementById('editWhatsapp').value = currentUser.whatsapp || currentUser.phone;
             document.getElementById('editLocation').value = currentUser.location;
+            document.getElementById('editEmail').value = currentUser.email || '';
         }
 
         window.showEditForm = function() {
@@ -1175,6 +1747,7 @@
             const newPhone = document.getElementById('editPhone').value;
             const newWhatsapp = document.getElementById('editWhatsapp').value;
             const newLocation = document.getElementById('editLocation').value;
+            const newEmail = document.getElementById('editEmail').value;
             
             if (!newName || !newPhone || !newLocation) {
                 showToast('Please fill all required fields', 'error');
@@ -1187,13 +1760,15 @@
                     name: newName,
                     phone: newPhone,
                     whatsapp: newWhatsapp,
-                    location: newLocation
+                    location: newLocation,
+                    email: newEmail
                 });
                 
                 currentUser.name = newName;
                 currentUser.phone = newPhone;
                 currentUser.whatsapp = newWhatsapp;
                 currentUser.location = newLocation;
+                currentUser.email = newEmail;
                 localStorage.setItem('jefram_user', JSON.stringify(currentUser));
                 
                 showToast('Profile updated successfully!', 'success');
@@ -1229,7 +1804,7 @@
                 for (const order of ordersArray) {
                     const statusClass = getStatusClass(order.status);
                     const deliveryFee = order.delivery_fee || 0;
-                    const totalWithDelivery = order.total + deliveryFee;
+                    const totalWithDelivery = (order.total || order.subtotal || 0) + deliveryFee;
                     
                     ordersHtml += `
                         <div class="order-card">
@@ -1242,13 +1817,13 @@
                                 ${order.items.map(item => `${item.name} x${item.quantity}`).join(', ')}
                             </div>
                             <div class="order-total">
-                                Subtotal: UGX ${order.total.toLocaleString()}<br>
-                                Delivery Fee: ${deliveryFee > 0 ? `UGX ${deliveryFee.toLocaleString()}` : 'FREE'}
+                                Subtotal: UGX ${(order.subtotal || order.total).toLocaleString()}
+                                ${order.discount ? `<br><span style="color:#28a745;">Discount: -UGX ${order.discount.toLocaleString()}</span>` : ''}
+                                <br>Delivery Fee: ${deliveryFee > 0 ? `UGX ${deliveryFee.toLocaleString()}` : 'FREE'}
                                 ${deliveryFee > 0 ? `<br><strong>Total: UGX ${totalWithDelivery.toLocaleString()}</strong>` : ''}
                             </div>
                     `;
                     
-                    // Show delivery agent if assigned
                     if (order.delivery_agent) {
                         ordersHtml += `
                             <div class="delivery-info">
@@ -1265,7 +1840,6 @@
                     
                     ordersHtml += `<div style="font-size: 12px; color: #999; margin-top: 8px;">${new Date(order.createdAt).toLocaleString()}</div>`;
                     
-                    // Show rating button if delivered and not rated
                     if (order.status === 'delivered' && !order.product_rating) {
                         ordersHtml += `
                             <button onclick="openRatingModal('${order.id}', ${JSON.stringify(order).replace(/</g, '\\u003c')})" 
@@ -1294,13 +1868,72 @@
             return classes[status] || 'status-pending';
         }
 
+        window.openRatingModal = async function(orderId, orderData) {
+            currentRatingOrderId = orderId;
+            currentRatingOrder = orderData;
+            currentProductRating = 0;
+            currentDeliveryRating = 0;
+            
+            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
+                star.className = 'far fa-star';
+            });
+            document.getElementById('ratingComment').value = '';
+            
+            document.getElementById('ratingOrderInfo').innerHTML = `
+                <p><strong>Order #${orderId.slice(-6)}</strong></p>
+                <p>Total: UGX ${orderData.total.toLocaleString()}</p>
+                <p>Items: ${orderData.items.map(i => i.name).join(', ')}</p>
+            `;
+            
+            document.getElementById('ratingModal').style.display = 'flex';
+            initRatingStars();
+        };
+
+        window.closeRatingModal = function() {
+            document.getElementById('ratingModal').style.display = 'none';
+        };
+
+        window.submitRating = async function() {
+            if (currentProductRating === 0) {
+                showToast('Please rate the product quality', 'error');
+                return;
+            }
+            if (currentDeliveryRating === 0) {
+                showToast('Please rate the delivery service', 'error');
+                return;
+            }
+            
+            try {
+                const orderRef = doc(db, 'orders', currentRatingOrderId);
+                await updateDoc(orderRef, {
+                    product_rating: currentProductRating,
+                    delivery_rating: currentDeliveryRating,
+                    rating_comment: document.getElementById('ratingComment').value,
+                    rated_at: new Date().toISOString()
+                });
+                
+                showToast('Thank you for your rating! ⭐', 'success');
+                closeRatingModal();
+                
+                if (document.getElementById('profileModal').style.display === 'flex') {
+                    loadOrders();
+                }
+            } catch (error) {
+                console.error('Rating error:', error);
+                showToast('Failed to submit rating', 'error');
+            }
+        };
+
         window.logout = function() {
             currentUser = null;
             currentUserDocId = null;
             cart = [];
+            wishlist = [];
+            appliedCoupon = null;
             updateCartCount();
             localStorage.removeItem('jefram_user');
             localStorage.removeItem('jefram_user_id');
+            localStorage.removeItem('jefram_wishlist');
             closeProfileModal();
             showToast('Signed out successfully!', 'success');
             window.location.reload();
@@ -1323,9 +1956,14 @@
             const cartItemsDiv = document.getElementById('cartItems');
             if (cart.length === 0) {
                 cartItemsDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Your cart is empty</div>';
-                document.getElementById('cartTotal').textContent = 'Total: UGX 0';
+                document.getElementById('cartTotal').innerHTML = 'Total: UGX 0';
+                document.getElementById('couponSection').style.display = 'none';
                 return;
             }
+            
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const discount = calculateDiscount(subtotal);
+            const total = subtotal - discount;
             
             cartItemsDiv.innerHTML = cart.map(item => `
                 <div class="cart-item">
@@ -1342,11 +1980,17 @@
                 </div>
             `).join('');
             
-            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            document.getElementById('cartTotal').textContent = `Total: UGX ${total.toLocaleString()}`;
+            let totalHtml = `Subtotal: UGX ${subtotal.toLocaleString()}`;
+            if (discount > 0) {
+                totalHtml += `<br><span style="color:#28a745;">Discount: -UGX ${discount.toLocaleString()}</span>`;
+            }
+            totalHtml += `<br><strong>Total: UGX ${total.toLocaleString()}</strong>`;
+            document.getElementById('cartTotal').innerHTML = totalHtml;
+            document.getElementById('couponSection').style.display = 'block';
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
@@ -1388,7 +2032,7 @@
             });
         }
 
-        function renderProducts() {
+        async function renderProducts() {
             const productsGrid = document.getElementById('productsGrid');
             if (!productsGrid) return;
             
@@ -1405,23 +2049,33 @@
             }
             
             if (filteredProducts.length === 0) {
-                productsGrid.innerHTML = '<div style="text-align: center; padding: 2rem;">No products found</div>';
+                productsGrid.innerHTML = '<div style="text-align: center; padding: 2rem;">' + t('noProducts') + '</div>';
                 return;
             }
             
-            productsGrid.innerHTML = filteredProducts.map(product => `
-                <div class="product-card">
-                    <img src="${product.image_url || 'https://via.placeholder.com/300'}" class="product-image" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300'">
-                    <div class="product-info">
-                        <div class="product-name">${escapeHtml(product.name)}</div>
-                        <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
-                        <div class="product-stock">${parseInt(product.stock) > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}</div>
-                        <button class="add-to-cart" onclick="addToCart('${product.id}')" ${parseInt(product.stock) === 0 ? 'disabled' : ''}>
-                            Add to Cart
-                        </button>
+            let productsHtml = '';
+            for (const product of filteredProducts) {
+                const reviewsHtml = await loadProductReviews(product.id);
+                productsHtml += `
+                    <div class="product-card">
+                        <div class="wishlist-btn" data-id="${product.id}" onclick="toggleWishlist({id:'${product.id}', name:'${escapeHtml(product.name)}', price:${product.price}, image_url:'${product.image_url}'})">
+                            <i class="${wishlist.find(i => i.id == product.id) ? 'fas' : 'far'} fa-heart"></i>
+                        </div>
+                        <img src="${product.image_url || 'https://via.placeholder.com/300'}" class="product-image" alt="${product.name}" onerror="this.src='https://via.placeholder.com/300'">
+                        <div class="product-info">
+                            <div class="product-name">${escapeHtml(product.name)}</div>
+                            <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
+                            <div class="product-stock">${parseInt(product.stock) > 0 ? t('inStock') + ` (${product.stock})` : t('outOfStock')}</div>
+                            <button class="add-to-cart" onclick="addToCart('${product.id}')" ${parseInt(product.stock) === 0 ? 'disabled' : ''}>
+                                ${t('addToCart')}
+                            </button>
+                            ${reviewsHtml}
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }
+            productsGrid.innerHTML = productsHtml;
+            updateWishlistButtons();
         }
 
         async function fetchProducts() {
@@ -1442,12 +2096,22 @@
                 });
                 categories = [...new Set(products.map(p => p.category).filter(c => c))];
                 renderCategories();
-                renderProducts();
+                await renderProducts();
             } catch (error) {
                 console.error('Error fetching products:', error);
                 showToast('Failed to load products', 'error');
             }
         }
+
+        // Stock alert check (every hour)
+        async function checkLowStock() {
+            const lowStockProducts = products.filter(p => p.stock <= 5 && p.stock > 0);
+            if (lowStockProducts.length > 0 && currentUser && currentUser.email) {
+                console.log(`Low stock alert: ${lowStockProducts.map(p => p.name).join(', ')}`);
+                // In production, send email to admin
+            }
+        }
+        setInterval(checkLowStock, 3600000);
 
         document.getElementById('searchInput').addEventListener('input', renderProducts);
         
@@ -1456,6 +2120,11 @@
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
             currentUserDocId = savedUserId;
+        }
+        
+        const savedWishlist = localStorage.getItem('jefram_wishlist');
+        if (savedWishlist) {
+            wishlist = JSON.parse(savedWishlist);
         }
         
         fetchProducts();
@@ -1473,6 +2142,32 @@
                 });
             }
         });
+
+        // Export data function (for user to download their data)
+        window.exportMyData = async function() {
+            if (!currentUser) return;
+            const ordersRef = collection(db, 'orders');
+            const q = query(ordersRef, where("customer.phone", "==", currentUser.phone));
+            const snapshot = await getDocs(q);
+            const orders = [];
+            snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+            
+            const data = {
+                user: currentUser,
+                orders: orders,
+                wishlist: wishlist,
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `jefram_my_data_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Your data has been exported!', 'success');
+        };
     </script>
 </body>
 </html>
