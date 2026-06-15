@@ -87,6 +87,7 @@
             background: #f5f5f5;
             border-radius: 8px;
             overflow: hidden;
+            position: relative;
         }
         
         .image-preview img {
@@ -153,12 +154,6 @@
             display: block;
         }
         
-        .message.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            display: block;
-        }
-        
         .loading {
             display: inline-block;
             width: 18px;
@@ -177,9 +172,14 @@
         
         .remove-btn {
             background: #dc3545;
-            margin-top: 8px;
+            margin-top: 5px;
             padding: 6px;
             font-size: 12px;
+            width: auto;
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
         }
         
         .row {
@@ -206,11 +206,10 @@
             <input id="subcategory" placeholder="Subcategory">
         </div>
         
-        <!-- Image Upload Area -->
         <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
             <div class="upload-icon">📷</div>
             <div class="upload-text">Click or drag to upload product photo</div>
-            <div class="file-info">PNG, JPG, WEBP up to 5MB</div>
+            <div class="file-info">PNG, JPG, WEBP up to 2MB</div>
         </div>
         
         <div class="image-preview" id="imagePreview"></div>
@@ -265,12 +264,10 @@
             }, 4000);
         }
         
-        // Handle file upload
         window.handleImageUpload = function(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
                 
-                // Check file size (max 2MB for Firestore)
                 if (file.size > 2 * 1024 * 1024) {
                     showMessage('Image too large! Please choose an image under 2MB.', 'error');
                     return;
@@ -280,14 +277,11 @@
                 reader.onload = function(e) {
                     currentImageBase64 = e.target.result;
                     
-                    // Show preview
                     const preview = document.getElementById('imagePreview');
                     preview.innerHTML = `<img src="${currentImageBase64}" style="max-width:100%; max-height:100%; object-fit:contain">
-                                        <button class="remove-btn" onclick="removeImage()" style="position:absolute; margin-top:5px; width:auto; padding:5px 10px;">❌ Remove</button>`;
+                                        <button class="remove-btn" onclick="removeImage()">❌ Remove Image</button>`;
                     preview.style.display = 'flex';
-                    preview.style.position = 'relative';
                     
-                    // Hide upload area
                     document.getElementById('uploadArea').style.display = 'none';
                 };
                 reader.readAsDataURL(file);
@@ -302,7 +296,6 @@
             document.getElementById('imageInput').value = '';
         };
         
-        // Drag and drop support
         const uploadArea = document.getElementById('uploadArea');
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -363,7 +356,6 @@
                 
                 showMessage('✅ Product added successfully!', 'success');
                 
-                // Clear form
                 document.getElementById('name').value = '';
                 document.getElementById('price').value = '';
                 document.getElementById('category').value = '';
@@ -374,11 +366,7 @@
                 
             } catch (error) {
                 console.error('Error:', error);
-                let errorMsg = error.message;
-                if (errorMsg.includes('64 KiB')) {
-                    errorMsg = 'Image too large! Please use a smaller image (under 64KB) or compress it first.';
-                }
-                showMessage('Failed: ' + errorMsg, 'error');
+                showMessage('Failed: ' + error.message, 'error');
             } finally {
                 addBtn.disabled = false;
                 addBtn.innerHTML = '➕ Add Product';

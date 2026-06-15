@@ -550,21 +550,16 @@
         import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
 
         const firebaseConfig = {
-    apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
-    authDomain: "jefram-stores.firebaseapp.com",
-    projectId: "jefram-stores",
-    storageBucket: "jefram-stores.firebasestorage.app",
-    messagingSenderId: "669495715459",
-    appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
-};
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        window.db = db;
-        window.collection = collection;
-        window.getDocs = getDocs;
-        window.addDoc = addDoc;
 
         let products = [];
         let cart = [];
@@ -674,7 +669,7 @@
                 `_Please confirm this order and provide payment instructions._`;
             
             try {
-                const ordersRef = collection(window.db, 'orders');
+                const ordersRef = collection(db, 'orders');
                 await addDoc(ordersRef, {
                     customer: currentUser,
                     items: cart,
@@ -684,8 +679,10 @@
                     createdAt: new Date().toISOString()
                 });
                 
+                // ORDERS SENT TO SHOP OWNER: 256742533656
                 const whatsappUrl = `https://wa.me/256742533656?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
+                
                 cart = [];
                 updateCartCount();
                 closeCart();
@@ -713,7 +710,7 @@
             }
             
             try {
-                const customersRef = collection(window.db, 'customers');
+                const customersRef = collection(db, 'customers');
                 await addDoc(customersRef, {
                     name: name,
                     phone: phone,
@@ -849,7 +846,7 @@
             }
             
             try {
-                const productsRef = collection(window.db, 'products');
+                const productsRef = collection(db, 'products');
                 const snapshot = await getDocs(productsRef);
                 products = [];
                 snapshot.forEach(doc => {
