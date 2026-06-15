@@ -24,7 +24,7 @@
             background: white;
             border-radius: 20px;
             padding: 40px;
-            max-width: 500px;
+            max-width: 550px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
@@ -43,6 +43,7 @@
             border-radius: 8px;
             font-family: inherit;
             font-size: 14px;
+            box-sizing: border-box;
         }
         
         input:focus, textarea:focus {
@@ -55,6 +56,61 @@
             min-height: 80px;
         }
         
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            background: #fafafa;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8e8ff;
+        }
+        
+        .image-preview {
+            width: 100%;
+            height: 180px;
+            margin-bottom: 15px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .file-info {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+        }
+        
         button {
             width: 100%;
             padding: 14px;
@@ -65,20 +121,21 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.3s;
         }
         
-        button:hover {
+        button:hover:not(:disabled) {
             transform: translateY(-2px);
         }
         
         button:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
         }
         
         .message {
             margin-top: 20px;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
             text-align: center;
             display: none;
@@ -96,68 +153,77 @@
             display: block;
         }
         
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            display: block;
+        }
+        
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            width: 18px;
+            height: 18px;
+            border: 2px solid white;
+            border-top-color: transparent;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-right: 10px;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
         
-        .image-preview {
-            width: 100%;
-            height: 150px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f9f9f9;
-            overflow: hidden;
-        }
-        
-        .image-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-        
-        .hint {
+        .remove-btn {
+            background: #dc3545;
+            margin-top: 8px;
+            padding: 6px;
             font-size: 12px;
-            color: #999;
-            margin-top: -10px;
-            margin-bottom: 15px;
+        }
+        
+        .row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .row input {
+            flex: 1;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Add New Product</h2>
+        <h2>📦 Add New Product</h2>
         
-        <input id="name" placeholder="Product Name">
-        <input id="price" placeholder="Price (UGX)" type="number">
-        <input id="category" placeholder="Category (e.g., Electronics, Clothing)">
-        <input id="subcategory" placeholder="Subcategory">
-        
-        <input id="image" placeholder="Image URL (e.g., https://via.placeholder.com/300)">
-        <div class="image-preview" id="imagePreview">
-            <span>Enter a URL above to preview</span>
+        <div class="row">
+            <input id="name" placeholder="Product Name">
+            <input id="price" placeholder="Price (UGX)" type="number">
         </div>
-        <div class="hint">💡 Tip: Right-click any image online and select "Copy image URL"</div>
+        
+        <div class="row">
+            <input id="category" placeholder="Category">
+            <input id="subcategory" placeholder="Subcategory">
+        </div>
+        
+        <!-- Image Upload Area -->
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">Click or drag to upload product photo</div>
+            <div class="file-info">PNG, JPG, WEBP up to 5MB</div>
+        </div>
+        
+        <div class="image-preview" id="imagePreview"></div>
+        
+        <input type="file" id="imageInput" style="display: none" accept="image/png,image/jpeg,image/webp" onchange="handleImageUpload(this)">
         
         <textarea id="desc" placeholder="Product Description"></textarea>
-        <input id="stock" placeholder="Stock Quantity" type="number" value="10">
         
-        <button id="addBtn" onclick="addProduct()">Add Product</button>
+        <div class="row">
+            <input id="stock" placeholder="Stock" type="number" value="10">
+        </div>
+        
+        <button id="addBtn" onclick="addProduct()">➕ Add Product</button>
         <div id="message" class="message"></div>
     </div>
 
@@ -185,38 +251,96 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
+        
+        let currentImageBase64 = null;
+        
         function showMessage(msg, type) {
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = msg;
             messageDiv.className = `message ${type}`;
             setTimeout(() => {
-                messageDiv.className = 'message';
-            }, 5000);
+                if (messageDiv.className === `message ${type}`) {
+                    messageDiv.className = 'message';
+                }
+            }, 4000);
         }
         
-        // Preview image when URL is entered
-        document.getElementById('image').addEventListener('input', function() {
-            const url = this.value;
-            const preview = document.getElementById('imagePreview');
-            if (url) {
-                preview.innerHTML = `<img src="${url}" onerror="this.style.display='none'; this.nextSibling.style.display='block'" style="max-width:100%; max-height:100%;"><span style="display:none;">Invalid image URL</span>`;
+        // Handle file upload
+        window.handleImageUpload = function(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                
+                // Check file size (max 2MB for Firestore)
+                if (file.size > 2 * 1024 * 1024) {
+                    showMessage('Image too large! Please choose an image under 2MB.', 'error');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentImageBase64 = e.target.result;
+                    
+                    // Show preview
+                    const preview = document.getElementById('imagePreview');
+                    preview.innerHTML = `<img src="${currentImageBase64}" style="max-width:100%; max-height:100%; object-fit:contain">
+                                        <button class="remove-btn" onclick="removeImage()" style="position:absolute; margin-top:5px; width:auto; padding:5px 10px;">❌ Remove</button>`;
+                    preview.style.display = 'flex';
+                    preview.style.position = 'relative';
+                    
+                    // Hide upload area
+                    document.getElementById('uploadArea').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        
+        window.removeImage = function() {
+            currentImageBase64 = null;
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imagePreview').innerHTML = '';
+            document.getElementById('uploadArea').style.display = 'block';
+            document.getElementById('imageInput').value = '';
+        };
+        
+        // Drag and drop support
+        const uploadArea = document.getElementById('uploadArea');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const input = document.getElementById('imageInput');
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                input.files = dataTransfer.files;
+                handleImageUpload(input);
             } else {
-                preview.innerHTML = '<span>Enter a URL above to preview</span>';
+                showMessage('Please drop an image file', 'error');
             }
         });
         
         window.addProduct = async function() {
-            const name = document.getElementById('name').value;
+            const name = document.getElementById('name').value.trim();
             const price = document.getElementById('price').value;
-            const category = document.getElementById('category').value;
-            const subcategory = document.getElementById('subcategory').value;
-            const image_url = document.getElementById('image').value;
-            const description = document.getElementById('desc').value;
+            const category = document.getElementById('category').value.trim();
+            const subcategory = document.getElementById('subcategory').value.trim();
+            const description = document.getElementById('desc').value.trim();
             const stock = document.getElementById('stock').value;
             
             if (!name || !price || !category) {
                 showMessage('Please fill name, price, and category', 'error');
+                return;
+            }
+            
+            if (!currentImageBase64) {
+                showMessage('Please upload a product photo', 'error');
                 return;
             }
             
@@ -230,31 +354,34 @@
                     name: name,
                     price: parseFloat(price),
                     category: category,
-                    subcategory: subcategory,
-                    image_url: image_url || 'https://via.placeholder.com/300',
-                    description: description,
+                    subcategory: subcategory || '',
+                    image_url: currentImageBase64,
+                    description: description || '',
                     stock: parseInt(stock) || 0,
                     createdAt: new Date().toISOString()
                 });
                 
-                showMessage('Product added successfully!', 'success');
+                showMessage('✅ Product added successfully!', 'success');
                 
                 // Clear form
                 document.getElementById('name').value = '';
                 document.getElementById('price').value = '';
                 document.getElementById('category').value = '';
                 document.getElementById('subcategory').value = '';
-                document.getElementById('image').value = '';
                 document.getElementById('desc').value = '';
                 document.getElementById('stock').value = '10';
-                document.getElementById('imagePreview').innerHTML = '<span>Enter a URL above to preview</span>';
+                removeImage();
                 
             } catch (error) {
-                console.error('Error adding product:', error);
-                showMessage('Failed to add product: ' + error.message, 'error');
+                console.error('Error:', error);
+                let errorMsg = error.message;
+                if (errorMsg.includes('64 KiB')) {
+                    errorMsg = 'Image too large! Please use a smaller image (under 64KB) or compress it first.';
+                }
+                showMessage('Failed: ' + errorMsg, 'error');
             } finally {
                 addBtn.disabled = false;
-                addBtn.innerHTML = 'Add Product';
+                addBtn.innerHTML = '➕ Add Product';
             }
         };
     </script>
