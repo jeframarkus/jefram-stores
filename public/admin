@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Jefram</title>
+</head>
+<body>
+
+<h2>Add Product</h2>
+<input id="name" placeholder="Name"><br>
+<input id="price" placeholder="Price"><br>
+<input id="category" placeholder="Category"><br>
+<input id="subcategory" placeholder="Subcategory"><br>
+<input id="image" placeholder="Image URL"><br>
+<textarea id="desc" placeholder="Description"></textarea><br>
+<button onclick="addProduct()">Add Product</button>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycby3UPHH1526LrIoHe3cPM7mfiI8jwqzPO1v3hn01vai-QLN2f9tVE2Kzjt67CkGGV6qtg/exec";
+
+function addProduct(){
+  let url = API + "?action=addProduct"
+  + "&name=" + encodeURIComponent(name.value)
+  + "&price=" + encodeURIComponent(price.value)
+  + "&category=" + encodeURIComponent(category.value)
+  + "&subcategory=" + encodeURIComponent(subcategory.value)
+  + "&image=" + encodeURIComponent(image.value)
+  + "&description=" + encodeURIComponent(desc.value);
+
+  fetch(url)
+    .then(r=>r.text())
+    .then(res=>{
+      alert(res);
+      location.reload();
+    });
+}
+</script>
+
+</body>
+</html>
