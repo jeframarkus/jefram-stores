@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Jefram Stores</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Admin Login</h2>
+        <div class="subtitle">Jefram Stores Dashboard</div>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <div id="message" class="message"></div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, collection, getDocs, query, where } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.login = async function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const messageDiv = document.getElementById('message');
+
+            if (!username || !password) {
+                messageDiv.textContent = 'Please enter username and password';
+                messageDiv.className = 'message error';
+                return;
+            }
+
+            try {
+                const adminsRef = collection(db, 'admins');
+                const q = query(adminsRef, where("username", "==", username));
+                const snapshot = await getDocs(q);
+
+                if (snapshot.empty) {
+                    messageDiv.textContent = 'Invalid credentials';
+                    messageDiv.className = 'message error';
+                    return;
+                }
+
+                let admin = null;
+                snapshot.forEach(doc => {
+                    admin = { id: doc.id, ...doc.data() };
+                });
+
+                if (admin.password === password) {
+                    localStorage.setItem('admin_logged_in', 'true');
+                    localStorage.setItem('admin_data', JSON.stringify(admin));
+                    window.location.href = 'index.html';
+                } else {
+                    messageDiv.textContent = 'Invalid credentials';
+                    messageDiv.className = 'message error';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                messageDiv.textContent = 'Login failed. Please try again.';
+                messageDiv.className = 'message error';
+            }
+        };
+    </script>
+</body>
+</html>
