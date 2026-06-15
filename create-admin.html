@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html>
-<head><title>Add Admin</title></head>
+<head>
+    <title>Create Admin</title>
+</head>
 <body>
+    <h2>Creating Admin...</h2>
+    <div id="result"></div>
+    
     <script type="importmap">
         {
             "imports": {
@@ -10,10 +15,11 @@
             }
         }
     </script>
+    
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, addDoc } from "firebase/firestore";
-
+        
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
             authDomain: "jefram-stores.firebaseapp.com",
@@ -22,20 +28,32 @@
             messagingSenderId: "669495715459",
             appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
         };
-
+        
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
+        
         try {
-            await addDoc(collection(db, 'admins'), {
+            const docRef = await addDoc(collection(db, "admins"), {
                 username: "master",
                 password: "admin1409",
                 role: "master",
                 createdAt: new Date().toISOString()
             });
-            document.body.innerHTML = "<h2 style='color:green'>✅ Admin created successfully!</h2><p>Username: master<br>Password: admin1409</p>";
+            document.getElementById('result').innerHTML = `
+                <div style="color: green;">
+                    <h3>✅ Admin Created Successfully!</h3>
+                    <p>Username: <strong>master</strong></p>
+                    <p>Password: <strong>admin1409</strong></p>
+                    <p>Document ID: ${docRef.id}</p>
+                </div>
+            `;
         } catch (error) {
-            document.body.innerHTML = "<h2 style='color:red'>❌ Error: " + error.message + "</h2>";
+            document.getElementById('result').innerHTML = `
+                <div style="color: red;">
+                    <h3>❌ Error:</h3>
+                    <p>${error.message}</p>
+                </div>
+            `;
         }
     </script>
 </body>

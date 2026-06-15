@@ -63,6 +63,11 @@
             width: 20px;
         }
 
+        .nav-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
         .main-content {
             margin-left: 260px;
             padding: 20px;
@@ -177,25 +182,10 @@
             font-weight: 500;
         }
 
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-confirmed {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-on_way {
-            background: #cce5ff;
-            color: #004085;
-        }
-
-        .status-delivered {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-on_way { background: #cce5ff; color: #004085; }
+        .status-delivered { background: #d1ecf1; color: #0c5460; }
 
         select, button {
             padding: 6px 12px;
@@ -260,26 +250,13 @@
             font-weight: bold;
         }
 
-        .stock-in {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .stock-out {
-            background: #f8d7da;
-            color: #721c24;
-        }
+        .stock-in { background: #d4edda; color: #155724; }
+        .stock-out { background: #f8d7da; color: #721c24; }
 
         @media (max-width: 768px) {
-            .sidebar {
-                width: 70px;
-            }
-            .sidebar span {
-                display: none;
-            }
-            .main-content {
-                margin-left: 70px;
-            }
+            .sidebar { width: 70px; }
+            .sidebar span { display: none; }
+            .main-content { margin-left: 70px; }
         }
 
         .modal {
@@ -304,6 +281,14 @@
             max-height: 80vh;
             overflow-y: auto;
         }
+
+        .permission-badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -312,25 +297,25 @@
             <h2>Jefram Stores</h2>
             <p>Admin Dashboard</p>
         </div>
-        <div class="nav-item active" data-section="overview">
+        <div class="nav-item" data-section="overview" id="navOverview">
             <i class="fas fa-chart-line"></i> <span>Overview</span>
         </div>
-        <div class="nav-item" data-section="orders">
+        <div class="nav-item" data-section="orders" id="navOrders">
             <i class="fas fa-shopping-cart"></i> <span>Orders</span>
         </div>
-        <div class="nav-item" data-section="users">
+        <div class="nav-item" data-section="users" id="navUsers">
             <i class="fas fa-users"></i> <span>Users</span>
         </div>
-        <div class="nav-item" data-section="products">
+        <div class="nav-item" data-section="products" id="navProducts">
             <i class="fas fa-box"></i> <span>Products</span>
         </div>
-        <div class="nav-item" data-section="add-product">
+        <div class="nav-item" data-section="add-product" id="navAddProduct">
             <i class="fas fa-plus-circle"></i> <span>Add Product</span>
         </div>
-        <div class="nav-item" data-section="sales">
+        <div class="nav-item" data-section="sales" id="navSales">
             <i class="fas fa-chart-bar"></i> <span>Sales Summary</span>
         </div>
-        <div class="nav-item" data-section="admins" id="adminsMenu" style="display: none;">
+        <div class="nav-item" data-section="admins" id="navAdmins" style="display: none;">
             <i class="fas fa-user-shield"></i> <span>Admins</span>
         </div>
     </div>
@@ -340,6 +325,7 @@
             <h1 id="pageTitle">Dashboard Overview</h1>
             <div class="admin-info">
                 <span id="adminRole"></span>
+                <span class="permission-badge" id="permissionBadge"></span>
                 <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </div>
@@ -378,20 +364,18 @@
             </div>
         </div>
 
-        <!-- Orders Section -->
+        <!-- Orders Section (Master Only) -->
         <div id="orders" class="section">
             <div class="section-title">
                 <span>Order Management</span>
             </div>
             <table id="ordersTable">
-                <thead>
-                    <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr>
-                </thead>
+                <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody id="ordersList"></tbody>
             </table>
         </div>
 
-        <!-- Users Section -->
+        <!-- Users Section (Master Only) -->
         <div id="users" class="section">
             <div class="section-title">
                 <span>Customer Management</span>
@@ -402,7 +386,7 @@
             </table>
         </div>
 
-        <!-- Products Section -->
+        <!-- Products Section (Both Master and Sub Admin) -->
         <div id="products" class="section">
             <div class="section-title">
                 <span>Product Management</span>
@@ -413,7 +397,7 @@
             </table>
         </div>
 
-        <!-- Add Product Section -->
+        <!-- Add Product Section (Both Master and Sub Admin) -->
         <div id="add-product" class="section">
             <div class="section-title">
                 <span>Add New Product</span>
@@ -435,16 +419,15 @@
             </div>
         </div>
 
-        <!-- Sales Summary Section -->
+        <!-- Sales Summary Section (Master Only) -->
         <div id="sales" class="section">
             <div class="section-title">
                 <span>Sales Summary</span>
             </div>
             <canvas id="salesChart" style="max-height: 400px;"></canvas>
-            <div id="salesData"></div>
         </div>
 
-        <!-- Admins Section -->
+        <!-- Admins Section (Master Only) -->
         <div id="admins" class="section">
             <div class="section-title">
                 <span>Admin Management</span>
@@ -466,15 +449,15 @@
         </div>
     </div>
 
-    <!-- Add Admin Modal -->
+    <!-- Add Admin Modal (Master Only) -->
     <div id="addAdminModal" class="modal">
         <div class="modal-content">
             <h3>Add New Admin</h3>
             <input type="text" id="adminUsername" placeholder="Username" style="width:100%; margin-bottom:10px; padding:10px;">
             <input type="password" id="adminPassword" placeholder="Password" style="width:100%; margin-bottom:10px; padding:10px;">
             <select id="adminRole" style="width:100%; margin-bottom:10px; padding:10px;">
-                <option value="subadmin">Sub Admin</option>
-                <option value="master">Master Admin</option>
+                <option value="subadmin">Sub Admin (Products only)</option>
+                <option value="master">Master Admin (Full access)</option>
             </select>
             <button class="btn-primary" onclick="addNewAdmin()">Create Admin</button>
             <button onclick="closeAddAdminModal()" style="margin-top:10px;">Cancel</button>
@@ -519,34 +502,75 @@
         }
         currentAdmin = JSON.parse(adminData);
 
-        // Show/hide master admin features
-        if (currentAdmin.role === 'master') {
-            document.getElementById('adminsMenu').style.display = 'flex';
+        const isMaster = currentAdmin.role === 'master';
+        const isSubAdmin = currentAdmin.role === 'subadmin';
+
+        // Show/hide menu items based on role
+        if (isSubAdmin) {
+            // Sub admins only see Products and Add Product
+            document.getElementById('navOverview').style.display = 'none';
+            document.getElementById('navOrders').style.display = 'none';
+            document.getElementById('navUsers').style.display = 'none';
+            document.getElementById('navSales').style.display = 'none';
+            document.getElementById('navAdmins').style.display = 'none';
+            
+            // Show Products section by default
+            document.getElementById('pageTitle').innerText = 'Product Management';
+            document.getElementById('permissionBadge').innerHTML = '🔒 Products Only';
+            
+            // Hide overview section, show products
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById('products').classList.add('active');
+            
+            // Update active nav
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+            document.getElementById('navProducts').classList.add('active');
+        } else {
+            document.getElementById('permissionBadge').innerHTML = '👑 Full Access';
+            document.getElementById('navAdmins').style.display = 'flex';
         }
+
         document.getElementById('adminRole').innerHTML = `<i class="fas fa-shield-alt"></i> ${currentAdmin.role} Admin`;
 
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
                 const section = item.dataset.section;
+                if (!section) return;
+                
+                // Check permission for subadmin
+                if (isSubAdmin && !['products', 'add-product'].includes(section)) {
+                    alert('You do not have permission to access this section. Sub Admins can only manage products.');
+                    return;
+                }
+                
                 document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
                 document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
                 document.getElementById(section).classList.add('active');
                 
-                const titles = { overview: 'Dashboard Overview', orders: 'Order Management', users: 'Customer Management', products: 'Product Management', 'add-product': 'Add Product', sales: 'Sales Summary', admins: 'Admin Management' };
+                const titles = { 
+                    overview: 'Dashboard Overview', 
+                    orders: 'Order Management', 
+                    users: 'Customer Management', 
+                    products: 'Product Management', 
+                    'add-product': 'Add Product', 
+                    sales: 'Sales Summary', 
+                    admins: 'Admin Management' 
+                };
                 document.getElementById('pageTitle').innerText = titles[section];
                 
-                if (section === 'orders') loadOrders();
-                if (section === 'users') loadUsers();
+                if (section === 'orders' && isMaster) loadOrders();
+                if (section === 'users' && isMaster) loadUsers();
                 if (section === 'products') loadProducts();
-                if (section === 'overview') loadStats();
-                if (section === 'sales') loadSalesSummary();
-                if (section === 'admins' && currentAdmin.role === 'master') loadAdmins();
+                if (section === 'overview' && isMaster) loadStats();
+                if (section === 'sales' && isMaster) loadSalesSummary();
+                if (section === 'admins' && isMaster) loadAdmins();
             });
         });
 
         async function loadStats() {
+            if (!isMaster) return;
             const ordersSnap = await getDocs(collection(db, 'orders'));
             const usersSnap = await getDocs(collection(db, 'customers'));
             const productsSnap = await getDocs(collection(db, 'products'));
@@ -561,6 +585,7 @@
         }
 
         async function loadOrders() {
+            if (!isMaster) return;
             const ordersSnap = await getDocs(collection(db, 'orders'));
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '';
@@ -588,6 +613,7 @@
         }
 
         window.updateOrderStatus = async function(orderId, newStatus) {
+            if (!isMaster) return;
             try {
                 const orderRef = doc(db, 'orders', orderId);
                 await updateDoc(orderRef, { status: newStatus });
@@ -600,6 +626,7 @@
         };
 
         async function loadUsers() {
+            if (!isMaster) return;
             const usersSnap = await getDocs(collection(db, 'customers'));
             const ordersSnap = await getDocs(collection(db, 'orders'));
             const ordersByPhone = {};
@@ -691,6 +718,7 @@
                 await updateDoc(productRef, { stock: parseInt(newStock) });
                 showToast('Stock updated!', 'success');
                 loadProducts();
+                if (isMaster) loadStats();
             } catch (error) {
                 showToast('Failed to update stock', 'error');
             }
@@ -729,7 +757,7 @@
                     description, stock: parseInt(stock) || 0,
                     createdAt: new Date().toISOString()
                 });
-                document.getElementById('productMessage').innerHTML = '<span style="color:green;">Product added!</span>';
+                document.getElementById('productMessage').innerHTML = '<span style="color:green;">✅ Product added!</span>';
                 document.getElementById('productName').value = '';
                 document.getElementById('productPrice').value = '';
                 document.getElementById('productCategory').value = '';
@@ -739,7 +767,7 @@
                 document.getElementById('productImagePreview').style.display = 'none';
                 currentImageBase64 = null;
                 loadProducts();
-                loadStats();
+                if (isMaster) loadStats();
                 setTimeout(() => {
                     document.getElementById('productMessage').innerHTML = '';
                 }, 3000);
@@ -749,6 +777,7 @@
         };
 
         async function loadSalesSummary() {
+            if (!isMaster) return;
             const ordersSnap = await getDocs(collection(db, 'orders'));
             const dailySales = {};
             ordersSnap.forEach(doc => {
@@ -767,7 +796,7 @@
         }
 
         async function loadAdmins() {
-            if (currentAdmin.role !== 'master') return;
+            if (!isMaster) return;
             const adminsSnap = await getDocs(collection(db, 'admins'));
             const adminsList = document.getElementById('adminsList');
             adminsList.innerHTML = '';
@@ -785,6 +814,7 @@
         }
 
         window.showAddAdminModal = function() {
+            if (!isMaster) return;
             document.getElementById('addAdminModal').style.display = 'flex';
         };
 
@@ -793,24 +823,36 @@
         };
 
         window.addNewAdmin = async function() {
-            const username = document.getElementById('adminUsername').value;
-            const password = document.getElementById('adminPassword').value;
-            const role = document.getElementById('adminRole').value;
+            if (!isMaster) return;
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+            const roleSelect = document.getElementById('adminRole');
+            const role = roleSelect ? roleSelect.value : 'subadmin';
             
             if (!username || !password) {
                 alert('Please fill all fields');
                 return;
             }
             
-            await addDoc(collection(db, 'admins'), {
-                username, password, role, createdAt: new Date().toISOString()
-            });
-            closeAddAdminModal();
-            loadAdmins();
-            showToast('Admin created!', 'success');
+            try {
+                await addDoc(collection(db, 'admins'), {
+                    username: username,
+                    password: password,
+                    role: role,
+                    createdAt: new Date().toISOString()
+                });
+                closeAddAdminModal();
+                loadAdmins();
+                showToast('Admin created!', 'success');
+                document.getElementById('adminUsername').value = '';
+                document.getElementById('adminPassword').value = '';
+            } catch (error) {
+                showToast('Failed to create admin: ' + error.message, 'error');
+            }
         };
 
         window.deleteAdmin = async function(adminId) {
+            if (!isMaster) return;
             if (confirm('Delete this admin?')) {
                 await deleteDoc(doc(db, 'admins', adminId));
                 loadAdmins();
@@ -832,13 +874,15 @@
             window.location.href = 'login.html';
         };
 
-        loadStats();
-        loadOrders();
-        loadUsers();
+        // Initial load based on role
+        if (isMaster) {
+            loadStats();
+            loadOrders();
+            loadUsers();
+            loadSalesSummary();
+            loadAdmins();
+        }
         loadProducts();
-        loadSalesSummary();
-        
-        if (currentAdmin.role === 'master') loadAdmins();
     </script>
 </body>
 </html>
