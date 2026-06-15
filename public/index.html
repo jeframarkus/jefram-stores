@@ -66,6 +66,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: 800;
+            cursor: pointer;
         }
 
         .logo p {
@@ -102,6 +103,34 @@
             color: #999;
         }
 
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .profile-icon {
+            cursor: pointer;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .profile-icon:hover {
+            background: #667eea;
+        }
+
+        .profile-icon:hover i {
+            color: white;
+        }
+
+        .profile-icon i {
+            font-size: 1.3rem;
+            color: #667eea;
+        }
+
         .cart-icon {
             position: relative;
             cursor: pointer;
@@ -116,7 +145,7 @@
         }
 
         .cart-icon i {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: #667eea;
         }
 
@@ -334,7 +363,7 @@
         .modal-content {
             background: white;
             border-radius: 20px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
@@ -379,17 +408,112 @@
             margin-top: 1rem;
         }
 
-        .register-form {
+        .register-form, .profile-form {
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
 
-        .register-form input {
+        .register-form input, .profile-form input {
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 1rem;
+        }
+
+        .profile-info {
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        .edit-btn {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .order-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .order-status {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .order-items {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .order-total {
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
         }
 
         .loader {
@@ -456,7 +580,7 @@
 <body>
     <div class="header">
         <div class="header-content">
-            <div class="logo">
+            <div class="logo" onclick="window.location.reload()">
                 <h1>Jefram Stores</h1>
                 <p>Your Trusted Store in Kampala</p>
             </div>
@@ -464,12 +588,17 @@
                 <input type="text" id="searchInput" placeholder="Search products...">
                 <i class="fas fa-search"></i>
             </div>
-            <div class="cart-icon" onclick="openCart()">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="cart-count" id="cartCount">0</span>
-            </div>
-            <div class="mobile-menu-btn" onclick="toggleMobileMenu()">
-                <i class="fas fa-bars"></i>
+            <div class="header-actions">
+                <div class="profile-icon" onclick="openProfileModal()">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="cart-icon" onclick="openCart()">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-count" id="cartCount">0</span>
+                </div>
+                <div class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </div>
             </div>
         </div>
     </div>
@@ -501,6 +630,7 @@
         </div>
     </div>
 
+    <!-- Cart Modal -->
     <div id="cartModal" class="modal">
         <div class="modal-content">
             <h2>Your Cart</h2>
@@ -523,16 +653,49 @@
         </div>
     </div>
 
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <h2>My Account</h2>
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('profile')">Profile</button>
+                <button class="tab" onclick="switchTab('orders')">My Orders</button>
+            </div>
+            <div id="profileTab">
+                <div class="profile-info" id="profileInfo"></div>
+                <div id="editProfileForm" style="display: none;">
+                    <div class="profile-form">
+                        <input type="text" id="editName" placeholder="Full Name">
+                        <input type="tel" id="editPhone" placeholder="Phone Number">
+                        <input type="text" id="editWhatsapp" placeholder="WhatsApp Number">
+                        <input type="text" id="editLocation" placeholder="Location">
+                        <button onclick="updateProfile()" style="background: #28a745; color: white; padding: 12px; border: none; border-radius: 8px;">Save Changes</button>
+                        <button onclick="cancelEdit()" style="background: #666; color: white; padding: 12px; border: none; border-radius: 8px;">Cancel</button>
+                    </div>
+                </div>
+                <button id="editProfileBtn" class="edit-btn" onclick="showEditForm()">Edit Profile</button>
+                <button class="logout-btn" onclick="logout()">Sign Out</button>
+            </div>
+            <div id="ordersTab" style="display: none;">
+                <div id="ordersList"></div>
+            </div>
+            <button onclick="closeProfileModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
     <div id="registerModal" class="modal">
         <div class="modal-content">
-            <h2>Register to Continue</h2>
+            <h2>Register / Sign In</h2>
             <div class="register-form">
                 <input type="text" id="customerName" placeholder="Full Name" required>
                 <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
+                <input type="text" id="customerWhatsapp" placeholder="WhatsApp Number (optional)">
                 <input type="email" id="customerEmail" placeholder="Email (Optional)">
                 <input type="text" id="customerLocation" placeholder="Location in Uganda" required>
-                <button onclick="registerUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Register & Continue</button>
+                <button onclick="registerUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Register / Sign In</button>
             </div>
+            <button onclick="closeRegisterModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
         </div>
     </div>
 
@@ -547,7 +710,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -566,6 +729,7 @@
         let categories = [];
         let currentUser = null;
         let currentCategory = 'all';
+        let currentUserDocId = null;
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -587,7 +751,7 @@
 
         window.openCart = function() {
             if (!currentUser) {
-                document.getElementById('registerModal').style.display = 'flex';
+                openRegisterModal();
                 return;
             }
             renderCart();
@@ -622,7 +786,7 @@
 
         window.addToCart = function(productId) {
             if (!currentUser) {
-                document.getElementById('registerModal').style.display = 'flex';
+                openRegisterModal();
                 return;
             }
             const product = products.find(p => p.id == productId);
@@ -655,10 +819,13 @@
                 `• ${item.name} x${item.quantity} - UGX ${(item.price * item.quantity).toLocaleString()}`
             ).join('\n');
             
+            const customerWhatsapp = currentUser.whatsapp || currentUser.phone;
+            
             const message = `*NEW ORDER FROM JEFRAM STORES* 🛍️\n\n` +
                 `*Customer Details:*\n` +
                 `Name: ${currentUser.name}\n` +
                 `Phone: ${currentUser.phone}\n` +
+                `WhatsApp: ${customerWhatsapp}\n` +
                 `Location: ${currentUser.location}\n` +
                 `Email: ${currentUser.email || 'Not provided'}\n\n` +
                 `*Order Details:*\n` +
@@ -679,7 +846,6 @@
                     createdAt: new Date().toISOString()
                 });
                 
-                // ORDERS SENT TO SHOP OWNER: 256742533656
                 const whatsappUrl = `https://wa.me/256742533656?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
                 
@@ -696,6 +862,7 @@
         window.registerUser = async function() {
             const name = document.getElementById('customerName').value;
             const phone = document.getElementById('customerPhone').value;
+            const whatsapp = document.getElementById('customerWhatsapp').value;
             const email = document.getElementById('customerEmail').value;
             const location = document.getElementById('customerLocation').value;
             
@@ -710,24 +877,208 @@
             }
             
             try {
+                // Check if user already exists
                 const customersRef = collection(db, 'customers');
-                await addDoc(customersRef, {
-                    name: name,
-                    phone: phone,
-                    email: email,
-                    location: location,
-                    registeredAt: new Date().toISOString()
-                });
+                const q = query(customersRef, where("phone", "==", phone));
+                const existing = await getDocs(q);
                 
-                currentUser = { name, phone, email, location, registeredAt: new Date().toISOString() };
-                localStorage.setItem('jefram_user', JSON.stringify(currentUser));
+                if (!existing.empty) {
+                    // User exists - sign them in
+                    const userDoc = existing.docs[0];
+                    currentUser = userDoc.data();
+                    currentUserDocId = userDoc.id;
+                    localStorage.setItem('jefram_user', JSON.stringify(currentUser));
+                    localStorage.setItem('jefram_user_id', currentUserDocId);
+                    showToast('Welcome back!', 'success');
+                } else {
+                    // New user - create account
+                    const newUser = {
+                        name: name,
+                        phone: phone,
+                        whatsapp: whatsapp || phone,
+                        email: email || '',
+                        location: location,
+                        registeredAt: new Date().toISOString()
+                    };
+                    const docRef = await addDoc(customersRef, newUser);
+                    currentUser = newUser;
+                    currentUserDocId = docRef.id;
+                    localStorage.setItem('jefram_user', JSON.stringify(currentUser));
+                    localStorage.setItem('jefram_user_id', currentUserDocId);
+                    showToast('Registration successful! Start shopping!');
+                }
+                
                 document.getElementById('registerModal').style.display = 'none';
-                showToast('Registration successful! Start shopping!');
+                
+                // Clear form
+                document.getElementById('customerName').value = '';
+                document.getElementById('customerPhone').value = '';
+                document.getElementById('customerWhatsapp').value = '';
+                document.getElementById('customerEmail').value = '';
+                document.getElementById('customerLocation').value = '';
+                
             } catch (error) {
-                console.error('Error registering:', error);
-                showToast('Registration failed. Please try again.', 'error');
+                console.error('Error:', error);
+                showToast('Operation failed. Please try again.', 'error');
             }
         };
+
+        window.openProfileModal = function() {
+            if (!currentUser) {
+                openRegisterModal();
+                return;
+            }
+            loadProfileData();
+            document.getElementById('profileModal').style.display = 'flex';
+        };
+
+        window.closeProfileModal = function() {
+            document.getElementById('profileModal').style.display = 'none';
+        };
+
+        window.switchTab = function(tab) {
+            const profileTab = document.getElementById('profileTab');
+            const ordersTab = document.getElementById('ordersTab');
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'profile') {
+                profileTab.style.display = 'block';
+                ordersTab.style.display = 'none';
+                tabs[0].classList.add('active');
+                loadProfileData();
+            } else {
+                profileTab.style.display = 'none';
+                ordersTab.style.display = 'block';
+                tabs[1].classList.add('active');
+                loadOrders();
+            }
+        };
+
+        async function loadProfileData() {
+            if (!currentUser) return;
+            
+            const profileInfo = document.getElementById('profileInfo');
+            profileInfo.innerHTML = `
+                <div class="info-row"><span class="info-label">Name:</span><span class="info-value">${escapeHtml(currentUser.name)}</span></div>
+                <div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${escapeHtml(currentUser.phone)}</span></div>
+                <div class="info-row"><span class="info-label">WhatsApp:</span><span class="info-value">${escapeHtml(currentUser.whatsapp || currentUser.phone)}</span></div>
+                <div class="info-row"><span class="info-label">Location:</span><span class="info-value">${escapeHtml(currentUser.location)}</span></div>
+                <div class="info-row"><span class="info-label">Email:</span><span class="info-value">${escapeHtml(currentUser.email || 'Not provided')}</span></div>
+                <div class="info-row"><span class="info-label">Member since:</span><span class="info-value">${new Date(currentUser.registeredAt).toLocaleDateString()}</span></div>
+            `;
+            
+            document.getElementById('editName').value = currentUser.name;
+            document.getElementById('editPhone').value = currentUser.phone;
+            document.getElementById('editWhatsapp').value = currentUser.whatsapp || currentUser.phone;
+            document.getElementById('editLocation').value = currentUser.location;
+        }
+
+        window.showEditForm = function() {
+            document.getElementById('profileInfo').style.display = 'none';
+            document.getElementById('editProfileForm').style.display = 'block';
+            document.getElementById('editProfileBtn').style.display = 'none';
+        };
+
+        window.cancelEdit = function() {
+            document.getElementById('profileInfo').style.display = 'block';
+            document.getElementById('editProfileForm').style.display = 'none';
+            document.getElementById('editProfileBtn').style.display = 'block';
+        };
+
+        window.updateProfile = async function() {
+            const newName = document.getElementById('editName').value;
+            const newPhone = document.getElementById('editPhone').value;
+            const newWhatsapp = document.getElementById('editWhatsapp').value;
+            const newLocation = document.getElementById('editLocation').value;
+            
+            if (!newName || !newPhone || !newLocation) {
+                showToast('Please fill all required fields', 'error');
+                return;
+            }
+            
+            try {
+                const userRef = doc(db, 'customers', currentUserDocId);
+                await updateDoc(userRef, {
+                    name: newName,
+                    phone: newPhone,
+                    whatsapp: newWhatsapp,
+                    location: newLocation
+                });
+                
+                currentUser.name = newName;
+                currentUser.phone = newPhone;
+                currentUser.whatsapp = newWhatsapp;
+                currentUser.location = newLocation;
+                localStorage.setItem('jefram_user', JSON.stringify(currentUser));
+                
+                showToast('Profile updated successfully!', 'success');
+                cancelEdit();
+                loadProfileData();
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showToast('Failed to update profile', 'error');
+            }
+        };
+
+        async function loadOrders() {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+            
+            try {
+                const ordersRef = collection(db, 'orders');
+                const q = query(ordersRef, where("customer.phone", "==", currentUser.phone));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    ordersList.innerHTML = '<div style="text-align: center; padding: 2rem;">No orders found</div>';
+                    return;
+                }
+                
+                let ordersHtml = '';
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    ordersHtml += `
+                        <div class="order-card">
+                            <div class="order-header">
+                                <span>Order #${doc.id.slice(-6)}</span>
+                                <span class="order-status">${order.status}</span>
+                            </div>
+                            <div class="order-items">
+                                ${order.items.map(item => `${item.name} x${item.quantity}`).join(', ')}
+                            </div>
+                            <div class="order-total">Total: UGX ${order.total.toLocaleString()}</div>
+                            <div style="font-size: 12px; color: #999; margin-top: 8px;">${new Date(order.createdAt).toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                ordersList.innerHTML = ordersHtml;
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                ordersList.innerHTML = '<div style="text-align: center; padding: 2rem;">Failed to load orders</div>';
+            }
+        }
+
+        window.logout = function() {
+            currentUser = null;
+            currentUserDocId = null;
+            cart = [];
+            updateCartCount();
+            localStorage.removeItem('jefram_user');
+            localStorage.removeItem('jefram_user_id');
+            closeProfileModal();
+            showToast('Signed out successfully!', 'success');
+            window.location.reload();
+        };
+
+        function openRegisterModal() {
+            document.getElementById('registerModal').style.display = 'flex';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+        }
 
         function updateCartCount() {
             const total = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -867,8 +1218,10 @@
         document.getElementById('searchInput').addEventListener('input', renderProducts);
         
         const savedUser = localStorage.getItem('jefram_user');
+        const savedUserId = localStorage.getItem('jefram_user_id');
         if (savedUser) {
             currentUser = JSON.parse(savedUser);
+            currentUserDocId = savedUserId;
         }
         
         fetchProducts();
@@ -878,6 +1231,15 @@
                 event.target.style.display = 'none';
             }
         };
+        
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+        });
     </script>
 </body>
 </html>
