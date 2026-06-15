@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>Add Admin</title></head>
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, collection, addDoc } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        try {
+            await addDoc(collection(db, 'admins'), {
+                username: "master",
+                password: "admin1409",
+                role: "master",
+                createdAt: new Date().toISOString()
+            });
+            document.body.innerHTML = "<h2 style='color:green'>✅ Admin created successfully!</h2><p>Username: master<br>Password: admin1409</p>";
+        } catch (error) {
+            document.body.innerHTML = "<h2 style='color:red'>❌ Error: " + error.message + "</h2>";
+        }
+    </script>
+</body>
+</html>
