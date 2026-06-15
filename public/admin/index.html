@@ -24,7 +24,7 @@
             background: white;
             border-radius: 20px;
             padding: 40px;
-            max-width: 600px;
+            max-width: 500px;
             width: 100%;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
@@ -35,7 +35,7 @@
             text-align: center;
         }
         
-        input, textarea, select {
+        input, textarea {
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
@@ -43,10 +43,9 @@
             border-radius: 8px;
             font-family: inherit;
             font-size: 14px;
-            transition: all 0.3s;
         }
         
-        input:focus, textarea:focus, select:focus {
+        input:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -54,36 +53,6 @@
         textarea {
             resize: vertical;
             min-height: 80px;
-        }
-        
-        .image-preview {
-            width: 100%;
-            height: 200px;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f9f9f9;
-            cursor: pointer;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .image-preview span {
-            color: #999;
-            text-align: center;
-        }
-        
-        .file-input {
-            display: none;
         }
         
         button {
@@ -96,7 +65,6 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.3s;
         }
         
         button:hover {
@@ -143,6 +111,32 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        .image-preview {
+            width: 100%;
+            height: 150px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            overflow: hidden;
+        }
+        
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -154,11 +148,11 @@
         <input id="category" placeholder="Category (e.g., Electronics, Clothing)">
         <input id="subcategory" placeholder="Subcategory">
         
-        <div class="image-preview" onclick="document.getElementById('imageInput').click()">
-            <span id="previewText">Click to upload product image</span>
-            <img id="previewImage" style="display: none;">
+        <input id="image" placeholder="Image URL (e.g., https://via.placeholder.com/300)">
+        <div class="image-preview" id="imagePreview">
+            <span>Enter a URL above to preview</span>
         </div>
-        <input type="file" id="imageInput" class="file-input" accept="image/*" onchange="previewImage(this)">
+        <div class="hint">💡 Tip: Right-click any image online and select "Copy image URL"</div>
         
         <textarea id="desc" placeholder="Product Description"></textarea>
         <input id="stock" placeholder="Stock Quantity" type="number" value="10">
@@ -181,18 +175,16 @@
         import { getFirestore, collection, addDoc } from "firebase/firestore";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBTTaQPLMW7giaXfMIy-nLLhoNf6fHuV4g",
-            authDomain: "jefram-store.firebaseapp.com",
-            projectId: "jefram-store",
-            storageBucket: "jefram-store.firebasestorage.app",
-            messagingSenderId: "721543300616",
-            appId: "1:721543300616:web:5e799d663fcbbaed6a33bd"
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
-        let selectedImageFile = null;
 
         function showMessage(msg, type) {
             const messageDiv = document.getElementById('message');
@@ -203,34 +195,23 @@
             }, 5000);
         }
         
-        window.previewImage = function(input) {
-            if (input.files && input.files[0]) {
-                selectedImageFile = input.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('previewImage').style.display = 'block';
-                    document.getElementById('previewImage').src = e.target.result;
-                    document.getElementById('previewText').style.display = 'none';
-                };
-                reader.readAsDataURL(input.files[0]);
+        // Preview image when URL is entered
+        document.getElementById('image').addEventListener('input', function() {
+            const url = this.value;
+            const preview = document.getElementById('imagePreview');
+            if (url) {
+                preview.innerHTML = `<img src="${url}" onerror="this.style.display='none'; this.nextSibling.style.display='block'" style="max-width:100%; max-height:100%;"><span style="display:none;">Invalid image URL</span>`;
+            } else {
+                preview.innerHTML = '<span>Enter a URL above to preview</span>';
             }
-        };
-        
-        // Convert image to base64 (no external API needed!)
-        function convertToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-        }
+        });
         
         window.addProduct = async function() {
             const name = document.getElementById('name').value;
             const price = document.getElementById('price').value;
             const category = document.getElementById('category').value;
             const subcategory = document.getElementById('subcategory').value;
+            const image_url = document.getElementById('image').value;
             const description = document.getElementById('desc').value;
             const stock = document.getElementById('stock').value;
             
@@ -244,20 +225,13 @@
             addBtn.innerHTML = '<span class="loading"></span> Adding Product...';
             
             try {
-                let imageUrl = 'https://via.placeholder.com/300';
-                
-                // Convert image to base64 and store directly
-                if (selectedImageFile) {
-                    imageUrl = await convertToBase64(selectedImageFile);
-                }
-                
                 const productsRef = collection(db, 'products');
                 await addDoc(productsRef, {
                     name: name,
                     price: parseFloat(price),
                     category: category,
                     subcategory: subcategory,
-                    image_url: imageUrl,
+                    image_url: image_url || 'https://via.placeholder.com/300',
                     description: description,
                     stock: parseInt(stock) || 0,
                     createdAt: new Date().toISOString()
@@ -270,13 +244,10 @@
                 document.getElementById('price').value = '';
                 document.getElementById('category').value = '';
                 document.getElementById('subcategory').value = '';
+                document.getElementById('image').value = '';
                 document.getElementById('desc').value = '';
                 document.getElementById('stock').value = '10';
-                document.getElementById('previewImage').style.display = 'none';
-                document.getElementById('previewImage').src = '';
-                document.getElementById('previewText').style.display = 'block';
-                document.getElementById('imageInput').value = '';
-                selectedImageFile = null;
+                document.getElementById('imagePreview').innerHTML = '<span>Enter a URL above to preview</span>';
                 
             } catch (error) {
                 console.error('Error adding product:', error);
