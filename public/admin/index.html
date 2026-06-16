@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Jefram Stores</title>
+    <link rel="icon" href="../favicon.ico" type="image/x-icon">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -922,7 +923,7 @@
         }
 
         async function loadReviews() {
-            const reviewsSnap = await getDocs(orderBy(collection(db, 'reviews'), 'createdAt', 'desc'));
+            const reviewsSnap = await getDocs(query(collection(db, 'reviews'), orderBy('createdAt', 'desc')));
             const reviewsList = document.getElementById('reviewsList');
             reviewsList.innerHTML = '';
             reviewsSnap.forEach(doc => {
