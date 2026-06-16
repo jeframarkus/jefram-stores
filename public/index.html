@@ -455,13 +455,22 @@
             lg: { welcome: "Kaabwo ku Jefram Stores", heroText: "Ebintu ebirungi ebituusibwa ku luggi lwo mu Uganda yonna", shopByCategory: "Gula ku Bikula", ourProducts: "Ebintu Byaffe", addToCart: "Yongera mu Katiiji", outOfStock: "Tekiri mu Matuuka", inStock: "Kiri mu Matuuka", noProducts: "Tewali bintu bibadde" }
         };
 
-        function t(key) { return translations[currentLanguage][key] || translations.en[key] || key; }
-        function showToast(message, type = 'success') {
+        window.t = function(key) { return translations[currentLanguage][key] || translations.en[key] || key; };
+        window.showToast = function(message, type = 'success') {
             const toast = document.createElement('div'); toast.className = 'toast';
             toast.style.background = type === 'success' ? '#28a745' : '#dc3545';
             toast.innerHTML = message; document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
+        };
+
+        window.renderWishlist = function() {
+            const wishlistDiv = document.getElementById('wishlistItems');
+            if (wishlist.length === 0) { wishlistDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Your wishlist is empty</div>'; return; }
+            wishlistDiv.innerHTML = wishlist.map(item => `<div class="cart-item"><div><strong>${window.escapeHtml(item.name)}</strong><br>UGX ${item.price.toLocaleString()}</div><div><button onclick="window.addToCartFromWishlist('${item.id}')" style="background:#28a745; color:white; padding:5px 10px;">Add to Cart</button><button onclick="window.removeFromWishlist('${item.id}')" style="color:red; padding:5px 10px;">Remove</button></div></div>`).join('');
+            document.getElementById('wishlistCount').innerText = wishlist.length;
         }
+        
+        window.addToCartFromWishlist = function(productId) { window.addToCart(productId); window.removeFromWishlist(productId); };
 
         // Language
         document.querySelectorAll('.lang-option').forEach(opt => {
@@ -469,11 +478,11 @@
                 document.querySelectorAll('.lang-option').forEach(o => o.classList.remove('active'));
                 opt.classList.add('active');
                 currentLanguage = opt.dataset.lang;
-                document.getElementById('welcomeText').innerText = t('welcome');
-                document.getElementById('heroText').innerText = t('heroText');
-                document.getElementById('shopByCategory').innerText = t('shopByCategory');
-                document.getElementById('ourProducts').innerText = t('ourProducts');
-                renderProducts();
+                document.getElementById('welcomeText').innerText = window.t('welcome');
+                document.getElementById('heroText').innerText = window.t('heroText');
+                document.getElementById('shopByCategory').innerText = window.t('shopByCategory');
+                document.getElementById('ourProducts').innerText = window.t('ourProducts');
+                window.renderProducts();
             });
         });
 
@@ -482,25 +491,25 @@
             if ('Notification' in window) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    showToast('Notifications enabled! You will receive order updates.', 'success');
+                    window.showToast('Notifications enabled! You will receive order updates.', 'success');
                     document.getElementById('notificationPrompt').style.display = 'none';
                 } else {
-                    showToast('Notification permission denied.', 'error');
+                    window.showToast('Notification permission denied.', 'error');
                 }
             } else {
-                showToast('Notifications not supported in this browser.', 'error');
+                window.showToast('Notifications not supported in this browser.', 'error');
             }
         };
 
         window.closeNotificationPrompt = function() {
             document.getElementById('notificationPrompt').style.display = 'none';
-            showToast('You can enable later from browser settings.', 'info');
+            window.showToast('You can enable later from browser settings.', 'info');
         };
 
         setTimeout(() => { if (Notification && Notification.permission === 'default') document.getElementById('notificationPrompt').style.display = 'block'; }, 3000);
 
         // Wishlist - FIXED (global functions)
-        window.openWishlist = function() { if (!currentUser) { openLoginModal(); return; } renderWishlist(); document.getElementById('wishlistModal').style.display = 'flex'; };
+        window.openWishlist = function() { if (!currentUser) { window.openLoginModal(); return; } window.renderWishlist(); document.getElementById('wishlistModal').style.display = 'flex'; };
         window.closeWishlist = function() { document.getElementById('wishlistModal').style.display = 'none'; };
         
         function renderWishlist() {
@@ -511,24 +520,24 @@
         }
         
         window.addToCartFromWishlist = function(productId) { addToCart(productId); removeFromWishlist(productId); };
-        window.removeFromWishlist = async function(productId) { wishlist = wishlist.filter(i => i.id != productId); await saveWishlistToFirebase(); renderWishlist(); updateWishlistButtons(); showToast('Removed from wishlist', 'success'); };
+        window.removeFromWishlist = async function(productId) { wishlist = wishlist.filter(i => i.id != productId); await window.saveWishlistToFirebase(); window.renderWishlist(); window.updateWishlistButtons(); window.showToast('Removed from wishlist', 'success'); };
         
         window.toggleWishlist = async function(product) {
             if (!currentUser) {
-                openLoginModal();
+                window.openLoginModal();
                 return;
             }
             const exists = wishlist.find(i => i.id == product.id);
             if (exists) {
                 wishlist = wishlist.filter(i => i.id != product.id);
-                showToast(`${product.name} removed from wishlist`, 'info');
+                window.showToast(`${product.name} removed from wishlist`, 'info');
             } else {
                 wishlist.push({ id: product.id, name: product.name, price: product.price, image_url: product.image_url });
-                showToast(`${product.name} added to wishlist`, 'success');
+                window.showToast(`${product.name} added to wishlist`, 'success');
             }
-            await saveWishlistToFirebase();
-            renderWishlist();
-            updateWishlistButtons();
+            await window.saveWishlistToFirebase();
+            window.renderWishlist();
+            window.updateWishlistButtons();
         };
         
         window.updateWishlistButtons = function() {
@@ -543,65 +552,65 @@
             document.getElementById('wishlistCount').innerText = wishlist.length;
         };
 
-        async function saveWishlistToFirebase() {
+        window.saveWishlistToFirebase = async function() {
             if (!db || !currentUserDocId) return;
             try {
                 await updateDoc(doc(db, 'customers', currentUserDocId), { wishlist: wishlist });
             } catch(e) { console.error('Error saving wishlist:', e); }
         }
 
-        async function loadWishlistFromFirebase() {
+        window.loadWishlistFromFirebase = async function() {
             if (!db || !currentUserDocId) return;
             try {
                 const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
                 if (docSnap.exists() && docSnap.data().wishlist) {
                     wishlist = docSnap.data().wishlist;
-                    updateWishlistButtons();
+                    window.updateWishlistButtons();
                 }
             } catch(e) { console.error('Error loading wishlist:', e); }
         }
 
-        async function saveCartToFirebase() {
+        window.saveCartToFirebase = async function() {
             if (!db || !currentUserDocId) return;
             try {
                 await updateDoc(doc(db, 'customers', currentUserDocId), { cart: cart });
             } catch(e) { console.error('Error saving cart:', e); }
         }
 
-        async function loadCartFromFirebase() {
+        window.loadCartFromFirebase = async function() {
             if (!db || !currentUserDocId) return;
             try {
                 const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
                 if (docSnap.exists() && docSnap.data().cart) {
                     cart = docSnap.data().cart;
-                    updateCartCount();
+                    window.updateCartCount();
                 }
             } catch(e) { console.error('Error loading cart:', e); }
         }
 
         // Coupons
         window.applyCoupon = async function() {
-            if (!db) { showToast('Database not connected', 'error'); return; }
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
             const code = document.getElementById('couponCode').value.trim().toUpperCase();
-            if (!code) { showToast('Enter a coupon code', 'error'); return; }
+            if (!code) { window.showToast('Enter a coupon code', 'error'); return; }
             try {
                 const q = query(collection(db, 'coupons'), where("code", "==", code), where("active", "==", true));
                 const snapshot = await getDocs(q);
-                if (snapshot.empty) { showToast('Invalid coupon', 'error'); return; }
+                if (snapshot.empty) { window.showToast('Invalid coupon', 'error'); return; }
                 snapshot.forEach(doc => { appliedCoupon = { id: doc.id, ...doc.data() }; });
-                if (appliedCoupon.expiryDate && new Date(appliedCoupon.expiryDate) < new Date()) { showToast('Coupon expired', 'error'); return; }
-                if (appliedCoupon.usageLimit && appliedCoupon.usedCount >= appliedCoupon.usageLimit) { showToast('Usage limit reached', 'error'); return; }
+                if (appliedCoupon.expiryDate && new Date(appliedCoupon.expiryDate) < new Date()) { window.showToast('Coupon expired', 'error'); return; }
+                if (appliedCoupon.usageLimit && appliedCoupon.usedCount >= appliedCoupon.usageLimit) { window.showToast('Usage limit reached', 'error'); return; }
                 document.getElementById('couponMessage').innerHTML = `Coupon applied! ${appliedCoupon.discountType === 'percentage' ? appliedCoupon.discountValue + '% off' : 'UGX ' + appliedCoupon.discountValue.toLocaleString() + ' off'}`;
-                showToast('Coupon applied!', 'success'); renderCart();
-            } catch(e) { console.error('Coupon error:', e); showToast('Failed to apply coupon', 'error'); }
+                window.showToast('Coupon applied!', 'success'); window.renderCart();
+            } catch(e) { console.error('Coupon error:', e); window.showToast('Failed to apply coupon', 'error'); }
         };
-        function calculateDiscount(amount) { if (!appliedCoupon) return 0; return appliedCoupon.discountType === 'percentage' ? (amount * appliedCoupon.discountValue) / 100 : Math.min(appliedCoupon.discountValue, amount); }
+        window.calculateDiscount = function(amount) { if (!appliedCoupon) return 0; return appliedCoupon.discountType === 'percentage' ? (amount * appliedCoupon.discountValue) / 100 : Math.min(appliedCoupon.discountValue, amount); }
 
         // Reviews
-        window.openReviewModal = function(productId, productName) { if (!currentUser) { openLoginModal(); return; } currentReviewProduct = { id: productId, name: productName }; reviewRating = 0; document.querySelectorAll('#reviewRating i').forEach(s => s.className = 'far fa-star'); document.getElementById('reviewText').value = ''; document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`; document.getElementById('reviewModal').style.display = 'flex'; };
+        window.openReviewModal = function(productId, productName) { if (!currentUser) { window.openLoginModal(); return; } currentReviewProduct = { id: productId, name: productName }; reviewRating = 0; document.querySelectorAll('#reviewRating i').forEach(s => s.className = 'far fa-star'); document.getElementById('reviewText').value = ''; document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`; document.getElementById('reviewModal').style.display = 'flex'; };
         window.closeReviewModal = function() { document.getElementById('reviewModal').style.display = 'none'; };
-        window.submitReview = async function() { if (!db) { showToast('Database not connected', 'error'); return; } if (reviewRating === 0) { showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); showToast('Review submitted!', 'success'); closeReviewModal(); } catch(e) { console.error('Review submission error:', e); showToast('Failed to submit review', 'error'); } };
-        async function loadProductReviews(productId) { if (!db) return ''; try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; const reviews = []; snapshot.forEach(doc => { reviews.push(doc.data()); }); // Sort manually to avoid index requirement reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); reviews.forEach(r => { html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${escapeHtml(r.comment)}"</div><small>- ${escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { console.error('Error loading reviews:', e); return ''; } }
+        window.submitReview = async function() { if (!db) { window.showToast('Database not connected', 'error'); return; } if (reviewRating === 0) { window.showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); window.showToast('Review submitted!', 'success'); window.closeReviewModal(); } catch(e) { console.error('Review submission error:', e); window.showToast('Failed to submit review', 'error'); } };
+        window.loadProductReviews = async function(productId) { if (!db) return ''; try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; const reviews = []; snapshot.forEach(doc => { reviews.push(doc.data()); }); // Sort manually to avoid index requirement reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); reviews.forEach(r => { html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${window.escapeHtml(r.comment)}"</div><small>- ${window.escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="window.openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { console.error('Error loading reviews:', e); return ''; } }
 
         // Payment - FIXED (toggling works)
         window.togglePaymentForm = function() {
@@ -655,16 +664,16 @@
         }
 
         window.proceedToCheckout = async function() {
-            if (!db) { showToast('Database not connected', 'error'); return; }
-            if (cart.length === 0) { showToast('Cart empty', 'error'); return; }
-            if (!currentUser) { showToast('Please login to place order', 'error'); openLoginModal(); return; }
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
+            if (cart.length === 0) { window.showToast('Cart empty', 'error'); return; }
+            if (!currentUser) { window.showToast('Please login to place order', 'error'); window.openLoginModal(); return; }
             
             const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
-            if (!paymentMethodEl) { showToast('Select a payment method', 'error'); return; }
+            if (!paymentMethodEl) { window.showToast('Select a payment method', 'error'); return; }
             const paymentMethod = paymentMethodEl.value;
             
             let subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-            const discount = calculateDiscount(subtotal);
+            const discount = window.calculateDiscount(subtotal);
             const total = subtotal - discount;
             let mobileNumber = '';
             
@@ -672,14 +681,14 @@
                 if (paymentMethod === 'mobile_money') {
                     const provider = document.getElementById('mobileMoneyProvider').value;
                     mobileNumber = document.getElementById('mobileMoneyNumber').value;
-                    if (!mobileNumber) { showToast('Enter Mobile Money number', 'error'); return; }
-                    showToast(`Processing ${provider} payment for UGX ${total.toLocaleString()}...`, 'info');
+                    if (!mobileNumber) { window.showToast('Enter Mobile Money number', 'error'); return; }
+                    window.showToast(`Processing ${provider} payment for UGX ${total.toLocaleString()}...`, 'info');
                     const paymentResult = await processMobileMoneyPayment(provider, mobileNumber, total);
                     if (!paymentResult.success) {
-                        showToast(`Payment failed: ${paymentResult.error}`, 'error');
+                        window.showToast(`Payment failed: ${paymentResult.error}`, 'error');
                         return;
                     }
-                    showToast(`Payment successful! Transaction ID: ${paymentResult.transactionId}`, 'success');
+                    window.showToast(`Payment successful! Transaction ID: ${paymentResult.transactionId}`, 'success');
                 }
                 
                 const itemsList = cart.map(i => `• ${i.name} x${i.quantity} - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
@@ -712,30 +721,30 @@
                 window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
                 cart = []; 
                 appliedCoupon = null; 
-                await saveCartToFirebase(); 
-                updateCartCount(); 
-                closeCart(); 
-                showToast('Order placed successfully! Check WhatsApp.', 'success');
+                await window.saveCartToFirebase(); 
+                window.updateCartCount(); 
+                window.closeCart(); 
+                window.showToast('Order placed successfully! Check WhatsApp.', 'success');
             } catch(e) { 
                 console.error('Checkout error:', e); 
-                showToast('Failed to place order: ' + e.message, 'error'); 
+                window.showToast('Failed to place order: ' + e.message, 'error'); 
             }
         };
 
         // Cart functions
-        window.openCart = function() { if (!currentUser) { openLoginModal(); return; } renderCart(); document.getElementById('cartModal').style.display = 'flex'; };
+        window.openCart = function() { if (!currentUser) { window.openLoginModal(); return; } window.renderCart(); document.getElementById('cartModal').style.display = 'flex'; };
         window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; };
-        window.updateQuantity = async function(productId, change) { const item = cart.find(i => i.id == productId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id != productId); await saveCartToFirebase(); renderCart(); updateCartCount(); } };
-        window.removeFromCart = async function(productId) { cart = cart.filter(i => i.id != productId); await saveCartToFirebase(); renderCart(); updateCartCount(); };
-        window.addToCart = async function(productId) { if (!currentUser) { openLoginModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); await saveCartToFirebase(); updateCartCount(); showToast(`${product.name} added to cart!`); };
-        function updateCartCount() { document.getElementById('cartCount').innerText = cart.reduce((s, i) => s + i.quantity, 0); }
-        function renderCart() {
+        window.updateQuantity = async function(productId, change) { const item = cart.find(i => i.id == productId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id != productId); await window.saveCartToFirebase(); window.renderCart(); window.updateCartCount(); } };
+        window.removeFromCart = async function(productId) { cart = cart.filter(i => i.id != productId); await window.saveCartToFirebase(); window.renderCart(); window.updateCartCount(); };
+        window.addToCart = async function(productId) { if (!currentUser) { window.openLoginModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); await window.saveCartToFirebase(); window.updateCartCount(); window.showToast(`${product.name} added to cart!`); };
+        window.updateCartCount = function() { document.getElementById('cartCount').innerText = cart.reduce((s, i) => s + i.quantity, 0); }
+        window.renderCart = function() {
             const cartDiv = document.getElementById('cartItems');
             if (cart.length === 0) { cartDiv.innerHTML = '<div style="text-align:center; padding:2rem;">Your cart is empty</div>'; document.getElementById('cartTotal').innerHTML = 'Total: UGX 0'; document.getElementById('couponSection').style.display = 'none'; return; }
             const subtotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-            const discount = calculateDiscount(subtotal);
+            const discount = window.calculateDiscount(subtotal);
             const total = subtotal - discount;
-            cartDiv.innerHTML = cart.map(i => `<div class="cart-item"><div><strong>${escapeHtml(i.name)}</strong><br>UGX ${i.price.toLocaleString()} x ${i.quantity}</div><div><button onclick="updateQuantity('${i.id}', -1)">-</button><span> ${i.quantity} </span><button onclick="updateQuantity('${i.id}', 1)">+</button><button onclick="removeFromCart('${i.id}')" style="color:red;">×</button></div></div>`).join('');
+            cartDiv.innerHTML = cart.map(i => `<div class="cart-item"><div><strong>${window.escapeHtml(i.name)}</strong><br>UGX ${i.price.toLocaleString()} x ${i.quantity}</div><div><button onclick="window.updateQuantity('${i.id}', -1)">-</button><span> ${i.quantity} </span><button onclick="window.updateQuantity('${i.id}', 1)">+</button><button onclick="window.removeFromCart('${i.id}')" style="color:red;">×</button></div></div>`).join('');
             let html = `Subtotal: UGX ${subtotal.toLocaleString()}`;
             if (discount > 0) html += `<br><span style="color:#28a745;">Discount: -UGX ${discount.toLocaleString()}</span>`;
             html += `<br><strong>Total: UGX ${total.toLocaleString()}</strong>`;
@@ -745,18 +754,18 @@
 
         // User functions
         window.registerUser = async function() {
-            if (!db) { showToast('Database not connected', 'error'); return; }
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
             const name = document.getElementById('customerName').value, phone = document.getElementById('customerPhone').value, whatsapp = document.getElementById('customerWhatsapp').value, email = document.getElementById('customerEmail').value, location = document.getElementById('customerLocation').value;
-            if (!name || !phone || !location) { showToast('Fill all required fields', 'error'); return; }
-            if (!phone.match(/^[0-9]{10,13}$/)) { showToast('Valid phone number required', 'error'); return; }
+            if (!name || !phone || !location) { window.showToast('Fill all required fields', 'error'); return; }
+            if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
             try {
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-                if (!existing.empty) { showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
+                if (!existing.empty) { window.showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
                 
                 const docRef = await addDoc(collection(db, 'customers'), { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString(), wishlist: [], cart: [] });
                 currentUser = { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() };
                 currentUserDocId = docRef.id;
-                showToast('Registration successful!', 'success');
+                window.showToast('Registration successful!', 'success');
                 
                 // Create Firebase session
                 const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
@@ -766,26 +775,26 @@
                     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
                 });
                 customerSessionId = sessionRef.id;
-                setCookie('jefram_session_id', customerSessionId, 30);
+                window.setCookie('jefram_session_id', customerSessionId, 30);
                 
-                await loadWishlistFromFirebase();
-                await loadCartFromFirebase();
+                await window.loadWishlistFromFirebase();
+                await window.loadCartFromFirebase();
                 document.getElementById('registerModal').style.display = 'none';
                 ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation'].forEach(id => document.getElementById(id).value = '');
-            } catch(e) { console.error('Registration error:', e); showToast('Registration failed', 'error'); }
+            } catch(e) { console.error('Registration error:', e); window.showToast('Registration failed', 'error'); }
         };
 
         window.loginUser = async function() {
-            if (!db) { showToast('Database not connected', 'error'); return; }
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
             const phone = document.getElementById('loginPhone').value;
-            if (!phone) { showToast('Enter phone number', 'error'); return; }
-            if (!phone.match(/^[0-9]{10,13}$/)) { showToast('Valid phone number required', 'error'); return; }
+            if (!phone) { window.showToast('Enter phone number', 'error'); return; }
+            if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
             try {
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-                if (existing.empty) { showToast('Phone number not found. Please register.', 'error'); return; }
+                if (existing.empty) { window.showToast('Phone number not found. Please register.', 'error'); return; }
                 
                 existing.forEach(d => { currentUser = d.data(); currentUserDocId = d.id; });
-                showToast('Welcome back!', 'success');
+                window.showToast('Welcome back!', 'success');
                 
                 // Create Firebase session
                 const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
@@ -795,15 +804,15 @@
                     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
                 });
                 customerSessionId = sessionRef.id;
-                setCookie('jefram_session_id', customerSessionId, 30);
+                window.setCookie('jefram_session_id', customerSessionId, 30);
                 
-                await loadWishlistFromFirebase();
-                await loadCartFromFirebase();
+                await window.loadWishlistFromFirebase();
+                await window.loadCartFromFirebase();
                 document.getElementById('loginModal').style.display = 'none';
                 document.getElementById('loginPhone').value = '';
-            } catch(e) { console.error('Login error:', e); showToast('Login failed', 'error'); }
+            } catch(e) { console.error('Login error:', e); window.showToast('Login failed', 'error'); }
         };
-        window.openProfileModal = function() { if (!currentUser) { openLoginModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
+        window.openProfileModal = function() { if (!currentUser) { window.openLoginModal(); return; } window.loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
         window.closeProfileModal = function() { document.getElementById('profileModal').style.display = 'none'; };
         window.logout = async function() {
             if (customerSessionId) {
@@ -813,29 +822,29 @@
                     console.error('Error deleting session:', e);
                 }
             }
-            deleteCookie('jefram_session_id');
+            window.deleteCookie('jefram_session_id');
             currentUser = null;
             cart = [];
             wishlist = [];
             customerSessionId = null;
-            updateCartCount();
-            showToast('Signed out', 'success');
+            window.updateCartCount();
+            window.showToast('Signed out', 'success');
             window.location.reload();
         };
         window.openRegisterModal = function() { document.getElementById('registerModal').style.display = 'flex'; };
         window.closeRegisterModal = function() { document.getElementById('registerModal').style.display = 'none'; };
         window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; };
         window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; };
-        async function loadProfileData() {
-            document.getElementById('profileInfo').innerHTML = `<div class="info-row"><span class="info-label">Name:</span><span class="info-value">${escapeHtml(currentUser.name)}</span></div><div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${escapeHtml(currentUser.phone)}</span></div><div class="info-row"><span class="info-label">WhatsApp:</span><span class="info-value">${escapeHtml(currentUser.whatsapp || currentUser.phone)}</span></div><div class="info-row"><span class="info-label">Location:</span><span class="info-value">${escapeHtml(currentUser.location)}</span></div><div class="info-row"><span class="info-label">Member since:</span><span class="info-value">${new Date(currentUser.registeredAt).toLocaleDateString()}</span></div>`;
+        window.loadProfileData = async function() {
+            document.getElementById('profileInfo').innerHTML = `<div class="info-row"><span class="info-label">Name:</span><span class="info-value">${window.escapeHtml(currentUser.name)}</span></div><div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${window.escapeHtml(currentUser.phone)}</span></div><div class="info-row"><span class="info-label">WhatsApp:</span><span class="info-value">${window.escapeHtml(currentUser.whatsapp || currentUser.phone)}</span></div><div class="info-row"><span class="info-label">Location:</span><span class="info-value">${window.escapeHtml(currentUser.location)}</span></div><div class="info-row"><span class="info-label">Member since:</span><span class="info-value">${new Date(currentUser.registeredAt).toLocaleDateString()}</span></div>`;
             document.getElementById('editName').value = currentUser.name; document.getElementById('editPhone').value = currentUser.phone; document.getElementById('editWhatsapp').value = currentUser.whatsapp || currentUser.phone; document.getElementById('editLocation').value = currentUser.location;
         }
         window.showEditForm = function() { document.getElementById('profileInfo').style.display = 'none'; document.getElementById('editProfileForm').style.display = 'block'; document.getElementById('editProfileBtn').style.display = 'none'; };
         window.cancelEdit = function() { document.getElementById('profileInfo').style.display = 'block'; document.getElementById('editProfileForm').style.display = 'none'; document.getElementById('editProfileBtn').style.display = 'block'; };
         window.updateProfile = async function() {
-            if (!db) { showToast('Database not connected', 'error'); return; }
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
             const newName = document.getElementById('editName').value, newPhone = document.getElementById('editPhone').value, newWhatsapp = document.getElementById('editWhatsapp').value, newLocation = document.getElementById('editLocation').value;
-            if (!newName || !newPhone || !newLocation) { showToast('Fill required fields', 'error'); return; }
+            if (!newName || !newPhone || !newLocation) { window.showToast('Fill required fields', 'error'); return; }
             try {
                 await updateDoc(doc(db, 'customers', currentUserDocId), { name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation });
                 currentUser = { ...currentUser, name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation };
@@ -843,10 +852,10 @@
                 if (customerSessionId) {
                     await updateDoc(doc(db, 'customer_sessions', customerSessionId), { customer: currentUser });
                 }
-                showToast('Profile updated!', 'success'); cancelEdit(); loadProfileData();
-            } catch(e) { console.error('Profile update error:', e); showToast('Failed to update profile', 'error'); }
+                window.showToast('Profile updated!', 'success'); window.cancelEdit(); window.loadProfileData();
+            } catch(e) { console.error('Profile update error:', e); window.showToast('Failed to update profile', 'error'); }
         };
-        async function loadOrders() {
+        window.loadOrders = async function() {
             if (!db) { console.error('Database not initialized'); return; }
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
@@ -866,39 +875,39 @@
             document.getElementById('profileTab').style.display = tab === 'profile' ? 'block' : 'none';
             document.getElementById('ordersTab').style.display = tab === 'orders' ? 'block' : 'none';
             document.getElementById('trackingTab').style.display = tab === 'tracking' ? 'block' : 'none';
-            if (tab === 'orders') loadOrders();
-            else if (tab === 'profile') loadProfileData();
+            if (tab === 'orders') window.loadOrders();
+            else if (tab === 'profile') window.loadProfileData();
         };
 
         // Products
-        window.filterByCategory = function(category) { currentCategory = category; renderProducts(); document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active')); if (window.event?.target) window.event.target.classList.add('active'); };
+        window.filterByCategory = function(category) { currentCategory = category; window.renderProducts(); document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active')); if (window.event?.target) window.event.target.classList.add('active'); };
         window.toggleMobileMenu = function() { document.getElementById('navMenu').classList.toggle('active'); };
-        function getCategoryIcon(c) { const icons = { 'Electronics': 'fa-mobile-alt', 'Clothing': 'fa-tshirt', 'Food': 'fa-utensils', 'Home': 'fa-home', 'Beauty': 'fa-spa' }; return icons[c] || 'fa-tag'; }
-        function renderCategories() {
+        window.getCategoryIcon = function(c) { const icons = { 'Electronics': 'fa-mobile-alt', 'Clothing': 'fa-tshirt', 'Food': 'fa-utensils', 'Home': 'fa-home', 'Beauty': 'fa-spa' }; return icons[c] || 'fa-tag'; }
+        window.renderCategories = function() {
             const grid = document.getElementById('categoriesGrid');
             if (!grid) return;
-            grid.innerHTML = categories.map(cat => `<div class="category-card" onclick="filterByCategory('${cat}')"><i class="fas ${getCategoryIcon(cat)}"></i><h3>${cat}</h3></div>`).join('');
+            grid.innerHTML = categories.map(cat => `<div class="category-card" onclick="window.filterByCategory('${cat}')"><i class="fas ${window.getCategoryIcon(cat)}"></i><h3>${cat}</h3></div>`).join('');
             const navMenu = document.getElementById('navMenu');
             document.querySelectorAll('#navMenu a:not([onclick*="all"])').forEach(a => a.remove());
-            categories.forEach(cat => { const a = document.createElement('a'); a.textContent = cat; a.onclick = () => filterByCategory(cat); navMenu.appendChild(a); });
+            categories.forEach(cat => { const a = document.createElement('a'); a.textContent = cat; a.onclick = () => window.filterByCategory(cat); navMenu.appendChild(a); });
         }
-        async function renderProducts() {
+        window.renderProducts = async function() {
             const grid = document.getElementById('productsGrid');
             if (!grid) return;
             let filtered = products;
             if (currentCategory !== 'all') filtered = products.filter(p => p.category === currentCategory);
             const search = document.getElementById('searchInput').value.toLowerCase();
             if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search) || (p.description && p.description.toLowerCase().includes(search)));
-            if (filtered.length === 0) { grid.innerHTML = `<div style="text-align:center; padding:2rem;">${t('noProducts')}</div>`; return; }
+            if (filtered.length === 0) { grid.innerHTML = `<div style="text-align:center; padding:2rem;">${window.t('noProducts')}</div>`; return; }
             let html = '';
             for (const p of filtered) {
-                const reviews = await loadProductReviews(p.id);
-                html += `<div class="product-card"><div class="wishlist-btn" data-id="${p.id}" onclick="toggleWishlist({id:'${p.id}', name:'${escapeHtml(p.name)}', price:${p.price}})"><i class="${wishlist.find(i => i.id == p.id) ? 'fas' : 'far'} fa-heart"></i></div><img src="${p.image_url || 'https://via.placeholder.com/300'}" class="product-image" onerror="this.src='https://via.placeholder.com/300'"><div class="product-info"><div class="product-name">${escapeHtml(p.name)}</div><div class="product-price">UGX ${parseInt(p.price).toLocaleString()}</div><div class="product-stock">${parseInt(p.stock) > 0 ? t('inStock') + ` (${p.stock})` : t('outOfStock')}</div><button class="add-to-cart" onclick="addToCart('${p.id}')" ${parseInt(p.stock) === 0 ? 'disabled' : ''}>${t('addToCart')}</button>${reviews}</div></div>`;
+                const reviews = await window.loadProductReviews(p.id);
+                html += `<div class="product-card"><div class="wishlist-btn" data-id="${p.id}" onclick="window.toggleWishlist({id:'${p.id}', name:'${window.escapeHtml(p.name)}', price:${p.price}})"><i class="${wishlist.find(i => i.id == p.id) ? 'fas' : 'far'} fa-heart"></i></div><img src="${p.image_url || 'https://via.placeholder.com/300'}" class="product-image" onerror="this.src='https://via.placeholder.com/300'"><div class="product-info"><div class="product-name">${window.escapeHtml(p.name)}</div><div class="product-price">UGX ${parseInt(p.price).toLocaleString()}</div><div class="product-stock">${parseInt(p.stock) > 0 ? window.t('inStock') + ` (${p.stock})` : window.t('outOfStock')}</div><button class="add-to-cart" onclick="window.addToCart('${p.id}')" ${parseInt(p.stock) === 0 ? 'disabled' : ''}>${window.t('addToCart')}</button>${reviews}</div></div>`;
             }
             grid.innerHTML = html;
-            updateWishlistButtons();
+            window.updateWishlistButtons();
         }
-        async function fetchProducts() {
+        window.fetchProducts = async function() {
             if (!db) {
                 console.error('Database not initialized');
                 return;
@@ -909,15 +918,15 @@
                 const snapshot = await getDocs(collection(db, 'products'));
                 products = []; snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
                 categories = [...new Set(products.map(p => p.category).filter(c => c))];
-                renderCategories(); await renderProducts();
+                window.renderCategories(); await window.renderProducts();
             } catch (error) {
                 console.error('Error fetching products:', error);
                 if (grid) grid.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load products. Please refresh the page.</div>';
-                showToast('Failed to load products', 'error');
+                window.showToast('Failed to load products', 'error');
             }
         }
 
-        async function loadConfig() {
+        window.loadConfig = async function() {
             if (!db) return;
             try {
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
@@ -934,39 +943,39 @@
             }
         }
 
-        function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+        window.escapeHtml = function(text) { if (!text) return ''; return text.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
 
         // Cookie helpers for session management
-        function setCookie(name, value, days) {
+        window.setCookie = function(name, value, days) {
             const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
             document.cookie = `${name}=${value}; expires=${expires}; path=/`;
         }
 
-        function getCookie(name) {
+        window.getCookie = function(name) {
             const value = `; ${document.cookie}`;
             const parts = value.split(`; ${name}=`);
             if (parts.length === 2) return parts.pop().split(';').shift();
             return null;
         }
 
-        function deleteCookie(name) {
+        window.deleteCookie = function(name) {
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
         }
 
         // Customer session validation using Firebase
-        async function validateCustomerSession() {
-            const sessionId = getCookie('jefram_session_id');
+        window.validateCustomerSession = async function() {
+            const sessionId = window.getCookie('jefram_session_id');
             if (!sessionId) return false;
             try {
                 const sessionDoc = await getDoc(doc(db, 'customer_sessions', sessionId));
                 if (!sessionDoc.exists()) {
-                    deleteCookie('jefram_session_id');
+                    window.deleteCookie('jefram_session_id');
                     return false;
                 }
                 const session = sessionDoc.data();
                 if (new Date(session.expiresAt) < new Date()) {
                     await deleteDoc(doc(db, 'customer_sessions', sessionId));
-                    deleteCookie('jefram_session_id');
+                    window.deleteCookie('jefram_session_id');
                     return false;
                 }
                 currentUser = session.customer;
@@ -975,23 +984,23 @@
                 return true;
             } catch (error) {
                 console.error('Session validation error:', error);
-                deleteCookie('jefram_session_id');
+                window.deleteCookie('jefram_session_id');
                 return false;
             }
         }
 
-        document.getElementById('searchInput').addEventListener('input', renderProducts);
+        document.getElementById('searchInput').addEventListener('input', window.renderProducts);
         
         // Initialize app
         (async function init() {
-            await loadConfig(); // Load configuration from Firebase
-            await fetchProducts(); // Fetch products
+            await window.loadConfig(); // Load configuration from Firebase
+            await window.fetchProducts(); // Fetch products
             
             // Initialize session on page load
-            const isValid = await validateCustomerSession();
+            const isValid = await window.validateCustomerSession();
             if (isValid) {
-                await loadWishlistFromFirebase();
-                await loadCartFromFirebase();
+                await window.loadWishlistFromFirebase();
+                await window.loadCartFromFirebase();
             }
         })();
         
