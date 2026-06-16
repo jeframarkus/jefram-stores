@@ -641,31 +641,64 @@
         window.proceedToCheckout = async function() {
             if (!db) { showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { showToast('Cart empty', 'error'); return; }
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            if (!currentUser) { showToast('Please login to place order', 'error'); openRegisterModal(); return; }
+            
+            const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
+            if (!paymentMethodEl) { showToast('Select a payment method', 'error'); return; }
+            const paymentMethod = paymentMethodEl.value;
+            
             let subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
             const discount = calculateDiscount(subtotal);
             const total = subtotal - discount;
             let mobileNumber = '';
-            if (paymentMethod === 'mobile_money') {
-                const provider = document.getElementById('mobileMoneyProvider').value;
-                mobileNumber = document.getElementById('mobileMoneyNumber').value;
-                if (!mobileNumber) { showToast('Enter Mobile Money number', 'error'); return; }
-                showToast(`Processing ${provider} payment for UGX ${total.toLocaleString()}...`, 'info');
-                const paymentResult = await processMobileMoneyPayment(provider, mobileNumber, total);
-                if (!paymentResult.success) {
-                    showToast(`Payment failed: ${paymentResult.error}`, 'error');
-                    return;
-                }
-                showToast(`Payment successful! Transaction ID: ${paymentResult.transactionId}`, 'success');
-            }
-            const itemsList = cart.map(i => `• ${i.name} x${i.quantity} - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
-            const message = `*NEW ORDER* 🛍️\n\nCustomer: ${currentUser.name}\nPhone: ${currentUser.phone}\nLocation: ${currentUser.location}\n\nItems:\n${itemsList}\n\nSubtotal: UGX ${subtotal.toLocaleString()}${discount > 0 ? `\nDiscount: -UGX ${discount.toLocaleString()}` : ''}\nTotal: UGX ${total.toLocaleString()}\nPayment: ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}\nMobile: ${mobileNumber}`;
+            
             try {
-                await addDoc(collection(db, 'orders'), { customer: currentUser, items: cart, subtotal, discount, coupon_code: appliedCoupon?.code, total, payment_method: paymentMethod, mobile_money_number: mobileNumber, status: 'pending', createdAt: new Date().toISOString() });
-                if (appliedCoupon) { await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 }); }
+                if (paymentMethod === 'mobile_money') {
+                    const provider = document.getElementById('mobileMoneyProvider').value;
+                    mobileNumber = document.getElementById('mobileMoneyNumber').value;
+                    if (!mobileNumber) { showToast('Enter Mobile Money number', 'error'); return; }
+                    showToast(`Processing ${provider} payment for UGX ${total.toLocaleString()}...`, 'info');
+                    const paymentResult = await processMobileMoneyPayment(provider, mobileNumber, total);
+                    if (!paymentResult.success) {
+                        showToast(`Payment failed: ${paymentResult.error}`, 'error');
+                        return;
+                    }
+                    showToast(`Payment successful! Transaction ID: ${paymentResult.transactionId}`, 'success');
+                }
+                
+                const itemsList = cart.map(i => `• ${i.name} x${i.quantity} - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
+                const message = `*NEW ORDER* 🛍️\n\nCustomer: ${currentUser.name}\nPhone: ${currentUser.phone}\nLocation: ${currentUser.location}\n\nItems:\n${itemsList}\n\nSubtotal: UGX ${subtotal.toLocaleString()}${discount > 0 ? `\nDiscount: -UGX ${discount.toLocaleString()}` : ''}\nTotal: UGX ${total.toLocaleString()}\nPayment: ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}\nMobile: ${mobileNumber}`;
+                
+                const orderRef = await addDoc(collection(db, 'orders'), { 
+                    customer: currentUser, 
+                    items: cart, 
+                    subtotal, 
+                    discount, 
+                    coupon_code: appliedCoupon?.code, 
+                    total, 
+                    payment_method: paymentMethod, 
+                    mobile_money_number: mobileNumber, 
+                    status: 'pending', 
+                    createdAt: new Date().toISOString() 
+                });
+                
+                console.log('Order created with ID:', orderRef.id);
+                
+                if (appliedCoupon) { 
+                    await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 }); 
+                }
+                
                 window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
-                cart = []; appliedCoupon = null; await saveCartToFirebase(); updateCartCount(); closeCart(); showToast('Order placed! Check WhatsApp.', 'success');
-            } catch(e) { console.error('Checkout error:', e); showToast('Failed to place order', 'error'); }
+                cart = []; 
+                appliedCoupon = null; 
+                await saveCartToFirebase(); 
+                updateCartCount(); 
+                closeCart(); 
+                showToast('Order placed successfully! Check WhatsApp.', 'success');
+            } catch(e) { 
+                console.error('Checkout error:', e); 
+                showToast('Failed to place order: ' + e.message, 'error'); 
+            }
         };
 
         // Cart functions
