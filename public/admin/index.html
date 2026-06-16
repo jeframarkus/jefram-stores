@@ -803,13 +803,17 @@
 
         async function loadOrders() {
             if (!isMaster) return;
-            const ordersSnap = await getDocs(orderBy(collection(db, 'orders'), 'createdAt', 'desc'));
+            const ordersSnap = await getDocs(collection(db, 'orders'));
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '';
             
-            for (const docSnap of ordersSnap.docs) {
-                const order = docSnap.data();
-                const orderId = docSnap.id;
+            const orders = [];
+            ordersSnap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+            // Sort manually to avoid index requirement
+            orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            for (const order of orders) {
+                const orderId = order.id;
                 const subtotal = order.subtotal || order.total;
                 const discount = order.discount || 0;
                 const deliveryFee = order.delivery_fee || 0;
