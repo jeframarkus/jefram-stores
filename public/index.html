@@ -669,18 +669,23 @@
                 const itemsList = cart.map(i => `• ${i.name} x${i.quantity} - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
                 const message = `*NEW ORDER* 🛍️\n\nCustomer: ${currentUser.name}\nPhone: ${currentUser.phone}\nLocation: ${currentUser.location}\n\nItems:\n${itemsList}\n\nSubtotal: UGX ${subtotal.toLocaleString()}${discount > 0 ? `\nDiscount: -UGX ${discount.toLocaleString()}` : ''}\nTotal: UGX ${total.toLocaleString()}\nPayment: ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}\nMobile: ${mobileNumber}`;
                 
-                const orderRef = await addDoc(collection(db, 'orders'), { 
+                const orderData = { 
                     customer: currentUser, 
                     items: cart, 
                     subtotal, 
                     discount, 
-                    coupon_code: appliedCoupon?.code, 
                     total, 
                     payment_method: paymentMethod, 
                     mobile_money_number: mobileNumber, 
                     status: 'pending', 
                     createdAt: new Date().toISOString() 
-                });
+                };
+                
+                if (appliedCoupon) {
+                    orderData.coupon_code = appliedCoupon.code;
+                }
+                
+                const orderRef = await addDoc(collection(db, 'orders'), orderData);
                 
                 console.log('Order created with ID:', orderRef.id);
                 
