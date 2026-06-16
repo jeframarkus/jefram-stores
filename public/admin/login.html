@@ -127,6 +127,16 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Simple SHA-256 hash function using Web Crypto API
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
         window.login = async function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -139,6 +149,7 @@
             }
 
             try {
+                const hashedPassword = await hashPassword(password);
                 const adminsRef = collection(db, 'admins');
                 const q = query(adminsRef, where("username", "==", username));
                 const snapshot = await getDocs(q);
@@ -154,7 +165,7 @@
                     admin = { id: doc.id, ...doc.data() };
                 });
 
-                if (admin.password === password) {
+                if (admin.password === hashedPassword) {
                     localStorage.setItem('admin_logged_in', 'true');
                     localStorage.setItem('admin_data', JSON.stringify(admin));
                     window.location.href = 'index.html';

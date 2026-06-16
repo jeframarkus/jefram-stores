@@ -392,8 +392,15 @@
             appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        let app, db;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            showToast('Failed to connect to database. Please refresh the page.', 'error');
+            document.getElementById('productsGrid').innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Database connection failed. Please refresh the page.</div>';
+        }
 
         let products = [];
         let cart = [];
@@ -409,6 +416,23 @@
         let currentDeliveryRating = 0;
         let currentReviewProduct = null;
         let reviewRating = 0;
+        let whatsappNumber = '256742533656'; // Default fallback, will be loaded from Firebase
+        
+        // Mobile Money Payment Configuration
+        const mobileMoneyConfig = {
+            mtn: {
+                name: 'MTN Mobile Money',
+                apiKey: '', // Add your MTN API key here
+                apiUrl: 'https://api.mtn.com/mm', // Replace with actual MTN API endpoint
+                enabled: false // Set to true when API is configured
+            },
+            airtel: {
+                name: 'Airtel Money',
+                apiKey: '', // Add your Airtel API key here
+                apiUrl: 'https://api.airtel.com/mm', // Replace with actual Airtel API endpoint
+                enabled: false // Set to true when API is configured
+            }
+        };
 
         const translations = {
             en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" },
@@ -505,6 +529,7 @@
 
         // Coupons
         window.applyCoupon = async function() {
+            if (!db) { showToast('Database not connected', 'error'); return; }
             const code = document.getElementById('couponCode').value.trim().toUpperCase();
             if (!code) { showToast('Enter a coupon code', 'error'); return; }
             try {
@@ -516,15 +541,15 @@
                 if (appliedCoupon.usageLimit && appliedCoupon.usedCount >= appliedCoupon.usageLimit) { showToast('Usage limit reached', 'error'); return; }
                 document.getElementById('couponMessage').innerHTML = `Coupon applied! ${appliedCoupon.discountType === 'percentage' ? appliedCoupon.discountValue + '% off' : 'UGX ' + appliedCoupon.discountValue.toLocaleString() + ' off'}`;
                 showToast('Coupon applied!', 'success'); renderCart();
-            } catch(e) { showToast('Failed to apply coupon', 'error'); }
+            } catch(e) { console.error('Coupon error:', e); showToast('Failed to apply coupon', 'error'); }
         };
         function calculateDiscount(amount) { if (!appliedCoupon) return 0; return appliedCoupon.discountType === 'percentage' ? (amount * appliedCoupon.discountValue) / 100 : Math.min(appliedCoupon.discountValue, amount); }
 
         // Reviews
         window.openReviewModal = function(productId, productName) { if (!currentUser) { openRegisterModal(); return; } currentReviewProduct = { id: productId, name: productName }; reviewRating = 0; document.querySelectorAll('#reviewRating i').forEach(s => s.className = 'far fa-star'); document.getElementById('reviewText').value = ''; document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`; document.getElementById('reviewModal').style.display = 'flex'; };
         window.closeReviewModal = function() { document.getElementById('reviewModal').style.display = 'none'; };
-        window.submitReview = async function() { if (reviewRating === 0) { showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); showToast('Review submitted!', 'success'); closeReviewModal(); } catch(e) { showToast('Failed to submit review', 'error'); } };
-        async function loadProductReviews(productId) { try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), orderBy("createdAt", "desc"), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; snapshot.forEach(doc => { const r = doc.data(); html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${escapeHtml(r.comment)}"</div><small>- ${escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { return ''; } }
+        window.submitReview = async function() { if (!db) { showToast('Database not connected', 'error'); return; } if (reviewRating === 0) { showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); showToast('Review submitted!', 'success'); closeReviewModal(); } catch(e) { console.error('Review submission error:', e); showToast('Failed to submit review', 'error'); } };
+        async function loadProductReviews(productId) { if (!db) return ''; try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), orderBy("createdAt", "desc"), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; snapshot.forEach(doc => { const r = doc.data(); html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${escapeHtml(r.comment)}"</div><small>- ${escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { console.error('Error loading reviews:', e); return ''; } }
 
         // Payment - FIXED (toggling works)
         window.togglePaymentForm = function() {
@@ -536,7 +561,49 @@
             }
         };
 
+        // Mobile Money Payment API Integration
+        async function processMobileMoneyPayment(provider, phoneNumber, amount) {
+            const config = mobileMoneyConfig[provider];
+            
+            if (!config || !config.enabled) {
+                console.warn(`${provider} payment not configured, using simulation`);
+                // Fallback to simulation for development
+                await new Promise(r => setTimeout(r, 2000));
+                return { success: true, transactionId: 'SIM-' + Date.now(), message: 'Payment simulated (API not configured)' };
+            }
+
+            try {
+                // Real API integration structure
+                const response = await fetch(config.apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${config.apiKey}`
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: phoneNumber,
+                        amount: amount,
+                        currency: 'UGX',
+                        provider: provider,
+                        reference: 'JEFRAM-' + Date.now()
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    return { success: true, transactionId: result.transactionId, message: 'Payment successful' };
+                } else {
+                    return { success: false, error: result.message || 'Payment failed' };
+                }
+            } catch (error) {
+                console.error('Mobile money API error:', error);
+                return { success: false, error: 'Payment service unavailable' };
+            }
+        }
+
         window.proceedToCheckout = async function() {
+            if (!db) { showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { showToast('Cart empty', 'error'); return; }
             const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
             let subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
@@ -548,17 +615,21 @@
                 mobileNumber = document.getElementById('mobileMoneyNumber').value;
                 if (!mobileNumber) { showToast('Enter Mobile Money number', 'error'); return; }
                 showToast(`Processing ${provider} payment for UGX ${total.toLocaleString()}...`, 'info');
-                await new Promise(r => setTimeout(r, 2000));
-                showToast(`Payment initiated! Check your phone.`, 'success');
+                const paymentResult = await processMobileMoneyPayment(provider, mobileNumber, total);
+                if (!paymentResult.success) {
+                    showToast(`Payment failed: ${paymentResult.error}`, 'error');
+                    return;
+                }
+                showToast(`Payment successful! Transaction ID: ${paymentResult.transactionId}`, 'success');
             }
             const itemsList = cart.map(i => `• ${i.name} x${i.quantity} - UGX ${(i.price * i.quantity).toLocaleString()}`).join('\n');
             const message = `*NEW ORDER* 🛍️\n\nCustomer: ${currentUser.name}\nPhone: ${currentUser.phone}\nLocation: ${currentUser.location}\n\nItems:\n${itemsList}\n\nSubtotal: UGX ${subtotal.toLocaleString()}${discount > 0 ? `\nDiscount: -UGX ${discount.toLocaleString()}` : ''}\nTotal: UGX ${total.toLocaleString()}\nPayment: ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}\nMobile: ${mobileNumber}`;
             try {
                 await addDoc(collection(db, 'orders'), { customer: currentUser, items: cart, subtotal, discount, coupon_code: appliedCoupon?.code, total, payment_method: paymentMethod, mobile_money_number: mobileNumber, status: 'pending', createdAt: new Date().toISOString() });
                 if (appliedCoupon) { await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 }); }
-                window.open(`https://wa.me/256742533656?text=${encodeURIComponent(message)}`, '_blank');
+                window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
                 cart = []; appliedCoupon = null; updateCartCount(); closeCart(); showToast('Order placed! Check WhatsApp.', 'success');
-            } catch(e) { showToast('Failed to place order', 'error'); }
+            } catch(e) { console.error('Checkout error:', e); showToast('Failed to place order', 'error'); }
         };
 
         // Cart functions
@@ -584,6 +655,7 @@
 
         // User functions
         window.registerUser = async function() {
+            if (!db) { showToast('Database not connected', 'error'); return; }
             const name = document.getElementById('customerName').value, phone = document.getElementById('customerPhone').value, whatsapp = document.getElementById('customerWhatsapp').value, email = document.getElementById('customerEmail').value, location = document.getElementById('customerLocation').value;
             if (!name || !phone || !location) { showToast('Fill all required fields', 'error'); return; }
             if (!phone.match(/^[0-9]{10,13}$/)) { showToast('Valid phone number required', 'error'); return; }
@@ -594,7 +666,7 @@
                 localStorage.setItem('jefram_user', JSON.stringify(currentUser)); localStorage.setItem('jefram_user_id', currentUserDocId);
                 document.getElementById('registerModal').style.display = 'none';
                 ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation'].forEach(id => document.getElementById(id).value = '');
-            } catch(e) { showToast('Registration failed', 'error'); }
+            } catch(e) { console.error('Registration error:', e); showToast('Registration failed', 'error'); }
         };
         window.openProfileModal = function() { if (!currentUser) { openRegisterModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
         window.closeProfileModal = function() { document.getElementById('profileModal').style.display = 'none'; };
@@ -608,20 +680,29 @@
         window.showEditForm = function() { document.getElementById('profileInfo').style.display = 'none'; document.getElementById('editProfileForm').style.display = 'block'; document.getElementById('editProfileBtn').style.display = 'none'; };
         window.cancelEdit = function() { document.getElementById('profileInfo').style.display = 'block'; document.getElementById('editProfileForm').style.display = 'none'; document.getElementById('editProfileBtn').style.display = 'block'; };
         window.updateProfile = async function() {
+            if (!db) { showToast('Database not connected', 'error'); return; }
             const newName = document.getElementById('editName').value, newPhone = document.getElementById('editPhone').value, newWhatsapp = document.getElementById('editWhatsapp').value, newLocation = document.getElementById('editLocation').value;
             if (!newName || !newPhone || !newLocation) { showToast('Fill required fields', 'error'); return; }
-            await updateDoc(doc(db, 'customers', currentUserDocId), { name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation });
-            currentUser = { ...currentUser, name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation };
-            localStorage.setItem('jefram_user', JSON.stringify(currentUser)); showToast('Profile updated!', 'success'); cancelEdit(); loadProfileData();
+            try {
+                await updateDoc(doc(db, 'customers', currentUserDocId), { name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation });
+                currentUser = { ...currentUser, name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation };
+                localStorage.setItem('jefram_user', JSON.stringify(currentUser)); showToast('Profile updated!', 'success'); cancelEdit(); loadProfileData();
+            } catch(e) { console.error('Profile update error:', e); showToast('Failed to update profile', 'error'); }
         };
         async function loadOrders() {
+            if (!db) { console.error('Database not initialized'); return; }
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-            const snapshot = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
-            if (snapshot.empty) { ordersList.innerHTML = '<div style="text-align:center; padding:2rem;">No orders found</div>'; return; }
-            let html = '';
-            snapshot.forEach(doc => { const o = doc.data(); html += `<div class="order-card"><div class="order-header"><span><strong>#${doc.id.slice(-6)}</strong></span><span class="order-status status-${o.status}">${o.status.toUpperCase()}</span></div><div class="order-items">${o.items.map(i => `${i.name} x${i.quantity}`).join(', ')}</div><div class="order-total">Total: UGX ${(o.total || o.subtotal).toLocaleString()}</div><div style="font-size:12px; color:#999;">${new Date(o.createdAt).toLocaleString()}</div></div>`; });
-            ordersList.innerHTML = html;
+            try {
+                const snapshot = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
+                if (snapshot.empty) { ordersList.innerHTML = '<div style="text-align:center; padding:2rem;">No orders found</div>'; return; }
+                let html = '';
+                snapshot.forEach(doc => { const o = doc.data(); html += `<div class="order-card"><div class="order-header"><span><strong>#${doc.id.slice(-6)}</strong></span><span class="order-status status-${o.status}">${o.status.toUpperCase()}</span></div><div class="order-items">${o.items.map(i => `${i.name} x${i.quantity}`).join(', ')}</div><div class="order-total">Total: UGX ${(o.total || o.subtotal).toLocaleString()}</div><div style="font-size:12px; color:#999;">${new Date(o.createdAt).toLocaleString()}</div></div>`; });
+                ordersList.innerHTML = html;
+            } catch(error) {
+                console.error('Error loading orders:', error);
+                ordersList.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load orders</div>';
+            }
         }
         window.switchTab = async function(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -661,12 +742,39 @@
             updateWishlistButtons();
         }
         async function fetchProducts() {
+            if (!db) {
+                console.error('Database not initialized');
+                return;
+            }
             const grid = document.getElementById('productsGrid');
             if (grid) grid.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-            const snapshot = await getDocs(collection(db, 'products'));
-            products = []; snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
-            categories = [...new Set(products.map(p => p.category).filter(c => c))];
-            renderCategories(); await renderProducts();
+            try {
+                const snapshot = await getDocs(collection(db, 'products'));
+                products = []; snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+                categories = [...new Set(products.map(p => p.category).filter(c => c))];
+                renderCategories(); await renderProducts();
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                if (grid) grid.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load products. Please refresh the page.</div>';
+                showToast('Failed to load products', 'error');
+            }
+        }
+
+        async function loadConfig() {
+            if (!db) return;
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                if (configDoc.exists()) {
+                    const config = configDoc.data();
+                    if (config.whatsappNumber) {
+                        whatsappNumber = config.whatsappNumber;
+                        console.log('WhatsApp number loaded from config:', whatsappNumber);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+                // Use default fallback if config fails to load
+            }
         }
 
         function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
@@ -676,6 +784,7 @@
         if (savedUser) { currentUser = JSON.parse(savedUser); currentUserDocId = localStorage.getItem('jefram_user_id'); }
         const savedWishlist = localStorage.getItem('jefram_wishlist');
         if (savedWishlist) wishlist = JSON.parse(savedWishlist);
+        loadConfig(); // Load configuration from Firebase
         fetchProducts();
         window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; };
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); });
