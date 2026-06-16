@@ -355,18 +355,32 @@
         </div>
     </div>
 
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>Sign In</h2>
+            <div class="register-form">
+                <input type="tel" id="loginPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
+                <button onclick="loginUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Sign In</button>
+            </div>
+            <p style="margin-top: 10px; text-align: center;">Don't have an account? <a href="#" onclick="closeLoginModal(); openRegisterModal();" style="color: #667eea;">Register</a></p>
+            <button onclick="closeLoginModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
+        </div>
+    </div>
+
     <!-- Registration Modal -->
     <div id="registerModal" class="modal">
         <div class="modal-content">
-            <h2>Register / Sign In</h2>
+            <h2>Register</h2>
             <div class="register-form">
                 <input type="text" id="customerName" placeholder="Full Name" required>
                 <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
                 <input type="text" id="customerWhatsapp" placeholder="WhatsApp Number (optional)">
                 <input type="email" id="customerEmail" placeholder="Email (Optional)">
                 <input type="text" id="customerLocation" placeholder="Location in Uganda" required>
-                <button onclick="registerUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Register / Sign In</button>
+                <button onclick="registerUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Register</button>
             </div>
+            <p style="margin-top: 10px; text-align: center;">Already have an account? <a href="#" onclick="closeRegisterModal(); openLoginModal();" style="color: #667eea;">Sign In</a></p>
             <button onclick="closeRegisterModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
         </div>
     </div>
@@ -486,7 +500,7 @@
         setTimeout(() => { if (Notification && Notification.permission === 'default') document.getElementById('notificationPrompt').style.display = 'block'; }, 3000);
 
         // Wishlist - FIXED (global functions)
-        window.openWishlist = function() { if (!currentUser) { openRegisterModal(); return; } renderWishlist(); document.getElementById('wishlistModal').style.display = 'flex'; };
+        window.openWishlist = function() { if (!currentUser) { openLoginModal(); return; } renderWishlist(); document.getElementById('wishlistModal').style.display = 'flex'; };
         window.closeWishlist = function() { document.getElementById('wishlistModal').style.display = 'none'; };
         
         function renderWishlist() {
@@ -501,7 +515,7 @@
         
         window.toggleWishlist = async function(product) {
             if (!currentUser) {
-                openRegisterModal();
+                openLoginModal();
                 return;
             }
             const exists = wishlist.find(i => i.id == product.id);
@@ -584,10 +598,10 @@
         function calculateDiscount(amount) { if (!appliedCoupon) return 0; return appliedCoupon.discountType === 'percentage' ? (amount * appliedCoupon.discountValue) / 100 : Math.min(appliedCoupon.discountValue, amount); }
 
         // Reviews
-        window.openReviewModal = function(productId, productName) { if (!currentUser) { openRegisterModal(); return; } currentReviewProduct = { id: productId, name: productName }; reviewRating = 0; document.querySelectorAll('#reviewRating i').forEach(s => s.className = 'far fa-star'); document.getElementById('reviewText').value = ''; document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`; document.getElementById('reviewModal').style.display = 'flex'; };
+        window.openReviewModal = function(productId, productName) { if (!currentUser) { openLoginModal(); return; } currentReviewProduct = { id: productId, name: productName }; reviewRating = 0; document.querySelectorAll('#reviewRating i').forEach(s => s.className = 'far fa-star'); document.getElementById('reviewText').value = ''; document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`; document.getElementById('reviewModal').style.display = 'flex'; };
         window.closeReviewModal = function() { document.getElementById('reviewModal').style.display = 'none'; };
         window.submitReview = async function() { if (!db) { showToast('Database not connected', 'error'); return; } if (reviewRating === 0) { showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); showToast('Review submitted!', 'success'); closeReviewModal(); } catch(e) { console.error('Review submission error:', e); showToast('Failed to submit review', 'error'); } };
-        async function loadProductReviews(productId) { if (!db) return ''; try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), orderBy("createdAt", "desc"), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; snapshot.forEach(doc => { const r = doc.data(); html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${escapeHtml(r.comment)}"</div><small>- ${escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { console.error('Error loading reviews:', e); return ''; } }
+        async function loadProductReviews(productId) { if (!db) return ''; try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; const reviews = []; snapshot.forEach(doc => { reviews.push(doc.data()); }); // Sort manually to avoid index requirement reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)); reviews.forEach(r => { html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${escapeHtml(r.comment)}"</div><small>- ${escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { console.error('Error loading reviews:', e); return ''; } }
 
         // Payment - FIXED (toggling works)
         window.togglePaymentForm = function() {
@@ -643,7 +657,7 @@
         window.proceedToCheckout = async function() {
             if (!db) { showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { showToast('Cart empty', 'error'); return; }
-            if (!currentUser) { showToast('Please login to place order', 'error'); openRegisterModal(); return; }
+            if (!currentUser) { showToast('Please login to place order', 'error'); openLoginModal(); return; }
             
             const paymentMethodEl = document.querySelector('input[name="paymentMethod"]:checked');
             if (!paymentMethodEl) { showToast('Select a payment method', 'error'); return; }
@@ -709,11 +723,11 @@
         };
 
         // Cart functions
-        window.openCart = function() { if (!currentUser) { openRegisterModal(); return; } renderCart(); document.getElementById('cartModal').style.display = 'flex'; };
+        window.openCart = function() { if (!currentUser) { openLoginModal(); return; } renderCart(); document.getElementById('cartModal').style.display = 'flex'; };
         window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; };
         window.updateQuantity = async function(productId, change) { const item = cart.find(i => i.id == productId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id != productId); await saveCartToFirebase(); renderCart(); updateCartCount(); } };
         window.removeFromCart = async function(productId) { cart = cart.filter(i => i.id != productId); await saveCartToFirebase(); renderCart(); updateCartCount(); };
-        window.addToCart = async function(productId) { if (!currentUser) { openRegisterModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); await saveCartToFirebase(); updateCartCount(); showToast(`${product.name} added to cart!`); };
+        window.addToCart = async function(productId) { if (!currentUser) { openLoginModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); await saveCartToFirebase(); updateCartCount(); showToast(`${product.name} added to cart!`); };
         function updateCartCount() { document.getElementById('cartCount').innerText = cart.reduce((s, i) => s + i.quantity, 0); }
         function renderCart() {
             const cartDiv = document.getElementById('cartItems');
@@ -737,8 +751,12 @@
             if (!phone.match(/^[0-9]{10,13}$/)) { showToast('Valid phone number required', 'error'); return; }
             try {
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-                if (!existing.empty) { existing.forEach(d => { currentUser = d.data(); currentUserDocId = d.id; }); showToast('Welcome back!', 'success'); }
-                else { const docRef = await addDoc(collection(db, 'customers'), { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString(), wishlist: [], cart: [] }); currentUser = { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() }; currentUserDocId = docRef.id; showToast('Registration successful!', 'success'); }
+                if (!existing.empty) { showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
+                
+                const docRef = await addDoc(collection(db, 'customers'), { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString(), wishlist: [], cart: [] });
+                currentUser = { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() };
+                currentUserDocId = docRef.id;
+                showToast('Registration successful!', 'success');
                 
                 // Create Firebase session
                 const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
@@ -756,7 +774,36 @@
                 ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation'].forEach(id => document.getElementById(id).value = '');
             } catch(e) { console.error('Registration error:', e); showToast('Registration failed', 'error'); }
         };
-        window.openProfileModal = function() { if (!currentUser) { openRegisterModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
+
+        window.loginUser = async function() {
+            if (!db) { showToast('Database not connected', 'error'); return; }
+            const phone = document.getElementById('loginPhone').value;
+            if (!phone) { showToast('Enter phone number', 'error'); return; }
+            if (!phone.match(/^[0-9]{10,13}$/)) { showToast('Valid phone number required', 'error'); return; }
+            try {
+                const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
+                if (existing.empty) { showToast('Phone number not found. Please register.', 'error'); return; }
+                
+                existing.forEach(d => { currentUser = d.data(); currentUserDocId = d.id; });
+                showToast('Welcome back!', 'success');
+                
+                // Create Firebase session
+                const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
+                    customerId: currentUserDocId,
+                    customer: currentUser,
+                    createdAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+                });
+                customerSessionId = sessionRef.id;
+                setCookie('jefram_session_id', customerSessionId, 30);
+                
+                await loadWishlistFromFirebase();
+                await loadCartFromFirebase();
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('loginPhone').value = '';
+            } catch(e) { console.error('Login error:', e); showToast('Login failed', 'error'); }
+        };
+        window.openProfileModal = function() { if (!currentUser) { openLoginModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
         window.closeProfileModal = function() { document.getElementById('profileModal').style.display = 'none'; };
         window.logout = async function() {
             if (customerSessionId) {
@@ -777,6 +824,8 @@
         };
         window.openRegisterModal = function() { document.getElementById('registerModal').style.display = 'flex'; };
         window.closeRegisterModal = function() { document.getElementById('registerModal').style.display = 'none'; };
+        window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; };
+        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; };
         async function loadProfileData() {
             document.getElementById('profileInfo').innerHTML = `<div class="info-row"><span class="info-label">Name:</span><span class="info-value">${escapeHtml(currentUser.name)}</span></div><div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${escapeHtml(currentUser.phone)}</span></div><div class="info-row"><span class="info-label">WhatsApp:</span><span class="info-value">${escapeHtml(currentUser.whatsapp || currentUser.phone)}</span></div><div class="info-row"><span class="info-label">Location:</span><span class="info-value">${escapeHtml(currentUser.location)}</span></div><div class="info-row"><span class="info-label">Member since:</span><span class="info-value">${new Date(currentUser.registeredAt).toLocaleDateString()}</span></div>`;
             document.getElementById('editName').value = currentUser.name; document.getElementById('editPhone').value = currentUser.phone; document.getElementById('editWhatsapp').value = currentUser.whatsapp || currentUser.phone; document.getElementById('editLocation').value = currentUser.location;
