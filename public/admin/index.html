@@ -923,12 +923,17 @@
         }
 
         async function loadReviews() {
-            const reviewsSnap = await getDocs(query(collection(db, 'reviews'), orderBy('createdAt', 'desc')));
+            const reviewsSnap = await getDocs(collection(db, 'reviews'));
             const reviewsList = document.getElementById('reviewsList');
             reviewsList.innerHTML = '';
+            const reviews = [];
             reviewsSnap.forEach(doc => {
-                const review = doc.data();
-                reviewsList.innerHTML += `<tr><td>${escapeHtml(review.productName)}</td><td>${escapeHtml(review.userName)}</td><td>${'⭐'.repeat(review.rating)}</td><td>${escapeHtml(review.comment).substring(0, 100)}</td><td>${new Date(review.createdAt).toLocaleDateString()}</td><td><button class="btn-danger btn-sm" onclick="deleteReview('${doc.id}')">Delete</button></td></tr>`;
+                reviews.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort manually to avoid index requirement
+            reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            reviews.forEach(review => {
+                reviewsList.innerHTML += `<tr><td>${escapeHtml(review.productName)}</td><td>${escapeHtml(review.userName)}</td><td>${'⭐'.repeat(review.rating)}</td><td>${escapeHtml(review.comment).substring(0, 100)}</td><td>${new Date(review.createdAt).toLocaleDateString()}</td><td><button class="btn-danger btn-sm" onclick="deleteReview('${review.id}')">Delete</button></td></tr>`;
             });
         }
 

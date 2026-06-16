@@ -775,8 +775,8 @@
             showToast('Signed out', 'success');
             window.location.reload();
         };
-        function openRegisterModal() { document.getElementById('registerModal').style.display = 'flex'; }
-        function closeRegisterModal() { document.getElementById('registerModal').style.display = 'none'; }
+        window.openRegisterModal = function() { document.getElementById('registerModal').style.display = 'flex'; };
+        window.closeRegisterModal = function() { document.getElementById('registerModal').style.display = 'none'; };
         async function loadProfileData() {
             document.getElementById('profileInfo').innerHTML = `<div class="info-row"><span class="info-label">Name:</span><span class="info-value">${escapeHtml(currentUser.name)}</span></div><div class="info-row"><span class="info-label">Phone:</span><span class="info-value">${escapeHtml(currentUser.phone)}</span></div><div class="info-row"><span class="info-label">WhatsApp:</span><span class="info-value">${escapeHtml(currentUser.whatsapp || currentUser.phone)}</span></div><div class="info-row"><span class="info-label">Location:</span><span class="info-value">${escapeHtml(currentUser.location)}</span></div><div class="info-row"><span class="info-label">Member since:</span><span class="info-value">${new Date(currentUser.registeredAt).toLocaleDateString()}</span></div>`;
             document.getElementById('editName').value = currentUser.name; document.getElementById('editPhone').value = currentUser.phone; document.getElementById('editWhatsapp').value = currentUser.whatsapp || currentUser.phone; document.getElementById('editLocation').value = currentUser.location;
