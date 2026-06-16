@@ -417,6 +417,7 @@
         let currentReviewProduct = null;
         let reviewRating = 0;
         let whatsappNumber = '256742533656'; // Default fallback, will be loaded from Firebase
+        let customerSessionId = null;
         
         // Mobile Money Payment Configuration
         const mobileMoneyConfig = {
@@ -737,7 +738,17 @@
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
                 if (!existing.empty) { existing.forEach(d => { currentUser = d.data(); currentUserDocId = d.id; }); showToast('Welcome back!', 'success'); }
                 else { const docRef = await addDoc(collection(db, 'customers'), { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString(), wishlist: [], cart: [] }); currentUser = { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() }; currentUserDocId = docRef.id; showToast('Registration successful!', 'success'); }
-                localStorage.setItem('jefram_user', JSON.stringify(currentUser)); localStorage.setItem('jefram_user_id', currentUserDocId);
+                
+                // Create Firebase session
+                const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
+                    customerId: currentUserDocId,
+                    customer: currentUser,
+                    createdAt: new Date().toISOString(),
+                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+                });
+                customerSessionId = sessionRef.id;
+                setCookie('jefram_session_id', customerSessionId, 30);
+                
                 await loadWishlistFromFirebase();
                 await loadCartFromFirebase();
                 document.getElementById('registerModal').style.display = 'none';
@@ -746,7 +757,23 @@
         };
         window.openProfileModal = function() { if (!currentUser) { openRegisterModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
         window.closeProfileModal = function() { document.getElementById('profileModal').style.display = 'none'; };
-        window.logout = function() { currentUser = null; cart = []; wishlist = []; updateCartCount(); localStorage.removeItem('jefram_user'); localStorage.removeItem('jefram_user_id'); showToast('Signed out', 'success'); window.location.reload(); };
+        window.logout = async function() {
+            if (customerSessionId) {
+                try {
+                    await deleteDoc(doc(db, 'customer_sessions', customerSessionId));
+                } catch (e) {
+                    console.error('Error deleting session:', e);
+                }
+            }
+            deleteCookie('jefram_session_id');
+            currentUser = null;
+            cart = [];
+            wishlist = [];
+            customerSessionId = null;
+            updateCartCount();
+            showToast('Signed out', 'success');
+            window.location.reload();
+        };
         function openRegisterModal() { document.getElementById('registerModal').style.display = 'flex'; }
         function closeRegisterModal() { document.getElementById('registerModal').style.display = 'none'; }
         async function loadProfileData() {
@@ -762,7 +789,11 @@
             try {
                 await updateDoc(doc(db, 'customers', currentUserDocId), { name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation });
                 currentUser = { ...currentUser, name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation };
-                localStorage.setItem('jefram_user', JSON.stringify(currentUser)); showToast('Profile updated!', 'success'); cancelEdit(); loadProfileData();
+                // Update session in Firebase
+                if (customerSessionId) {
+                    await updateDoc(doc(db, 'customer_sessions', customerSessionId), { customer: currentUser });
+                }
+                showToast('Profile updated!', 'success'); cancelEdit(); loadProfileData();
             } catch(e) { console.error('Profile update error:', e); showToast('Failed to update profile', 'error'); }
         };
         async function loadOrders() {
@@ -855,11 +886,63 @@
 
         function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
 
+        // Cookie helpers for session management
+        function setCookie(name, value, days) {
+            const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function deleteCookie(name) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+        }
+
+        // Customer session validation using Firebase
+        async function validateCustomerSession() {
+            const sessionId = getCookie('jefram_session_id');
+            if (!sessionId) return false;
+            try {
+                const sessionDoc = await getDoc(doc(db, 'customer_sessions', sessionId));
+                if (!sessionDoc.exists()) {
+                    deleteCookie('jefram_session_id');
+                    return false;
+                }
+                const session = sessionDoc.data();
+                if (new Date(session.expiresAt) < new Date()) {
+                    await deleteDoc(doc(db, 'customer_sessions', sessionId));
+                    deleteCookie('jefram_session_id');
+                    return false;
+                }
+                currentUser = session.customer;
+                currentUserDocId = session.customerId;
+                customerSessionId = sessionId;
+                return true;
+            } catch (error) {
+                console.error('Session validation error:', error);
+                deleteCookie('jefram_session_id');
+                return false;
+            }
+        }
+
         document.getElementById('searchInput').addEventListener('input', renderProducts);
-        const savedUser = localStorage.getItem('jefram_user');
-        if (savedUser) { currentUser = JSON.parse(savedUser); currentUserDocId = localStorage.getItem('jefram_user_id'); loadWishlistFromFirebase(); loadCartFromFirebase(); }
         loadConfig(); // Load configuration from Firebase
         fetchProducts();
+        
+        // Initialize session on page load
+        (async function init() {
+            const isValid = await validateCustomerSession();
+            if (isValid) {
+                await loadWishlistFromFirebase();
+                await loadCartFromFirebase();
+            }
+        })();
+        
         window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; };
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); });
     </script>

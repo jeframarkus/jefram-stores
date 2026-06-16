@@ -662,12 +662,29 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Cookie helpers for session management
+        function setCookie(name, value, days) {
+            const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+        }
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function deleteCookie(name) {
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+        }
+
         let currentAdmin = null;
         let currentImageBase64 = null;
         let deliveryAgents = [];
         let salesChart = null;
 
-        const sessionId = localStorage.getItem('admin_session_id');
+        const sessionId = getCookie('admin_session_id');
         
         if (!sessionId) {
             window.location.href = 'login.html';
@@ -678,14 +695,14 @@
             try {
                 const sessionDoc = await getDoc(doc(db, 'admin_sessions', sessionId));
                 if (!sessionDoc.exists()) {
-                    localStorage.removeItem('admin_session_id');
+                    deleteCookie('admin_session_id');
                     window.location.href = 'login.html';
                     return false;
                 }
                 const session = sessionDoc.data();
                 if (new Date(session.expiresAt) < new Date()) {
                     await deleteDoc(doc(db, 'admin_sessions', sessionId));
-                    localStorage.removeItem('admin_session_id');
+                    deleteCookie('admin_session_id');
                     window.location.href = 'login.html';
                     return false;
                 }
@@ -693,7 +710,7 @@
                 return true;
             } catch (error) {
                 console.error('Session validation error:', error);
-                localStorage.removeItem('admin_session_id');
+                deleteCookie('admin_session_id');
                 window.location.href = 'login.html';
                 return false;
             }
@@ -1210,13 +1227,13 @@
 
         function escapeHtml(text) { if (!text) return ''; const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
         function showToast(message, type) { const toast = document.createElement('div'); toast.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#28a745' : '#dc3545'}; color:white; padding:12px 20px; border-radius:8px; z-index:9999;`; toast.innerHTML = message; document.body.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
-        window.logout = async function() { 
+        window.logout = async function() {
             try {
                 await deleteDoc(doc(db, 'admin_sessions', sessionId));
             } catch (e) {
                 console.error('Error deleting session:', e);
             }
-            localStorage.removeItem('admin_session_id');
+            deleteCookie('admin_session_id');
             window.location.href = 'login.html';
         };
 
