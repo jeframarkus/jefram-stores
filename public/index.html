@@ -981,11 +981,13 @@
         }
 
         document.getElementById('searchInput').addEventListener('input', renderProducts);
-        loadConfig(); // Load configuration from Firebase
-        fetchProducts();
         
-        // Initialize session on page load
+        // Initialize app
         (async function init() {
+            await loadConfig(); // Load configuration from Firebase
+            await fetchProducts(); // Fetch products
+            
+            // Initialize session on page load
             const isValid = await validateCustomerSession();
             if (isValid) {
                 await loadWishlistFromFirebase();

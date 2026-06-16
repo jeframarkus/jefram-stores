@@ -783,7 +783,10 @@
             let totalRevenue = 0;
             ordersSnap.forEach(doc => {
                 const order = doc.data();
-                totalRevenue += (order.total || order.subtotal || 0) + (order.delivery_fee || 0);
+                // Only count revenue from delivered orders
+                if (order.status === 'delivered') {
+                    totalRevenue += (order.total || order.subtotal || 0) + (order.delivery_fee || 0);
+                }
             });
             
             const lowStockCount = productsSnap.docs.filter(d => d.data().stock <= 5 && d.data().stock > 0).length;
