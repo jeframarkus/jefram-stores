@@ -92,6 +92,23 @@
         .product-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #333; }
         .product-price { font-size: 1.3rem; color: #667eea; font-weight: bold; margin: 0.5rem 0; }
         .product-stock { font-size: 0.8rem; color: #28a745; margin-bottom: 1rem; }
+        
+        /* Size Selection Styles */
+        .size-select {
+            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 14px; margin: 10px 0; background: white; color: #333;
+            font-family: 'Poppins', sans-serif;
+        }
+        .size-select:focus { outline: none; border-color: #667eea; }
+        .size-select option:disabled { color: #ccc; }
+        .size-label {
+            font-size: 13px; font-weight: 500; color: #555; display: block; margin-top: 5px;
+        }
+        .size-badge {
+            display: inline-block; background: #667eea; color: white;
+            padding: 2px 10px; border-radius: 12px; font-size: 11px; margin-left: 5px;
+        }
+
         .add-to-cart { width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
         .add-to-cart:hover { transform: scale(1.02); }
         .add-to-cart:disabled { background: #ccc; cursor: not-allowed; }
@@ -435,12 +452,6 @@
         let reviewRating = 0;
         let whatsappNumber = '256742533656';
         let customerSessionId = null;
-        
-        // Mobile Money Configuration
-        const mobileMoneyConfig = {
-            mtn: { name: 'MTN Mobile Money', enabled: false },
-            airtel: { name: 'Airtel Money', enabled: false }
-        };
 
         const translations = {
             en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" },
@@ -607,7 +618,7 @@
             document.getElementById('wishlistModal').style.display = 'none';
         };
 
-        // ----- CART -----
+        // ----- CART WITH SIZE SUPPORT -----
         window.saveCartToFirebase = async function() {
             if (!db || !currentUserDocId) return;
             try {
@@ -641,11 +652,11 @@
         };
 
         window.updateQuantity = async function(productId, change) {
-            const item = cart.find(i => i.id == productId);
+            const item = cart.find(i => i.id === productId);
             if (item) {
                 item.quantity += change;
                 if (item.quantity <= 0) {
-                    cart = cart.filter(i => i.id != productId);
+                    cart = cart.filter(i => i.id !== productId);
                 }
                 await window.saveCartToFirebase();
                 window.renderCart();
@@ -654,33 +665,76 @@
         };
 
         window.removeFromCart = async function(productId) {
-            cart = cart.filter(i => i.id != productId);
+            cart = cart.filter(i => i.id !== productId);
             await window.saveCartToFirebase();
             window.renderCart();
             window.updateCartCount();
         };
 
+        // UPDATED: addToCart with size support
         window.addToCart = async function(productId) {
             if (!currentUser) {
                 window.openLoginModal();
                 return;
             }
-            const product = products.find(p => p.id == productId);
-            if (!product) return;
-            const existing = cart.find(i => i.id == productId);
+            const product = products.find(p => p.id === productId);
+            if (!product) {
+                window.showToast('Product not found', 'error');
+                return;
+            }
+
+            let selectedSize = null;
+            let selectedPrice = product.price;
+            let selectedStock = product.stock || 0;
+
+            // Check if product has sizes
+            if (product.hasSizes && product.sizes && product.sizes.length > 0) {
+                const sizeSelect = document.getElementById('sizeSelect_' + productId);
+                if (!sizeSelect) {
+                    window.showToast('Please select a size', 'error');
+                    return;
+                }
+                selectedSize = sizeSelect.value;
+                if (!selectedSize) {
+                    window.showToast('Please select a size', 'error');
+                    return;
+                }
+                const sizeData = product.sizes.find(s => s.size === selectedSize);
+                if (!sizeData || sizeData.stock === 0) {
+                    window.showToast('Selected size is out of stock', 'error');
+                    return;
+                }
+                selectedPrice = sizeData.price || product.price;
+                selectedStock = sizeData.stock;
+            } else {
+                if (selectedStock === 0) {
+                    window.showToast('Product out of stock', 'error');
+                    return;
+                }
+            }
+
+            // Check if same item with same size already in cart
+            const existing = cart.find(i => i.id === productId && i.selectedSize === selectedSize);
             if (existing) {
+                if (existing.quantity >= selectedStock) {
+                    window.showToast('Not enough stock available', 'error');
+                    return;
+                }
                 existing.quantity++;
             } else {
                 cart.push({
                     id: product.id,
                     name: product.name,
-                    price: parseFloat(product.price),
-                    quantity: 1
+                    price: selectedPrice,
+                    quantity: 1,
+                    selectedSize: selectedSize || null,
+                    image_url: product.image_url
                 });
             }
+
             await window.saveCartToFirebase();
             window.updateCartCount();
-            window.showToast(product.name + ' added to cart!');
+            window.showToast(product.name + (selectedSize ? ' (' + selectedSize + ')' : '') + ' added to cart!');
         };
 
         window.updateCartCount = function() {
@@ -688,6 +742,7 @@
             document.getElementById('cartCount').innerText = total;
         };
 
+        // UPDATED: renderCart with size display
         window.renderCart = function() {
             const cartDiv = document.getElementById('cartItems');
             if (cart.length === 0) {
@@ -701,7 +756,11 @@
             const total = subtotal - discount;
             cartDiv.innerHTML = cart.map(i =>
                 `<div class="cart-item">
-                    <div><strong>${window.escapeHtml(i.name)}</strong><br>UGX ${i.price.toLocaleString()} x ${i.quantity}</div>
+                    <div>
+                        <strong>${window.escapeHtml(i.name)}</strong>
+                        ${i.selectedSize ? '<span class="size-badge">' + window.escapeHtml(i.selectedSize) + '</span>' : ''}
+                        <br>UGX ${i.price.toLocaleString()} x ${i.quantity}
+                    </div>
                     <div>
                         <button onclick="window.updateQuantity('${i.id}', -1)">-</button>
                         <span> ${i.quantity} </span>
@@ -762,14 +821,11 @@
         };
 
         async function processMobileMoneyPayment(provider, phoneNumber, amount) {
-            const config = mobileMoneyConfig[provider];
-            if (!config || !config.enabled) {
-                await new Promise(r => setTimeout(r, 1500));
-                return { success: true, transactionId: 'SIM-' + Date.now(), message: 'Payment simulated' };
-            }
-            return { success: true, transactionId: 'API-' + Date.now(), message: 'Payment processed' };
+            await new Promise(r => setTimeout(r, 1500));
+            return { success: true, transactionId: 'SIM-' + Date.now(), message: 'Payment simulated' };
         }
 
+        // UPDATED: proceedToCheckout with size in order
         window.proceedToCheckout = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { window.showToast('Cart empty', 'error'); return; }
@@ -789,21 +845,34 @@
                     const provider = document.getElementById('mobileMoneyProvider').value;
                     mobileNumber = document.getElementById('mobileMoneyNumber').value;
                     if (!mobileNumber) { window.showToast('Enter Mobile Money number', 'error'); return; }
-                    window.showToast('Processing ' + provider + ' payment for UGX ' + total.toLocaleString() + '...', 'info');
+                    window.showToast('Processing ' + provider + ' payment...', 'info');
                     const paymentResult = await processMobileMoneyPayment(provider, mobileNumber, total);
                     if (!paymentResult.success) {
                         window.showToast('Payment failed: ' + paymentResult.error, 'error');
                         return;
                     }
-                    window.showToast('Payment successful! Transaction ID: ' + paymentResult.transactionId, 'success');
+                    window.showToast('Payment successful!', 'success');
                 }
                 
-                const itemsList = cart.map(i => '• ' + i.name + ' x' + i.quantity + ' - UGX ' + (i.price * i.quantity).toLocaleString()).join('\n');
-                const message = '*NEW ORDER* 🛍️\n\nCustomer: ' + currentUser.name + '\nPhone: ' + currentUser.phone + '\nLocation: ' + currentUser.location + '\n\nItems:\n' + itemsList + '\n\nSubtotal: UGX ' + subtotal.toLocaleString() + (discount > 0 ? '\nDiscount: -UGX ' + discount.toLocaleString() : '') + '\nTotal: UGX ' + total.toLocaleString() + '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money') + '\nMobile: ' + mobileNumber;
+                // Show size in order items
+                const itemsList = cart.map(i => 
+                    '• ' + i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + 
+                    ' x' + i.quantity + ' - UGX ' + (i.price * i.quantity).toLocaleString()
+                ).join('\n');
+                
+                const message = '*NEW ORDER* 🛍️\n\nCustomer: ' + currentUser.name + 
+                    '\nPhone: ' + currentUser.phone + 
+                    '\nLocation: ' + currentUser.location + 
+                    '\n\nItems:\n' + itemsList + 
+                    '\n\nSubtotal: UGX ' + subtotal.toLocaleString() + 
+                    (discount > 0 ? '\nDiscount: -UGX ' + discount.toLocaleString() : '') + 
+                    '\nTotal: UGX ' + total.toLocaleString() + 
+                    '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money') + 
+                    (mobileNumber ? '\nMobile: ' + mobileNumber : '');
                 
                 const orderData = {
                     customer: currentUser,
-                    items: cart,
+                    items: cart.map(i => ({ ...i })), // Preserve size info
                     subtotal: subtotal,
                     discount: discount,
                     total: total,
@@ -1057,8 +1126,9 @@
                 let html = '';
                 snapshot.forEach(doc => {
                     const o = doc.data();
+                    const itemsWithSizes = o.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + ' x' + i.quantity).join(', ');
                     html +=
-                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div><div class="order-items">' + o.items.map(i => i.name + ' x' + i.quantity).join(', ') + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div></div>';
+                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div><div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div></div>';
                 });
                 ordersList.innerHTML = html;
             } catch(error) {
@@ -1076,7 +1146,7 @@
             else if (tab === 'profile') window.loadProfileData();
         };
 
-        // ----- PRODUCT FUNCTIONS -----
+        // ----- PRODUCT FUNCTIONS WITH SIZE SUPPORT -----
         window.filterByCategory = function(category) {
             currentCategory = category;
             window.renderProducts();
@@ -1091,7 +1161,7 @@
         };
 
         window.getCategoryIcon = function(c) {
-            const icons = { 'Electronics': 'fa-mobile-alt', 'Clothing': 'fa-tshirt', 'Food': 'fa-utensils', 'Home': 'fa-home', 'Beauty': 'fa-spa' };
+            const icons = { 'Electronics': 'fa-mobile-alt', 'Clothing': 'fa-tshirt', 'Shoes': 'fa-shoe-prints', 'Food': 'fa-utensils', 'Home': 'fa-home', 'Beauty': 'fa-spa' };
             return icons[c] || 'fa-tag';
         };
 
@@ -1111,6 +1181,7 @@
             });
         };
 
+        // UPDATED: renderProducts with size selection dropdown
         window.renderProducts = async function() {
             const grid = document.getElementById('productsGrid');
             if (!grid) return;
@@ -1125,6 +1196,30 @@
             let html = '';
             for (const p of filtered) {
                 const reviews = await window.loadProductReviews(p.id);
+                const totalStock = p.hasSizes && p.sizes ? p.sizes.reduce((sum, s) => sum + s.stock, 0) : (p.stock || 0);
+                
+                // Build size options
+                let sizeOptions = '';
+                if (p.hasSizes && p.sizes && p.sizes.length > 0) {
+                    sizeOptions = '<option value="">Select Size</option>';
+                    p.sizes.forEach(s => {
+                        const disabled = s.stock === 0 ? 'disabled' : '';
+                        sizeOptions += '<option value="' + window.escapeHtml(s.size) + '" ' + disabled + '>' + 
+                            window.escapeHtml(s.size) + 
+                            (s.price && s.price !== p.price ? ' (+UGX ' + (s.price - p.price).toLocaleString() + ')' : '') + 
+                            ' (' + s.stock + ')' +
+                            '</option>';
+                    });
+                }
+
+                const sizeHtml = p.hasSizes ? 
+                    '<div style="margin: 10px 0;">' +
+                    '<label class="size-label">Select Size:</label>' +
+                    '<select class="size-select" id="sizeSelect_' + p.id + '">' +
+                    sizeOptions +
+                    '</select>' +
+                    '</div>' : '';
+
                 html +=
                     '<div class="product-card">' +
                     '<div class="wishlist-btn" data-id="' + p.id + '" onclick="window.toggleWishlist({id:\'' + p.id + '\', name:\'' + window.escapeHtml(p.name) + '\', price:' + p.price + '})">' +
@@ -1133,8 +1228,11 @@
                     '<div class="product-info">' +
                     '<div class="product-name">' + window.escapeHtml(p.name) + '</div>' +
                     '<div class="product-price">UGX ' + parseInt(p.price).toLocaleString() + '</div>' +
-                    '<div class="product-stock">' + (parseInt(p.stock) > 0 ? window.t('inStock') + ' (' + p.stock + ')' : window.t('outOfStock')) + '</div>' +
-                    '<button class="add-to-cart" onclick="window.addToCart(\'' + p.id + '\')" ' + (parseInt(p.stock) === 0 ? 'disabled' : '') + '>' + window.t('addToCart') + '</button>' +
+                    '<div class="product-stock">' + (totalStock > 0 ? window.t('inStock') + ' (' + totalStock + ')' : window.t('outOfStock')) + '</div>' +
+                    sizeHtml +
+                    '<button class="add-to-cart" onclick="window.addToCart(\'' + p.id + '\')" ' + (totalStock === 0 ? 'disabled' : '') + '>' + 
+                    window.t('addToCart') + 
+                    '</button>' +
                     reviews +
                     '</div></div>';
             }
@@ -1152,7 +1250,12 @@
             try {
                 const snapshot = await getDocs(collection(db, 'products'));
                 products = [];
-                snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Ensure sizes array exists for backward compatibility
+                    if (data.hasSizes && !data.sizes) data.sizes = [];
+                    products.push({ id: doc.id, ...data });
+                });
                 categories = [...new Set(products.map(p => p.category).filter(c => c))];
                 window.renderCategories();
                 await window.renderProducts();
