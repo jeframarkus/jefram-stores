@@ -10,7 +10,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Poppins', sans-serif; background: #f8f9fa; }
 
-        /* Language Switcher */
         .language-switcher {
             position: fixed; bottom: 20px; left: 20px; z-index: 999;
             background: white; border-radius: 30px; padding: 8px 16px;
@@ -29,7 +28,6 @@
             to { transform: translateX(0); opacity: 1; }
         }
 
-        /* Push Notification Permission */
         .notification-prompt {
             position: fixed; bottom: 80px; right: 20px; background: white;
             border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -87,8 +85,7 @@
         .product-card { background: white; border-radius: 15px; overflow: hidden; transition: all 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
         .product-card:hover { transform: translateY(-5px); }
         .wishlist-btn { position: absolute; top: 10px; right: 10px; background: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
-        .wishlist-btn i { color: #ff4757; font-size: 1.2rem; }
-        .wishlist-btn i.far { color: #ccc; }
+        .wishlist-btn i { font-size: 1.2rem; }
         .product-image { width: 100%; height: 250px; object-fit: cover; background: #f5f5f5; }
         .product-info { padding: 1.5rem; }
         .product-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #333; }
@@ -440,43 +437,71 @@
             });
         });
 
-        // Notifications
-        async function enableNotifications() {
+        // Notifications - FIXED (global functions)
+        window.enableNotifications = async function() {
             if ('Notification' in window) {
                 const permission = await Notification.requestPermission();
                 if (permission === 'granted') {
-                    showToast('Notifications enabled!', 'success');
+                    showToast('Notifications enabled! You will receive order updates.', 'success');
                     document.getElementById('notificationPrompt').style.display = 'none';
+                } else {
+                    showToast('Notification permission denied.', 'error');
                 }
+            } else {
+                showToast('Notifications not supported in this browser.', 'error');
             }
-        }
-        function closeNotificationPrompt() { document.getElementById('notificationPrompt').style.display = 'none'; }
+        };
+
+        window.closeNotificationPrompt = function() {
+            document.getElementById('notificationPrompt').style.display = 'none';
+            showToast('You can enable later from browser settings.', 'info');
+        };
+
         setTimeout(() => { if (Notification && Notification.permission === 'default') document.getElementById('notificationPrompt').style.display = 'block'; }, 3000);
 
-        // Wishlist
+        // Wishlist - FIXED (global functions)
         window.openWishlist = function() { if (!currentUser) { openRegisterModal(); return; } renderWishlist(); document.getElementById('wishlistModal').style.display = 'flex'; };
         window.closeWishlist = function() { document.getElementById('wishlistModal').style.display = 'none'; };
+        
         function renderWishlist() {
             const wishlistDiv = document.getElementById('wishlistItems');
             if (wishlist.length === 0) { wishlistDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Your wishlist is empty</div>'; return; }
             wishlistDiv.innerHTML = wishlist.map(item => `<div class="cart-item"><div><strong>${escapeHtml(item.name)}</strong><br>UGX ${item.price.toLocaleString()}</div><div><button onclick="addToCartFromWishlist('${item.id}')" style="background:#28a745; color:white; padding:5px 10px;">Add to Cart</button><button onclick="removeFromWishlist('${item.id}')" style="color:red; padding:5px 10px;">Remove</button></div></div>`).join('');
             document.getElementById('wishlistCount').innerText = wishlist.length;
         }
+        
         window.addToCartFromWishlist = function(productId) { addToCart(productId); removeFromWishlist(productId); };
-        window.removeFromWishlist = function(productId) { wishlist = wishlist.filter(i => i.id != productId); localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist)); renderWishlist(); updateWishlistButtons(); showToast('Removed', 'success'); };
-        function toggleWishlist(product) {
+        window.removeFromWishlist = function(productId) { wishlist = wishlist.filter(i => i.id != productId); localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist)); renderWishlist(); updateWishlistButtons(); showToast('Removed from wishlist', 'success'); };
+        
+        window.toggleWishlist = function(product) {
+            if (!currentUser) {
+                openRegisterModal();
+                return;
+            }
             const exists = wishlist.find(i => i.id == product.id);
-            if (exists) { wishlist = wishlist.filter(i => i.id != product.id); showToast(`${product.name} removed`, 'info'); }
-            else { wishlist.push({ id: product.id, name: product.name, price: product.price }); showToast(`${product.name} added to wishlist`, 'success'); }
-            localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist)); renderWishlist(); updateWishlistButtons();
-        }
-        function updateWishlistButtons() {
+            if (exists) {
+                wishlist = wishlist.filter(i => i.id != product.id);
+                showToast(`${product.name} removed from wishlist`, 'info');
+            } else {
+                wishlist.push({ id: product.id, name: product.name, price: product.price, image_url: product.image_url });
+                showToast(`${product.name} added to wishlist`, 'success');
+            }
+            localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist));
+            renderWishlist();
+            updateWishlistButtons();
+        };
+        
+        window.updateWishlistButtons = function() {
             document.querySelectorAll('.wishlist-btn').forEach(btn => {
-                const inWishlist = wishlist.find(i => i.id == btn.dataset.id);
-                btn.querySelector('i').className = inWishlist ? 'fas fa-heart' : 'far fa-heart';
+                const productId = btn.dataset.id;
+                const inWishlist = wishlist.find(i => i.id == productId);
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = inWishlist ? 'fas fa-heart' : 'far fa-heart';
+                }
             });
             document.getElementById('wishlistCount').innerText = wishlist.length;
-        }
+        };
 
         // Coupons
         window.applyCoupon = async function() {
@@ -491,20 +516,24 @@
                 if (appliedCoupon.usageLimit && appliedCoupon.usedCount >= appliedCoupon.usageLimit) { showToast('Usage limit reached', 'error'); return; }
                 document.getElementById('couponMessage').innerHTML = `Coupon applied! ${appliedCoupon.discountType === 'percentage' ? appliedCoupon.discountValue + '% off' : 'UGX ' + appliedCoupon.discountValue.toLocaleString() + ' off'}`;
                 showToast('Coupon applied!', 'success'); renderCart();
-            } catch(e) { showToast('Failed', 'error'); }
+            } catch(e) { showToast('Failed to apply coupon', 'error'); }
         };
         function calculateDiscount(amount) { if (!appliedCoupon) return 0; return appliedCoupon.discountType === 'percentage' ? (amount * appliedCoupon.discountValue) / 100 : Math.min(appliedCoupon.discountValue, amount); }
 
         // Reviews
         window.openReviewModal = function(productId, productName) { if (!currentUser) { openRegisterModal(); return; } currentReviewProduct = { id: productId, name: productName }; reviewRating = 0; document.querySelectorAll('#reviewRating i').forEach(s => s.className = 'far fa-star'); document.getElementById('reviewText').value = ''; document.getElementById('reviewProductInfo').innerHTML = `<p>Reviewing: <strong>${productName}</strong></p>`; document.getElementById('reviewModal').style.display = 'flex'; };
         window.closeReviewModal = function() { document.getElementById('reviewModal').style.display = 'none'; };
-        window.submitReview = async function() { if (reviewRating === 0) { showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); showToast('Review submitted!', 'success'); closeReviewModal(); } catch(e) { showToast('Failed', 'error'); } };
+        window.submitReview = async function() { if (reviewRating === 0) { showToast('Select a rating', 'error'); return; } try { await addDoc(collection(db, 'reviews'), { productId: currentReviewProduct.id, productName: currentReviewProduct.name, userId: currentUserDocId, userName: currentUser.name, rating: reviewRating, comment: document.getElementById('reviewText').value, createdAt: new Date().toISOString() }); showToast('Review submitted!', 'success'); closeReviewModal(); } catch(e) { showToast('Failed to submit review', 'error'); } };
         async function loadProductReviews(productId) { try { const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), orderBy("createdAt", "desc"), limit(3))); if (snapshot.empty) return ''; let html = '<div class="reviews-section"><strong>Reviews:</strong>'; snapshot.forEach(doc => { const r = doc.data(); html += `<div class="review-item"><div class="review-rating">${'⭐'.repeat(r.rating)}</div><div class="review-text">"${escapeHtml(r.comment)}"</div><small>- ${escapeHtml(r.userName)}</small></div>`; }); html += `<button class="write-review-btn" onclick="openReviewModal('${productId}', '')">Write Review</button></div>`; return html; } catch(e) { return ''; } }
 
-        // Payment
+        // Payment - FIXED (toggling works)
         window.togglePaymentForm = function() {
-            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
-            document.getElementById('mobileMoneyForm').style.display = paymentMethod === 'mobile_money' ? 'block' : 'none';
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
+            if (!paymentMethod) return;
+            const form = document.getElementById('mobileMoneyForm');
+            if (form) {
+                form.style.display = paymentMethod.value === 'mobile_money' ? 'block' : 'none';
+            }
         };
 
         window.proceedToCheckout = async function() {
@@ -528,8 +557,8 @@
                 await addDoc(collection(db, 'orders'), { customer: currentUser, items: cart, subtotal, discount, coupon_code: appliedCoupon?.code, total, payment_method: paymentMethod, mobile_money_number: mobileNumber, status: 'pending', createdAt: new Date().toISOString() });
                 if (appliedCoupon) { await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 }); }
                 window.open(`https://wa.me/256742533656?text=${encodeURIComponent(message)}`, '_blank');
-                cart = []; appliedCoupon = null; updateCartCount(); closeCart(); showToast('Order placed!', 'success');
-            } catch(e) { showToast('Failed', 'error'); }
+                cart = []; appliedCoupon = null; updateCartCount(); closeCart(); showToast('Order placed! Check WhatsApp.', 'success');
+            } catch(e) { showToast('Failed to place order', 'error'); }
         };
 
         // Cart functions
@@ -537,11 +566,11 @@
         window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; };
         window.updateQuantity = function(productId, change) { const item = cart.find(i => i.id == productId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id != productId); renderCart(); updateCartCount(); } };
         window.removeFromCart = function(productId) { cart = cart.filter(i => i.id != productId); renderCart(); updateCartCount(); };
-        window.addToCart = function(productId) { if (!currentUser) { openRegisterModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); updateCartCount(); showToast(`${product.name} added!`); };
+        window.addToCart = function(productId) { if (!currentUser) { openRegisterModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); updateCartCount(); showToast(`${product.name} added to cart!`); };
         function updateCartCount() { document.getElementById('cartCount').innerText = cart.reduce((s, i) => s + i.quantity, 0); }
         function renderCart() {
             const cartDiv = document.getElementById('cartItems');
-            if (cart.length === 0) { cartDiv.innerHTML = '<div style="text-align:center; padding:2rem;">Cart empty</div>'; document.getElementById('cartTotal').innerHTML = 'Total: UGX 0'; document.getElementById('couponSection').style.display = 'none'; return; }
+            if (cart.length === 0) { cartDiv.innerHTML = '<div style="text-align:center; padding:2rem;">Your cart is empty</div>'; document.getElementById('cartTotal').innerHTML = 'Total: UGX 0'; document.getElementById('couponSection').style.display = 'none'; return; }
             const subtotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
             const discount = calculateDiscount(subtotal);
             const total = subtotal - discount;
@@ -565,7 +594,7 @@
                 localStorage.setItem('jefram_user', JSON.stringify(currentUser)); localStorage.setItem('jefram_user_id', currentUserDocId);
                 document.getElementById('registerModal').style.display = 'none';
                 ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation'].forEach(id => document.getElementById(id).value = '');
-            } catch(e) { showToast('Failed', 'error'); }
+            } catch(e) { showToast('Registration failed', 'error'); }
         };
         window.openProfileModal = function() { if (!currentUser) { openRegisterModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
         window.closeProfileModal = function() { document.getElementById('profileModal').style.display = 'none'; };
@@ -589,7 +618,7 @@
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
             const snapshot = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
-            if (snapshot.empty) { ordersList.innerHTML = '<div style="text-align:center; padding:2rem;">No orders</div>'; return; }
+            if (snapshot.empty) { ordersList.innerHTML = '<div style="text-align:center; padding:2rem;">No orders found</div>'; return; }
             let html = '';
             snapshot.forEach(doc => { const o = doc.data(); html += `<div class="order-card"><div class="order-header"><span><strong>#${doc.id.slice(-6)}</strong></span><span class="order-status status-${o.status}">${o.status.toUpperCase()}</span></div><div class="order-items">${o.items.map(i => `${i.name} x${i.quantity}`).join(', ')}</div><div class="order-total">Total: UGX ${(o.total || o.subtotal).toLocaleString()}</div><div style="font-size:12px; color:#999;">${new Date(o.createdAt).toLocaleString()}</div></div>`; });
             ordersList.innerHTML = html;
