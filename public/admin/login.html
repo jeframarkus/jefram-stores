@@ -113,7 +113,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, query, where } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, where } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -166,8 +166,15 @@
                 });
 
                 if (admin.password === hashedPassword) {
-                    localStorage.setItem('admin_logged_in', 'true');
-                    localStorage.setItem('admin_data', JSON.stringify(admin));
+                    // Create session in Firebase
+                    const sessionRef = await addDoc(collection(db, 'admin_sessions'), {
+                        adminId: admin.id,
+                        username: admin.username,
+                        role: admin.role,
+                        createdAt: new Date().toISOString(),
+                        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+                    });
+                    localStorage.setItem('admin_session_id', sessionRef.id);
                     window.location.href = 'index.html';
                 } else {
                     messageDiv.textContent = 'Invalid credentials';

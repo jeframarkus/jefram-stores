@@ -495,9 +495,9 @@
         }
         
         window.addToCartFromWishlist = function(productId) { addToCart(productId); removeFromWishlist(productId); };
-        window.removeFromWishlist = function(productId) { wishlist = wishlist.filter(i => i.id != productId); localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist)); renderWishlist(); updateWishlistButtons(); showToast('Removed from wishlist', 'success'); };
+        window.removeFromWishlist = async function(productId) { wishlist = wishlist.filter(i => i.id != productId); await saveWishlistToFirebase(); renderWishlist(); updateWishlistButtons(); showToast('Removed from wishlist', 'success'); };
         
-        window.toggleWishlist = function(product) {
+        window.toggleWishlist = async function(product) {
             if (!currentUser) {
                 openRegisterModal();
                 return;
@@ -510,7 +510,7 @@
                 wishlist.push({ id: product.id, name: product.name, price: product.price, image_url: product.image_url });
                 showToast(`${product.name} added to wishlist`, 'success');
             }
-            localStorage.setItem('jefram_wishlist', JSON.stringify(wishlist));
+            await saveWishlistToFirebase();
             renderWishlist();
             updateWishlistButtons();
         };
@@ -526,6 +526,42 @@
             });
             document.getElementById('wishlistCount').innerText = wishlist.length;
         };
+
+        async function saveWishlistToFirebase() {
+            if (!db || !currentUserDocId) return;
+            try {
+                await updateDoc(doc(db, 'customers', currentUserDocId), { wishlist: wishlist });
+            } catch(e) { console.error('Error saving wishlist:', e); }
+        }
+
+        async function loadWishlistFromFirebase() {
+            if (!db || !currentUserDocId) return;
+            try {
+                const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
+                if (docSnap.exists() && docSnap.data().wishlist) {
+                    wishlist = docSnap.data().wishlist;
+                    updateWishlistButtons();
+                }
+            } catch(e) { console.error('Error loading wishlist:', e); }
+        }
+
+        async function saveCartToFirebase() {
+            if (!db || !currentUserDocId) return;
+            try {
+                await updateDoc(doc(db, 'customers', currentUserDocId), { cart: cart });
+            } catch(e) { console.error('Error saving cart:', e); }
+        }
+
+        async function loadCartFromFirebase() {
+            if (!db || !currentUserDocId) return;
+            try {
+                const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
+                if (docSnap.exists() && docSnap.data().cart) {
+                    cart = docSnap.data().cart;
+                    updateCartCount();
+                }
+            } catch(e) { console.error('Error loading cart:', e); }
+        }
 
         // Coupons
         window.applyCoupon = async function() {
@@ -628,16 +664,16 @@
                 await addDoc(collection(db, 'orders'), { customer: currentUser, items: cart, subtotal, discount, coupon_code: appliedCoupon?.code, total, payment_method: paymentMethod, mobile_money_number: mobileNumber, status: 'pending', createdAt: new Date().toISOString() });
                 if (appliedCoupon) { await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 }); }
                 window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
-                cart = []; appliedCoupon = null; updateCartCount(); closeCart(); showToast('Order placed! Check WhatsApp.', 'success');
+                cart = []; appliedCoupon = null; await saveCartToFirebase(); updateCartCount(); closeCart(); showToast('Order placed! Check WhatsApp.', 'success');
             } catch(e) { console.error('Checkout error:', e); showToast('Failed to place order', 'error'); }
         };
 
         // Cart functions
         window.openCart = function() { if (!currentUser) { openRegisterModal(); return; } renderCart(); document.getElementById('cartModal').style.display = 'flex'; };
         window.closeCart = function() { document.getElementById('cartModal').style.display = 'none'; };
-        window.updateQuantity = function(productId, change) { const item = cart.find(i => i.id == productId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id != productId); renderCart(); updateCartCount(); } };
-        window.removeFromCart = function(productId) { cart = cart.filter(i => i.id != productId); renderCart(); updateCartCount(); };
-        window.addToCart = function(productId) { if (!currentUser) { openRegisterModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); updateCartCount(); showToast(`${product.name} added to cart!`); };
+        window.updateQuantity = async function(productId, change) { const item = cart.find(i => i.id == productId); if (item) { item.quantity += change; if (item.quantity <= 0) cart = cart.filter(i => i.id != productId); await saveCartToFirebase(); renderCart(); updateCartCount(); } };
+        window.removeFromCart = async function(productId) { cart = cart.filter(i => i.id != productId); await saveCartToFirebase(); renderCart(); updateCartCount(); };
+        window.addToCart = async function(productId) { if (!currentUser) { openRegisterModal(); return; } const product = products.find(p => p.id == productId); if (!product) return; const existing = cart.find(i => i.id == productId); if (existing) existing.quantity++; else cart.push({ id: product.id, name: product.name, price: parseFloat(product.price), quantity: 1 }); await saveCartToFirebase(); updateCartCount(); showToast(`${product.name} added to cart!`); };
         function updateCartCount() { document.getElementById('cartCount').innerText = cart.reduce((s, i) => s + i.quantity, 0); }
         function renderCart() {
             const cartDiv = document.getElementById('cartItems');
@@ -662,15 +698,17 @@
             try {
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
                 if (!existing.empty) { existing.forEach(d => { currentUser = d.data(); currentUserDocId = d.id; }); showToast('Welcome back!', 'success'); }
-                else { const docRef = await addDoc(collection(db, 'customers'), { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() }); currentUser = { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() }; currentUserDocId = docRef.id; showToast('Registration successful!', 'success'); }
+                else { const docRef = await addDoc(collection(db, 'customers'), { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString(), wishlist: [], cart: [] }); currentUser = { name, phone, whatsapp: whatsapp || phone, email, location, registeredAt: new Date().toISOString() }; currentUserDocId = docRef.id; showToast('Registration successful!', 'success'); }
                 localStorage.setItem('jefram_user', JSON.stringify(currentUser)); localStorage.setItem('jefram_user_id', currentUserDocId);
+                await loadWishlistFromFirebase();
+                await loadCartFromFirebase();
                 document.getElementById('registerModal').style.display = 'none';
                 ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation'].forEach(id => document.getElementById(id).value = '');
             } catch(e) { console.error('Registration error:', e); showToast('Registration failed', 'error'); }
         };
         window.openProfileModal = function() { if (!currentUser) { openRegisterModal(); return; } loadProfileData(); document.getElementById('profileModal').style.display = 'flex'; };
         window.closeProfileModal = function() { document.getElementById('profileModal').style.display = 'none'; };
-        window.logout = function() { currentUser = null; cart = []; wishlist = []; updateCartCount(); localStorage.removeItem('jefram_user'); localStorage.removeItem('jefram_user_id'); localStorage.removeItem('jefram_wishlist'); showToast('Signed out', 'success'); window.location.reload(); };
+        window.logout = function() { currentUser = null; cart = []; wishlist = []; updateCartCount(); localStorage.removeItem('jefram_user'); localStorage.removeItem('jefram_user_id'); showToast('Signed out', 'success'); window.location.reload(); };
         function openRegisterModal() { document.getElementById('registerModal').style.display = 'flex'; }
         function closeRegisterModal() { document.getElementById('registerModal').style.display = 'none'; }
         async function loadProfileData() {
@@ -781,9 +819,7 @@
 
         document.getElementById('searchInput').addEventListener('input', renderProducts);
         const savedUser = localStorage.getItem('jefram_user');
-        if (savedUser) { currentUser = JSON.parse(savedUser); currentUserDocId = localStorage.getItem('jefram_user_id'); }
-        const savedWishlist = localStorage.getItem('jefram_wishlist');
-        if (savedWishlist) wishlist = JSON.parse(savedWishlist);
+        if (savedUser) { currentUser = JSON.parse(savedUser); currentUserDocId = localStorage.getItem('jefram_user_id'); loadWishlistFromFirebase(); loadCartFromFirebase(); }
         loadConfig(); // Load configuration from Firebase
         fetchProducts();
         window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; };
