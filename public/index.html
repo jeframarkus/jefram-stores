@@ -934,6 +934,17 @@
             document.getElementById('reviewText').value = '';
             document.getElementById('reviewProductInfo').innerHTML = '<p>Reviewing: <strong>' + productName + '</strong></p>';
             document.getElementById('reviewModal').style.display = 'flex';
+            
+            // Add click handlers to stars
+            document.querySelectorAll('#reviewRating i').forEach(star => {
+                star.onclick = function() {
+                    const value = parseInt(this.dataset.value);
+                    reviewRating = value;
+                    document.querySelectorAll('#reviewRating i').forEach((s, index) => {
+                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
+                    });
+                };
+            });
         };
 
         window.closeReviewModal = function() {
