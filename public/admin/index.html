@@ -1527,9 +1527,8 @@
             const password = document.getElementById('adminPassword').value.trim();
             const roleSelect = document.getElementById('adminRole');
             const role = roleSelect ? roleSelect.value : 'subadmin';
-            console.log('Creating admin:', { username, role, roleValue: roleSelect?.value });
+            console.log('Creating admin:', { username, password, role, roleSelectExists: !!roleSelect, roleValue: roleSelect?.value });
             if (!username || !password) return alert('Fill all fields');
-            if (!role) return alert('Please select a role');
             await addDoc(collection(db, 'admins'), { username, password, role, createdAt: new Date().toISOString() });
             window.closeAddAdminModal();
             loadAdmins();
