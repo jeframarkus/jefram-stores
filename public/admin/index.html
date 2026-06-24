@@ -1534,6 +1534,16 @@
             }
         };
 
+        // Simple SHA-256 hash function using Web Crypto API
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        }
+
         window.addNewAdmin = async function() {
             const username = document.getElementById('adminUsername').value.trim();
             const password = document.getElementById('adminPassword').value.trim();
@@ -1544,7 +1554,8 @@
             }
             console.log('Creating admin:', { username, password, role, roleSelectExists: !!roleSelect, allSelects: document.querySelectorAll('select').length });
             if (!username || !password) return alert('Fill all fields');
-            await addDoc(collection(db, 'admins'), { username, password, role, createdAt: new Date().toISOString() });
+            const hashedPassword = await hashPassword(password);
+            await addDoc(collection(db, 'admins'), { username, password: hashedPassword, role, createdAt: new Date().toISOString() });
             window.closeAddAdminModal();
             loadAdmins();
             showToast('Admin created!', 'success');
