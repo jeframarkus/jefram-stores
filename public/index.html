@@ -272,12 +272,24 @@
                 <label><input type="radio" name="paymentMethod" value="mobile_money" onchange="window.togglePaymentForm()"> Mobile Money (Pay First)</label>
             </div>
             <div class="mobile-money-form" id="mobileMoneyForm" style="display: none;">
+                <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <h4 style="margin:0 0 10px 0;">Send payment to:</h4>
+                    <div style="margin-bottom:8px;">
+                        <strong>MTN Mobile Money:</strong> <span id="mtnNumber">0771234567</span>
+                        <button onclick="window.copyNumber('0771234567')" style="background:#667eea; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; margin-left:5px;">Copy</button>
+                    </div>
+                    <div>
+                        <strong>Airtel Money:</strong> <span id="airtelNumber">0701234567</span>
+                        <button onclick="window.copyNumber('0701234567')" style="background:#667eea; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; margin-left:5px;">Copy</button>
+                    </div>
+                </div>
                 <select id="mobileMoneyProvider">
                     <option value="mtn">MTN Mobile Money</option>
                     <option value="airtel">Airtel Money</option>
                 </select>
-                <input type="tel" id="mobileMoneyNumber" placeholder="Phone Number (e.g., 077XXXXXXX)">
-                <small style="color:#666;">You will receive a payment request on your phone</small>
+                <input type="tel" id="mobileMoneyNumber" placeholder="Your Phone Number (e.g., 077XXXXXXX)">
+                <input type="file" id="paymentScreenshot" accept="image/*" style="margin-top:10px;">
+                <small style="color:#666;">Upload screenshot of your transaction</small>
             </div>
             <button class="whatsapp-checkout" onclick="window.proceedToCheckout()">
                 <i class="fab fa-whatsapp"></i> Confirm Order
@@ -820,12 +832,15 @@
             }
         };
 
-        async function processMobileMoneyPayment(provider, phoneNumber, amount) {
-            await new Promise(r => setTimeout(r, 1500));
-            return { success: true, transactionId: 'SIM-' + Date.now(), message: 'Payment simulated' };
-        }
+        window.copyNumber = function(number) {
+            navigator.clipboard.writeText(number).then(() => {
+                window.showToast('Number copied!', 'success');
+            }).catch(() => {
+                window.showToast('Failed to copy', 'error');
+            });
+        };
 
-        // UPDATED: proceedToCheckout with size in order
+        // UPDATED: proceedToCheckout with screenshot upload
         window.proceedToCheckout = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { window.showToast('Cart empty', 'error'); return; }
@@ -841,17 +856,25 @@
             let mobileNumber = '';
             
             try {
+                let paymentScreenshotUrl = '';
                 if (paymentMethod === 'mobile_money') {
                     const provider = document.getElementById('mobileMoneyProvider').value;
                     mobileNumber = document.getElementById('mobileMoneyNumber').value;
-                    if (!mobileNumber) { window.showToast('Enter Mobile Money number', 'error'); return; }
-                    window.showToast('Processing ' + provider + ' payment...', 'info');
-                    const paymentResult = await processMobileMoneyPayment(provider, mobileNumber, total);
-                    if (!paymentResult.success) {
-                        window.showToast('Payment failed: ' + paymentResult.error, 'error');
-                        return;
-                    }
-                    window.showToast('Payment successful!', 'success');
+                    const screenshotInput = document.getElementById('paymentScreenshot');
+                    
+                    if (!mobileNumber) { window.showToast('Enter your phone number', 'error'); return; }
+                    if (!screenshotInput.files || screenshotInput.files.length === 0) { window.showToast('Please upload payment screenshot', 'error'); return; }
+                    
+                    // Upload screenshot to Firebase Storage (simulated - in production use actual Firebase Storage)
+                    window.showToast('Uploading payment screenshot...', 'info');
+                    const file = screenshotInput.files[0];
+                    // For now, we'll store as base64 (not ideal for production but works for demo)
+                    paymentScreenshotUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
                 }
                 
                 // Show size in order items
@@ -878,7 +901,8 @@
                     total: total,
                     payment_method: paymentMethod,
                     mobile_money_number: mobileNumber,
-                    status: 'pending',
+                    payment_screenshot: paymentScreenshotUrl,
+                    status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'pending',
                     createdAt: new Date().toISOString()
                 };
                 if (appliedCoupon) { orderData.coupon_code = appliedCoupon.code; }

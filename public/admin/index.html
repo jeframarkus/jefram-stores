@@ -1005,16 +1005,34 @@
                 const totalWithDelivery = subtotal - discount + deliveryFee;
                 const itemsWithSizes = order.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '')).join(', ');
                 
+                // Payment screenshot and approval for mobile money
+                let paymentInfo = '';
+                if (order.payment_method === 'mobile_money') {
+                    paymentInfo = `<div style="margin-top:5px;"><small>Mobile: ${order.mobile_money_number || 'N/A'}</small>`;
+                    if (order.payment_screenshot) {
+                        paymentInfo += `<br><a href="${order.payment_screenshot}" target="_blank" style="color:#667eea; text-decoration:underline;">View Screenshot</a>`;
+                    }
+                    if (order.status === 'pending_payment') {
+                        paymentInfo += `<br><button onclick="approvePayment('${orderId}')" style="background:#28a745; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px;">✓ Approve</button>`;
+                        paymentInfo += `<button onclick="rejectPayment('${orderId}')" style="background:#dc3545; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px; margin-left:5px;">✗ Reject</button>`;
+                    }
+                    paymentInfo += `</div>`;
+                }
+                
+                const statusOptions = order.status === 'pending_payment' 
+                    ? `<option value="pending_payment" selected>Pending Payment</option>`
+                    : `<option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option><option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option><option value="on_way" ${order.status === 'on_way' ? 'selected' : ''}>On Way</option><option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>`;
+                
                 ordersList.innerHTML += `
                     <tr>
                         <td>${orderId.slice(-6)}</td>
-                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small></td>
+                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small>${paymentInfo}</td>
                         <td><small>${itemsWithSizes}</small></td>
                         <td>UGX ${(subtotal || 0).toLocaleString()}</td>
                         <td>${discount > 0 ? `-UGX ${discount.toLocaleString()}` : '-'}</td>
                         <td><input type="number" id="deliveryFee_${orderId}" value="${deliveryFee}" style="width:70px;" onchange="updateDeliveryFee('${orderId}', this.value)"></td>
                         <td><strong>UGX ${totalWithDelivery.toLocaleString()}</strong></td>
-                        <td><select onchange="updateOrderStatus('${orderId}', this.value, document.getElementById('deliveryFee_${orderId}').value)"><option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option><option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option><option value="on_way" ${order.status === 'on_way' ? 'selected' : ''}>On Way</option><option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option></select></td>
+                        <td><select onchange="updateOrderStatus('${orderId}', this.value, document.getElementById('deliveryFee_${orderId}').value)" ${order.status === 'pending_payment' ? 'disabled' : ''}>${statusOptions}</select></td>
                         <td><select id="agentSelect_${orderId}" onchange="assignDeliveryAgent('${orderId}', this.value)" class="agent-select"><option value="">Select</option>${deliveryAgents.map(a => `<option value="${a.id}" ${order.delivery_agent?.id === a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select></td>
                         <td>${order.product_rating ? `<span title="Product">📦 ${order.product_rating}/5</span><br>` : ''}${order.delivery_rating ? `<span title="Delivery">🚚 ${order.delivery_rating}/5</span>` : '-'}</td>
                         <td><button class="whatsapp-btn" onclick="contactCustomer('${order.customer.phone}', '${order.customer.name}')"><i class="fab fa-whatsapp"></i> Chat</button></td>
@@ -1286,6 +1304,32 @@
             await updateDoc(orderRef, { delivery_fee: parseInt(fee) || 0 });
             showToast('Delivery fee updated!', 'success');
             loadOrders();
+        };
+
+        window.approvePayment = async function(orderId) {
+            if (!confirm('Approve this payment? Order will move to pending status.')) return;
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                await updateDoc(orderRef, { status: 'pending' });
+                showToast('Payment approved!', 'success');
+                loadOrders();
+            } catch (error) {
+                console.error('Error approving payment:', error);
+                showToast('Failed to approve payment', 'error');
+            }
+        };
+
+        window.rejectPayment = async function(orderId) {
+            if (!confirm('Reject this payment? Order will be cancelled.')) return;
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                await updateDoc(orderRef, { status: 'cancelled' });
+                showToast('Payment rejected - order cancelled', 'success');
+                loadOrders();
+            } catch (error) {
+                console.error('Error rejecting payment:', error);
+                showToast('Failed to reject payment', 'error');
+            }
         };
 
         window.assignDeliveryAgent = async function(orderId, agentId) {
