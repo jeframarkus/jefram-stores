@@ -890,7 +890,7 @@
                     '\n\nSubtotal: UGX ' + subtotal.toLocaleString() + 
                     (discount > 0 ? '\nDiscount: -UGX ' + discount.toLocaleString() : '') + 
                     '\nTotal: UGX ' + total.toLocaleString() + 
-                    '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money') + 
+                    '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money (Payment Pending - Check Admin Panel)') + 
                     (mobileNumber ? '\nMobile: ' + mobileNumber : '');
                 
                 const orderData = {
