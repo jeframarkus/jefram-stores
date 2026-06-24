@@ -981,6 +981,32 @@
             }
         };
 
+        // Rating modal functions (for delivery/product rating after order)
+        window.submitRating = async function() {
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
+            if (deliveryRating === 0 && productRating === 0) { window.showToast('Select at least one rating', 'error'); return; }
+            try {
+                await addDoc(collection(db, 'reviews'), {
+                    type: 'order_rating',
+                    userId: currentUserDocId,
+                    userName: currentUser.name,
+                    productRating: productRating,
+                    deliveryRating: deliveryRating,
+                    comment: document.getElementById('ratingComment').value,
+                    createdAt: new Date().toISOString()
+                });
+                window.showToast('Rating submitted!', 'success');
+                window.closeRatingModal();
+            } catch(e) {
+                console.error('Rating submission error:', e);
+                window.showToast('Failed to submit rating', 'error');
+            }
+        };
+
+        window.closeRatingModal = function() {
+            document.getElementById('ratingModal').style.display = 'none';
+        };
+
         // ----- USER FUNCTIONS -----
         window.registerUser = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
