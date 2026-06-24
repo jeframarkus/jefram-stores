@@ -737,6 +737,49 @@
         </div>
     </div>
 
+    <!-- Edit Product Modal -->
+    <div id="editProductModal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Product</h3>
+            <input type="hidden" id="editProductId">
+            <input type="text" id="editProductName" placeholder="Product Name" style="width:100%; margin-bottom:10px; padding:10px;">
+            <input type="number" id="editProductPrice" placeholder="Price (UGX)" style="width:100%; margin-bottom:10px; padding:10px;">
+            <input type="text" id="editProductCategory" placeholder="Category" style="width:100%; margin-bottom:10px; padding:10px;">
+            <input type="text" id="editProductSubcategory" placeholder="Subcategory" style="width:100%; margin-bottom:10px; padding:10px;">
+            
+            <div class="size-section">
+                <label class="toggle-size-label">
+                    <input type="checkbox" id="editHasSizes" onchange="toggleEditSizeSection()">
+                    <span>This product has sizes</span>
+                </label>
+                <div id="editSizeManagement">
+                    <label>Add Sizes:</label>
+                    <div class="size-input-row">
+                        <input type="text" id="editSizeName" placeholder="Size" class="size-name">
+                        <input type="number" id="editSizePrice" placeholder="Price (optional)" class="size-price">
+                        <input type="number" id="editSizeStock" placeholder="Stock" class="size-stock" value="10">
+                        <button class="btn-primary btn-sm" onclick="addEditSize()">+ Add</button>
+                    </div>
+                    <div class="size-tags" id="editSizeTags"></div>
+                </div>
+                <div id="editSimpleStockSection">
+                    <input type="number" id="editProductStock" placeholder="Stock Quantity" value="10" style="width:100%; margin-top:10px; padding:10px;">
+                </div>
+            </div>
+            
+            <textarea id="editProductDesc" placeholder="Description" style="width:100%; margin-bottom:10px; padding:10px;"></textarea>
+            
+            <div class="upload-area" onclick="document.getElementById('editProductImage').click()">
+                <i class="fas fa-cloud-upload-alt"></i> Click to upload new image (optional)
+            </div>
+            <div class="image-preview" id="editProductImagePreview"></div>
+            <input type="file" id="editProductImage" style="display:none" accept="image/*" onchange="previewEditProductImage(this)">
+            
+            <button class="btn-primary" onclick="saveEditProduct()" style="width:100%;">Save Changes</button>
+            <button onclick="closeEditProductModal()" style="margin-top:10px; width:100%;">Cancel</button>
+        </div>
+    </div>
+
     <!-- Modals -->
     <div id="userModal" class="modal"><div class="modal-content"><h3>Customer Details</h3><div id="userDetails"></div><button onclick="window.closeUserModal()">Close</button></div></div>
     <div id="addAdminModal" class="modal">
@@ -782,7 +825,9 @@
 
         // Size management variables
         let productSizes = [];
+        let editProductSizes = [];
         let currentImageBase64 = null;
+        let editImageBase64 = null;
         let deliveryAgents = [];
         let salesChart = null;
 
@@ -940,24 +985,192 @@
             `).join('');
         }
 
-        // Load existing product sizes for editing
-        window.loadProductSizes = function(productData) {
-            if (productData.hasSizes && productData.sizes) {
-                productSizes = productData.sizes.map(s => ({ ...s }));
-                renderSizeTags();
-                document.getElementById('hasSizes').checked = true;
-                document.getElementById('sizeManagement').style.display = 'block';
-                document.getElementById('simpleStockSection').style.display = 'none';
-            } else {
-                productSizes = [];
-                renderSizeTags();
-                document.getElementById('hasSizes').checked = false;
-                document.getElementById('sizeManagement').style.display = 'none';
-                document.getElementById('simpleStockSection').style.display = 'block';
+        // ----- EDIT SIZE MANAGEMENT -----
+        window.toggleEditSizeSection = function() {
+            const hasSizes = document.getElementById('editHasSizes').checked;
+            document.getElementById('editSizeManagement').style.display = hasSizes ? 'block' : 'none';
+            document.getElementById('editSimpleStockSection').style.display = hasSizes ? 'none' : 'block';
+            if (!hasSizes) editProductSizes = [];
+            renderEditSizeTags();
+        };
+
+        window.addEditSize = function() {
+            const name = document.getElementById('editSizeName').value.trim();
+            const price = document.getElementById('editSizePrice').value ? parseFloat(document.getElementById('editSizePrice').value) : null;
+            const stock = parseInt(document.getElementById('editSizeStock').value) || 0;
+            
+            if (!name) {
+                alert('Please enter a size name');
+                return;
+            }
+            if (editProductSizes.find(s => s.size === name)) {
+                alert('Size already added');
+                return;
+            }
+            
+            editProductSizes.push({ size: name, price: price, stock: stock });
+            renderEditSizeTags();
+            document.getElementById('editSizeName').value = '';
+            document.getElementById('editSizePrice').value = '';
+            document.getElementById('editSizeStock').value = '10';
+        };
+
+        window.removeEditSize = function(index) {
+            editProductSizes.splice(index, 1);
+            renderEditSizeTags();
+        };
+
+        function renderEditSizeTags() {
+            const container = document.getElementById('editSizeTags');
+            if (editProductSizes.length === 0) {
+                container.innerHTML = '<span style="color:#999; font-size:13px;">No sizes added yet</span>';
+                return;
+            }
+            container.innerHTML = editProductSizes.map((s, i) => `
+                <span class="size-tag">
+                    ${s.size}
+                    ${s.price ? ' (UGX ' + s.price.toLocaleString() + ')' : ''}
+                    (${s.stock})
+                    <span class="remove-size" onclick="removeEditSize(${i})">×</span>
+                </span>
+            `).join('');
+        }
+
+        // ----- EDIT PRODUCT FUNCTIONS -----
+        window.editProduct = async function(productId) {
+            try {
+                const productDoc = await getDoc(doc(db, 'products', productId));
+                if (!productDoc.exists()) {
+                    showToast('Product not found', 'error');
+                    return;
+                }
+                const product = productDoc.data();
+                
+                // Fill the edit form
+                document.getElementById('editProductId').value = productId;
+                document.getElementById('editProductName').value = product.name || '';
+                document.getElementById('editProductPrice').value = product.price || '';
+                document.getElementById('editProductCategory').value = product.category || '';
+                document.getElementById('editProductSubcategory').value = product.subcategory || '';
+                document.getElementById('editProductDesc').value = product.description || '';
+                
+                // Handle sizes
+                editProductSizes = [];
+                if (product.hasSizes && product.sizes && product.sizes.length > 0) {
+                    editProductSizes = product.sizes.map(s => ({ ...s }));
+                    document.getElementById('editHasSizes').checked = true;
+                    document.getElementById('editSizeManagement').style.display = 'block';
+                    document.getElementById('editSimpleStockSection').style.display = 'none';
+                } else {
+                    document.getElementById('editHasSizes').checked = false;
+                    document.getElementById('editSizeManagement').style.display = 'none';
+                    document.getElementById('editSimpleStockSection').style.display = 'block';
+                    document.getElementById('editProductStock').value = product.stock || 0;
+                }
+                renderEditSizeTags();
+                
+                // Show current image
+                if (product.image_url) {
+                    document.getElementById('editProductImagePreview').style.display = 'flex';
+                    document.getElementById('editProductImagePreview').innerHTML = `<img src="${product.image_url}" style="max-width:100%; max-height:100%;"><br><small>Current image</small>`;
+                }
+                editImageBase64 = null;
+                
+                document.getElementById('editProductModal').style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading product:', error);
+                showToast('Failed to load product details', 'error');
             }
         };
 
-        // ----- EXISTING FUNCTIONS (preserved) -----
+        window.closeEditProductModal = function() {
+            document.getElementById('editProductModal').style.display = 'none';
+            editProductSizes = [];
+            editImageBase64 = null;
+            document.getElementById('editProductImagePreview').innerHTML = '';
+            document.getElementById('editProductImagePreview').style.display = 'none';
+        };
+
+        window.previewEditProductImage = function(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editImageBase64 = e.target.result;
+                    document.getElementById('editProductImagePreview').style.display = 'flex';
+                    document.getElementById('editProductImagePreview').innerHTML = `<img src="${editImageBase64}" style="max-width:100%; max-height:100%;">`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        window.saveEditProduct = async function() {
+            const productId = document.getElementById('editProductId').value;
+            const name = document.getElementById('editProductName').value.trim();
+            const price = parseFloat(document.getElementById('editProductPrice').value);
+            const category = document.getElementById('editProductCategory').value.trim();
+            const subcategory = document.getElementById('editProductSubcategory').value.trim();
+            const description = document.getElementById('editProductDesc').value.trim();
+            const hasSizes = document.getElementById('editHasSizes').checked;
+            
+            if (!name || !price || !category) {
+                showToast('Name, Price, and Category are required', 'error');
+                return;
+            }
+            
+            try {
+                const productRef = doc(db, 'products', productId);
+                const updateData = {
+                    name,
+                    price,
+                    category,
+                    subcategory: subcategory || '',
+                    description: description || '',
+                    hasSizes: hasSizes
+                };
+                
+                if (editImageBase64) {
+                    updateData.image_url = editImageBase64;
+                }
+                
+                if (hasSizes) {
+                    if (editProductSizes.length === 0) {
+                        showToast('Please add at least one size', 'error');
+                        return;
+                    }
+                    updateData.sizes = editProductSizes.map(s => ({ ...s }));
+                    updateData.stock = editProductSizes.reduce((sum, s) => sum + s.stock, 0);
+                } else {
+                    const stock = parseInt(document.getElementById('editProductStock').value) || 0;
+                    updateData.stock = stock;
+                    updateData.sizes = [];
+                }
+                
+                await updateDoc(productRef, updateData);
+                showToast('Product updated successfully!', 'success');
+                closeEditProductModal();
+                loadProducts();
+                if (isMaster) loadStats();
+            } catch (error) {
+                console.error('Error updating product:', error);
+                showToast('Failed to update product: ' + error.message, 'error');
+            }
+        };
+
+        // ----- DELETE PRODUCT -----
+        window.deleteProduct = async function(productId) {
+            if (!confirm('Delete this product permanently? This cannot be undone.')) return;
+            try {
+                await deleteDoc(doc(db, 'products', productId));
+                showToast('Product deleted successfully!', 'success');
+                loadProducts();
+                if (isMaster) loadStats();
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                showToast('Failed to delete product', 'error');
+            }
+        };
+
+        // ----- EXISTING FUNCTIONS -----
         async function loadStats() {
             if (!isMaster) return;
             const ordersSnap = await getDocs(collection(db, 'orders'));
@@ -1017,7 +1230,6 @@
                 const totalWithDelivery = subtotal - discount + deliveryFee;
                 const itemsWithSizes = order.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '')).join(', ');
                 
-                // Payment screenshot and approval for mobile money
                 let paymentInfo = '';
                 if (order.payment_method === 'mobile_money') {
                     paymentInfo = `<div style="margin-top:5px;"><small>Mobile: ${order.mobile_money_number || 'N/A'}</small>`;
@@ -1137,17 +1349,14 @@
                         <td><small>${sizeDisplay}</small></td>
                         <td><span class="stock-badge ${stockClass}">${totalStock > 0 ? (totalStock <= 5 ? 'Low Stock' : 'In Stock') : 'Out of Stock'}</span></td>
                         <td>${avgRating !== 'N/A' ? '⭐ ' + avgRating : '-'}</td>
-                        <td><button class="btn-primary btn-sm" onclick="editProduct('${docSnap.id}')"><i class="fas fa-edit"></i></button></td>
+                        <td>
+                            <button class="btn-primary btn-sm" onclick="editProduct('${docSnap.id}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn-danger btn-sm" onclick="deleteProduct('${docSnap.id}')"><i class="fas fa-trash"></i> Delete</button>
+                        </td>
                     </tr>
                 `;
             }
         }
-
-        // Edit product function (for future use)
-        window.editProduct = function(productId) {
-            alert('Edit functionality coming soon. For now, go to "Add Product" to create new products with sizes.');
-            // This will be expanded later
-        };
 
         async function loadCoupons() {
             const couponsSnap = await getDocs(collection(db, 'coupons'));
@@ -1453,7 +1662,7 @@
             }
         };
 
-        // ----- UPDATED: Add Product with Sizes -----
+        // ----- ADD PRODUCT -----
         window.previewProductImage = function(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -1534,7 +1743,7 @@
             }
         };
 
-        // Simple SHA-256 hash function using Web Crypto API
+        // ----- ADMIN MANAGEMENT -----
         async function hashPassword(password) {
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
@@ -1552,7 +1761,6 @@
             if (roleSelect) {
                 role = roleSelect.value || 'subadmin';
             }
-            console.log('Creating admin:', { username, password, role, roleSelectExists: !!roleSelect, allSelects: document.querySelectorAll('select').length });
             if (!username || !password) return alert('Fill all fields');
             const hashedPassword = await hashPassword(password);
             await addDoc(collection(db, 'admins'), { username, password: hashedPassword, role, createdAt: new Date().toISOString() });
