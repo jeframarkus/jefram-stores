@@ -965,14 +965,16 @@
             if (!db) return '';
             try {
                 const snapshot = await getDocs(query(collection(db, 'reviews'), where("productId", "==", productId), limit(3)));
-                if (snapshot.empty) return '';
-                let html = '<div class="reviews-section"><strong>Reviews:</strong>';
-                const reviews = [];
-                snapshot.forEach(doc => { reviews.push(doc.data()); });
-                reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                reviews.forEach(r => {
-                    html += '<div class="review-item"><div class="review-rating">' + '⭐'.repeat(r.rating) + '</div><div class="review-text">"' + window.escapeHtml(r.comment) + '"</div><small>- ' + window.escapeHtml(r.userName) + '</small></div>';
-                });
+                let html = '<div class="reviews-section">';
+                if (!snapshot.empty) {
+                    html += '<strong>Reviews:</strong>';
+                    const reviews = [];
+                    snapshot.forEach(doc => { reviews.push(doc.data()); });
+                    reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    reviews.forEach(r => {
+                        html += '<div class="review-item"><div class="review-rating">' + '⭐'.repeat(r.rating) + '</div><div class="review-text">"' + window.escapeHtml(r.comment) + '"</div><small>- ' + window.escapeHtml(r.userName) + '</small></div>';
+                    });
+                }
                 html += '<button class="write-review-btn" onclick="window.openReviewModal(\'' + productId + '\', \'\')">Write Review</button></div>';
                 return html;
             } catch(e) {
