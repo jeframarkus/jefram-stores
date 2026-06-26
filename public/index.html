@@ -409,7 +409,28 @@
                 <button onclick="window.loginUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Sign In</button>
             </div>
             <p style="margin-top: 10px; text-align: center;">Don't have an account? <a href="#" onclick="window.closeLoginModal(); window.openRegisterModal();" style="color: #667eea;">Register</a></p>
+            <p style="margin-top: 5px; text-align: center;"><a href="#" onclick="window.closeLoginModal(); window.openPasswordResetModal();" style="color: #667eea; font-size: 14px;">Forgot Password?</a></p>
             <button onclick="window.closeLoginModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Password Reset Modal -->
+    <div id="passwordResetModal" class="modal">
+        <div class="modal-content">
+            <h2>Reset Password</h2>
+            <div id="resetStep1">
+                <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter your phone number to receive a reset code via WhatsApp.</p>
+                <input type="tel" id="resetPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                <button onclick="window.sendResetCode()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px; width:100%;">Send Reset Code</button>
+            </div>
+            <div id="resetStep2" style="display: none;">
+                <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter the 6-digit code sent to your WhatsApp and your new password.</p>
+                <input type="text" id="resetCode" placeholder="6-digit Code" maxlength="6" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                <input type="password" id="newPassword" placeholder="New Password" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
+                <button onclick="window.confirmPasswordReset()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px; width:100%;">Reset Password</button>
+            </div>
+            <div id="resetMessage" style="margin-top: 10px; text-align: center; font-size: 14px;"></div>
+            <button onclick="window.closePasswordResetModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Cancel</button>
         </div>
     </div>
 
@@ -1164,6 +1185,119 @@
         window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; };
         window.openRegisterModal = function() { document.getElementById('registerModal').style.display = 'flex'; };
         window.closeRegisterModal = function() { document.getElementById('registerModal').style.display = 'none'; };
+        
+        window.openPasswordResetModal = function() {
+            document.getElementById('resetStep1').style.display = 'block';
+            document.getElementById('resetStep2').style.display = 'none';
+            document.getElementById('resetMessage').innerHTML = '';
+            document.getElementById('resetPhone').value = '';
+            document.getElementById('resetCode').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('passwordResetModal').style.display = 'flex';
+        };
+        
+        window.closePasswordResetModal = function() { document.getElementById('passwordResetModal').style.display = 'none'; };
+        
+        window.sendResetCode = async function() {
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
+            const phone = document.getElementById('resetPhone').value.trim();
+            if (!phone) { document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Enter phone number</span>'; return; }
+            
+            try {
+                const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
+                if (existing.empty) { 
+                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Phone number not found</span>'; 
+                    return; 
+                }
+                
+                // Generate 6-digit code
+                const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+                
+                // Store reset code in Firebase
+                await addDoc(collection(db, 'password_resets'), {
+                    phone: phone,
+                    code: resetCode,
+                    expiresAt: expiresAt,
+                    createdAt: new Date().toISOString()
+                });
+                
+                // Send via WhatsApp
+                const message = 'Your Jefram Stores password reset code is: ' + resetCode + '. This code expires in 15 minutes.';
+                window.open('https://wa.me/256' + phone.substring(1) + '?text=' + encodeURIComponent(message), '_blank');
+                
+                document.getElementById('resetStep1').style.display = 'none';
+                document.getElementById('resetStep2').style.display = 'block';
+                document.getElementById('resetMessage').innerHTML = '<span style="color:green;">Code sent to your WhatsApp!</span>';
+            } catch(e) {
+                console.error('Reset code error:', e);
+                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Failed to send code</span>';
+            }
+        };
+        
+        window.confirmPasswordReset = async function() {
+            if (!db) { window.showToast('Database not connected', 'error'); return; }
+            const phone = document.getElementById('resetPhone').value.trim();
+            const code = document.getElementById('resetCode').value.trim();
+            const newPassword = document.getElementById('newPassword').value;
+            
+            if (!code || code.length !== 6) { document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Enter valid 6-digit code</span>'; return; }
+            if (!newPassword || newPassword.length < 4) { document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Password must be at least 4 characters</span>'; return; }
+            
+            try {
+                // Find valid reset code
+                const resetsRef = collection(db, 'password_resets');
+                const q = query(resetsRef, where("phone", "==", phone), where("code", "==", code));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) { 
+                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Invalid or expired code</span>'; 
+                    return; 
+                }
+                
+                let resetDoc = null;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (new Date(data.expiresAt) > new Date()) {
+                        resetDoc = { id: doc.id, ...data };
+                    }
+                });
+                
+                if (!resetDoc) {
+                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Code expired. Request a new one.</span>';
+                    return;
+                }
+                
+                // Update customer password (hash it)
+                const encoder = new TextEncoder();
+                const data = encoder.encode(newPassword);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                const customersRef = collection(db, 'customers');
+                const customerQuery = query(customersRef, where("phone", "==", phone));
+                const customerSnap = await getDocs(customerQuery);
+                
+                if (!customerSnap.empty) {
+                    customerSnap.forEach(async (doc) => {
+                        await updateDoc(doc.ref, { password: hashHex });
+                    });
+                }
+                
+                // Delete used reset code
+                await deleteDoc(doc(db, 'password_resets', resetDoc.id));
+                
+                document.getElementById('resetMessage').innerHTML = '<span style="color:green;">Password reset successful! You can now login.</span>';
+                setTimeout(() => {
+                    window.closePasswordResetModal();
+                    window.openLoginModal();
+                }, 2000);
+            } catch(e) {
+                console.error('Password reset error:', e);
+                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Failed to reset password</span>';
+            }
+        };
 
         window.openProfileModal = function() {
             if (!currentUser) { window.openLoginModal(); return; }
