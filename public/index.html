@@ -936,6 +936,10 @@
                     message += '\n\nNotes: ' + orderNotes;
                 }
                 
+                // Generate unique tracking number
+                const trackingNumber = 'JF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+                message += '\n\nTracking Number: ' + trackingNumber;
+                
                 const orderData = {
                     customer: currentUser,
                     items: cart.map(i => ({ ...i })), // Preserve size info
@@ -946,6 +950,7 @@
                     mobile_money_number: mobileNumber,
                     payment_screenshot: paymentScreenshotUrl,
                     order_notes: orderNotes,
+                    tracking_number: trackingNumber,
                     status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'pending',
                     createdAt: new Date().toISOString()
                 };
@@ -1419,6 +1424,7 @@
                     const itemsWithSizes = o.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + ' x' + i.quantity).join(', ');
                     const canCancel = o.status === 'pending' || o.status === 'pending_payment';
                     const cancelButton = canCancel ? '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
+                    const trackingDisplay = o.tracking_number ? '<div style="margin-top:5px; font-size:12px; color:#667eea; font-weight:bold;">📦 Tracking: ' + o.tracking_number + '</div>' : '';
                     
                     // Order status progress bar
                     const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered', 'cancelled'];
@@ -1442,7 +1448,7 @@
                     progressBar += '</div>';
                     
                     html +=
-                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div>' + progressBar + '<div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' + cancelButton + '</div>';
+                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div>' + progressBar + '<div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' + trackingDisplay + cancelButton + '</div>';
                 });
                 ordersList.innerHTML = html;
             } catch(error) {
