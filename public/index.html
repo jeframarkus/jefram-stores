@@ -335,6 +335,7 @@
                 </div>
                 <button id="editProfileBtn" class="edit-btn" onclick="window.showEditForm()">Edit Profile</button>
                 <button class="logout-btn" onclick="window.logout()">Sign Out</button>
+                <button onclick="window.deleteAccount()" style="margin-top: 15px; width: 100%; padding: 10px; background: #dc3545; color: white; border: none; border-radius: 8px; font-size: 14px;">Delete Account</button>
             </div>
             <div id="ordersTab" style="display: none;"><div id="ordersList"></div></div>
             <div id="trackingTab" style="display: none;"><div id="trackingInfo"></div></div>
@@ -1372,6 +1373,36 @@
             } catch(e) {
                 console.error('Profile update error:', e);
                 window.showToast('Failed to update profile', 'error');
+            }
+        };
+
+        window.deleteAccount = async function() {
+            if (!confirm('Are you sure you want to delete your account? This action cannot be undone and will delete all your data including orders, wishlist, and cart.')) return;
+            if (!confirm('This is your last chance. All your data will be permanently deleted. Continue?')) return;
+            
+            try {
+                // Delete customer document
+                await deleteDoc(doc(db, 'customers', currentUserDocId));
+                
+                // Delete customer sessions
+                const sessionsSnap = await getDocs(query(collection(db, 'customer_sessions'), where("customerId", "==", currentUserDocId)));
+                sessionsSnap.forEach(async (doc) => {
+                    await deleteDoc(doc.ref);
+                });
+                
+                // Delete customer's orders (optional - keeping for business records)
+                // Uncomment below if you want to delete orders too
+                // const ordersSnap = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
+                // ordersSnap.forEach(async (doc) => {
+                //     await deleteDoc(doc.ref);
+                // });
+                
+                // Logout
+                window.logout();
+                window.showToast('Account deleted successfully', 'success');
+            } catch(e) {
+                console.error('Account deletion error:', e);
+                window.showToast('Failed to delete account', 'error');
             }
         };
 
