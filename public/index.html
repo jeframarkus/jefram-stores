@@ -361,6 +361,18 @@
         </div>
     </div>
 
+    <!-- Order Confirmation Modal -->
+    <div id="orderConfirmationModal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <div style="font-size:60px; margin-bottom:10px;">✅</div>
+            <h3>Order Placed Successfully!</h3>
+            <div id="confirmationOrderDetails" style="margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; text-align:left;"></div>
+            <p style="color:#666; font-size:14px;">We've sent your order details via WhatsApp. You can track your order in your profile.</p>
+            <button onclick="window.closeOrderConfirmation()" style="background:#667eea; color:white; padding:12px; border:none; border-radius:8px; width:100%; margin-top:10px;">Continue Shopping</button>
+            <button onclick="window.closeOrderConfirmation(); window.openProfileModal(); document.getElementById('ordersTab').style.display='block'; document.getElementById('profileTab').style.display='none'; window.loadOrders();" style="margin-top:10px; width:100%; padding:10px; background:#f5f5f5; border:none; border-radius:8px;">View My Orders</button>
+        </div>
+    </div>
+
     <!-- Rating Modal -->
     <div id="ratingModal" class="modal">
         <div class="modal-content">
@@ -945,13 +957,26 @@
                     }
                 }
                 
+                // Show order confirmation modal
+                const orderId = orderData.id || 'Order';
+                const confirmationDetails = `
+                    <strong>Order #:</strong> ${orderId}<br>
+                    <strong>Total:</strong> UGX ${total.toLocaleString()}<br>
+                    <strong>Payment:</strong> ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}<br>
+                    <strong>Items:</strong> ${cart.length} item(s)<br>
+                    <strong>Date:</strong> ${new Date().toLocaleString()}
+                `;
+                document.getElementById('confirmationOrderDetails').innerHTML = confirmationDetails;
+                document.getElementById('orderConfirmationModal').style.display = 'flex';
+                
+                // Open WhatsApp in background
                 window.open('https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(message), '_blank');
+                
                 cart = [];
                 appliedCoupon = null;
                 await window.saveCartToFirebase();
                 window.updateCartCount();
                 window.closeCart();
-                window.showToast('Order placed successfully! Check WhatsApp.', 'success');
             } catch(e) {
                 console.error('Checkout error:', e);
                 window.showToast('Failed to place order: ' + e.message, 'error');
@@ -982,6 +1007,10 @@
 
         window.closeReviewModal = function() {
             document.getElementById('reviewModal').style.display = 'none';
+        };
+
+        window.closeOrderConfirmation = function() {
+            document.getElementById('orderConfirmationModal').style.display = 'none';
         };
 
         window.submitReview = async function() {
