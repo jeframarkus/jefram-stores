@@ -267,6 +267,10 @@
                 <div id="couponMessage" class="discount-amount"></div>
             </div>
             <div class="cart-total" id="cartTotal">Total: UGX 0</div>
+            <div style="margin: 10px 0;">
+                <label style="font-weight: 500; font-size: 14px;">Order Notes (optional):</label>
+                <textarea id="orderNotes" placeholder="Special instructions for your order..." style="width:100%; margin-top:5px; padding:8px; border:1px solid #ddd; border-radius:5px; min-height:60px; resize:vertical;"></textarea>
+            </div>
             <div class="payment-options">
                 <label><input type="radio" name="paymentMethod" value="cash" checked onchange="window.togglePaymentForm()"> Cash on Delivery</label>
                 <label><input type="radio" name="paymentMethod" value="mobile_money" onchange="window.togglePaymentForm()"> Mobile Money (Pay First)</label>
@@ -893,6 +897,11 @@
                     '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money (Payment Pending - Check Admin Panel)') + 
                     (mobileNumber ? '\nMobile: ' + mobileNumber : '');
                 
+                const orderNotes = document.getElementById('orderNotes').value.trim();
+                if (orderNotes) {
+                    message += '\n\nNotes: ' + orderNotes;
+                }
+                
                 const orderData = {
                     customer: currentUser,
                     items: cart.map(i => ({ ...i })), // Preserve size info
@@ -902,6 +911,7 @@
                     payment_method: paymentMethod,
                     mobile_money_number: mobileNumber,
                     payment_screenshot: paymentScreenshotUrl,
+                    order_notes: orderNotes,
                     status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'pending',
                     createdAt: new Date().toISOString()
                 };
