@@ -749,7 +749,11 @@
                 <h4 style="margin-bottom: 10px;">💰 Mobile Money Numbers</h4>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
                     <input type="text" id="mtnNumber" placeholder="MTN Number" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                    <input type="text" id="mtnName" placeholder="MTN Account Name" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
                     <input type="text" id="airtelNumber" placeholder="Airtel Number" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                    <input type="text" id="airtelName" placeholder="Airtel Account Name" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
                     <button class="btn-primary" onclick="updateMobileMoneyNumbers()">Update</button>
                 </div>
                 <div style="margin-top: 5px;">
@@ -881,6 +885,21 @@
     </div>
     <div id="addAgentModal" class="modal"><div class="modal-content"><h3>Add Delivery Agent</h3><input type="text" id="agentName" placeholder="Agent Name" style="width:100%; margin-bottom:10px; padding:10px;"><input type="tel" id="agentPhone" placeholder="Phone Number" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="window.addDeliveryAgent()">Add</button><button onclick="window.closeAddAgentModal()">Cancel</button></div></div>
     <div id="addCouponModal" class="modal"><div class="modal-content"><h3>Create Coupon</h3><input type="text" id="couponCode" placeholder="Coupon Code" style="width:100%; margin-bottom:10px; padding:10px;"><select id="couponType" style="width:100%; margin-bottom:10px; padding:10px;"><option value="percentage">Percentage (%)</option><option value="fixed">Fixed Amount (UGX)</option></select><input type="number" id="couponValue" placeholder="Discount Value" style="width:100%; margin-bottom:10px; padding:10px;"><input type="number" id="couponUsageLimit" placeholder="Usage Limit (optional)" style="width:100%; margin-bottom:10px; padding:10px;"><input type="date" id="couponExpiry" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="window.createCoupon()">Create Coupon</button><button onclick="window.closeAddCouponModal()">Cancel</button></div></div>
+    <div id="orderResponseModal" class="modal">
+        <div class="modal-content">
+            <h3>💬 Send Response to Customer</h3>
+            <input type="hidden" id="responseOrderId">
+            <textarea id="adminResponseText" placeholder="Type your response to the customer..." style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:6px; min-height:100px; font-family:'Poppins', sans-serif;"></textarea>
+            <div style="margin-bottom:10px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="sendWhatsAppResponse" checked>
+                    <span>Also send via WhatsApp</span>
+                </label>
+            </div>
+            <button class="btn-primary" onclick="window.submitOrderResponse()">Send Response</button>
+            <button onclick="window.closeOrderResponseModal()">Cancel</button>
+        </div>
+    </div>
 
     <script type="importmap">
         {
@@ -893,7 +912,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where, orderBy, getDoc } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where, orderBy, getDoc, setDoc } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -1279,9 +1298,15 @@
                         document.getElementById('currentMtnDisplay').innerHTML = config.mtnNumber;
                         document.getElementById('mtnNumber').value = config.mtnNumber;
                     }
+                    if (config.mtnName) {
+                        document.getElementById('mtnName').value = config.mtnName;
+                    }
                     if (config.airtelNumber) {
                         document.getElementById('currentAirtelDisplay').innerHTML = config.airtelNumber;
                         document.getElementById('airtelNumber').value = config.airtelNumber;
+                    }
+                    if (config.airtelName) {
+                        document.getElementById('airtelName').value = config.airtelName;
                     }
                 }
             } catch (error) {
@@ -1297,7 +1322,12 @@
             }
             try {
                 const configRef = doc(db, 'config', 'store');
-                await updateDoc(configRef, { timerEndTime: new Date(timerEnd).getTime() });
+                const configDoc = await getDoc(configRef);
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { timerEndTime: new Date(timerEnd).getTime() });
+                } else {
+                    await setDoc(configRef, { timerEndTime: new Date(timerEnd).getTime() });
+                }
                 showToast('Timer set successfully!', 'success');
                 loadSettings();
             } catch (error) {
@@ -1310,7 +1340,10 @@
             if (!confirm('Clear the discount timer?')) return;
             try {
                 const configRef = doc(db, 'config', 'store');
-                await updateDoc(configRef, { timerEndTime: null });
+                const configDoc = await getDoc(configRef);
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { timerEndTime: null });
+                }
                 showToast('Timer cleared!', 'success');
                 loadSettings();
             } catch (error) {
@@ -1327,7 +1360,12 @@
             }
             try {
                 const configRef = doc(db, 'config', 'store');
-                await updateDoc(configRef, { whatsappNumber: number });
+                const configDoc = await getDoc(configRef);
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { whatsappNumber: number });
+                } else {
+                    await setDoc(configRef, { whatsappNumber: number });
+                }
                 showToast('WhatsApp number updated!', 'success');
                 loadSettings();
             } catch (error) {
@@ -1338,14 +1376,27 @@
 
         window.updateMobileMoneyNumbers = async function() {
             const mtn = document.getElementById('mtnNumber').value.trim();
+            const mtnName = document.getElementById('mtnName').value.trim();
             const airtel = document.getElementById('airtelNumber').value.trim();
+            const airtelName = document.getElementById('airtelName').value.trim();
             if (!mtn && !airtel) {
                 showToast('Enter at least one number', 'error');
                 return;
             }
             try {
                 const configRef = doc(db, 'config', 'store');
-                await updateDoc(configRef, { mtnNumber: mtn, airtelNumber: airtel });
+                const configDoc = await getDoc(configRef);
+                const updateData = {};
+                if (mtn) updateData.mtnNumber = mtn;
+                if (mtnName) updateData.mtnName = mtnName;
+                if (airtel) updateData.airtelNumber = airtel;
+                if (airtelName) updateData.airtelName = airtelName;
+                
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, updateData);
+                } else {
+                    await setDoc(configRef, updateData);
+                }
                 showToast('Mobile Money numbers updated!', 'success');
                 loadSettings();
             } catch (error) {
@@ -1433,6 +1484,15 @@
                     orderNotes = `<div style="margin-top:5px; font-size:12px; color:#666; background:#f8f9fa; padding:5px 8px; border-radius:4px;"><strong>📝 Notes:</strong> ${escapeHtml(order.order_notes)}</div>`;
                 }
                 
+                // Show admin response if present
+                let adminResponseDisplay = '';
+                if (order.admin_response) {
+                    adminResponseDisplay = `<div style="margin-top:5px; font-size:12px; color:#856404; background:#fff3cd; padding:5px 8px; border-radius:4px;"><strong>💬 Your Response:</strong> ${escapeHtml(order.admin_response)}</div>`;
+                }
+                
+                // Add response button
+                const responseButton = `<button onclick="sendOrderResponse('${orderId}')" style="background:#667eea; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px; font-size:11px;">💬 Respond</button>`;
+                
                 // Show tracking number
                 let trackingDisplay = '';
                 if (order.tracking_number) {
@@ -1452,7 +1512,7 @@
                 ordersList.innerHTML += `
                     <tr>
                         <td>${orderId.slice(-6)}<br>${trackingDisplay}${deliveryDisplay}</td>
-                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small>${orderNotes}${paymentInfo}</td>
+                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small>${orderNotes}${adminResponseDisplay}${paymentInfo}${responseButton}</td>
                         <td><small>${itemsWithSizes}</small></td>
                         <td>UGX ${(subtotal || 0).toLocaleString()}</td>
                         <td>${discount > 0 ? `-UGX ${discount.toLocaleString()}` : '-'}</td>
@@ -1818,6 +1878,50 @@
         window.closeAddCouponModal = () => document.getElementById('addCouponModal').style.display = 'none';
         window.showAddAdminModal = () => document.getElementById('addAdminModal').style.display = 'flex';
         window.closeAddAdminModal = () => document.getElementById('addAdminModal').style.display = 'none';
+        
+        // ----- ORDER RESPONSE FUNCTIONS -----
+        window.sendOrderResponse = function(orderId) {
+            document.getElementById('responseOrderId').value = orderId;
+            document.getElementById('adminResponseText').value = '';
+            document.getElementById('sendWhatsAppResponse').checked = true;
+            document.getElementById('orderResponseModal').style.display = 'flex';
+        };
+        
+        window.closeOrderResponseModal = () => document.getElementById('orderResponseModal').style.display = 'none';
+        
+        window.submitOrderResponse = async function() {
+            const orderId = document.getElementById('responseOrderId').value;
+            const responseText = document.getElementById('adminResponseText').value.trim();
+            const sendWhatsApp = document.getElementById('sendWhatsAppResponse').checked;
+            
+            if (!responseText) {
+                showToast('Please enter a response', 'error');
+                return;
+            }
+            
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                const orderDoc = await getDoc(orderRef);
+                const order = orderDoc.data();
+                
+                // Save response to order
+                await updateDoc(orderRef, { admin_response: responseText });
+                
+                // Send via WhatsApp if checked
+                if (sendWhatsApp && order.customer) {
+                    const customerPhone = order.customer.phone.replace(/^0+/, '');
+                    const message = `JEFRAM STORES - Admin Response\n\nDear ${order.customer.name},\n\n${responseText}\n\nThank you for shopping with us!`;
+                    window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                }
+                
+                showToast('Response sent successfully!', 'success');
+                closeOrderResponseModal();
+                loadOrders();
+            } catch (error) {
+                console.error('Error sending response:', error);
+                showToast('Failed to send response', 'error');
+            }
+        };
 
         window.addDeliveryAgent = async function() {
             const name = document.getElementById('agentName').value.trim();

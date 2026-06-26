@@ -395,12 +395,12 @@
                 <div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-bottom:15px;">
                     <h4 style="margin:0 0 10px 0;">Send payment to:</h4>
                     <div style="margin-bottom:8px;">
-                        <strong>MTN Mobile Money:</strong> <span id="mtnNumber">0766094465</span> (Namyalo Aisha)
-                        <button onclick="window.copyNumber('0766094465')" style="background:#667eea; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; margin-left:5px;">Copy</button>
+                        <strong>MTN Mobile Money:</strong> <span id="mtnNumber">0766094465</span> (<span id="mtnName">Namyalo Aisha</span>)
+                        <button onclick="window.copyNumber(document.getElementById('mtnNumber').textContent)" style="background:#667eea; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; margin-left:5px;">Copy</button>
                     </div>
                     <div>
-                        <strong>Airtel Money:</strong> <span id="airtelNumber">0743113984</span> (Kayemba Jonathan Kevin)
-                        <button onclick="window.copyNumber('0743113984')" style="background:#667eea; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; margin-left:5px;">Copy</button>
+                        <strong>Airtel Money:</strong> <span id="airtelNumber">0743113984</span> (<span id="airtelName">Kayemba Jonathan Kevin</span>)
+                        <button onclick="window.copyNumber(document.getElementById('airtelNumber').textContent)" style="background:#667eea; color:white; border:none; padding:2px 8px; border-radius:4px; cursor:pointer; margin-left:5px;">Copy</button>
                     </div>
                 </div>
                 <select id="mobileMoneyProvider">
@@ -1251,9 +1251,17 @@
                 '<p>Items: ' + orderData.items.map(i => i.name).join(', ') + '</p>';
             document.getElementById('ratingModal').style.display = 'flex';
             
-            // Add click handlers
+            // Remove existing handlers by cloning nodes
+            const productRating = document.getElementById('productRating');
+            const deliveryRating = document.getElementById('deliveryRating');
+            const newProductRating = productRating.cloneNode(true);
+            const newDeliveryRating = deliveryRating.cloneNode(true);
+            productRating.parentNode.replaceChild(newProductRating, productRating);
+            deliveryRating.parentNode.replaceChild(newDeliveryRating, deliveryRating);
+            
+            // Add click handlers to new elements
             document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
-                star.onclick = function() {
+                star.addEventListener('click', function() {
                     const value = parseInt(this.dataset.value);
                     const parent = this.parentElement;
                     const isProduct = parent.id === 'productRating';
@@ -1265,7 +1273,7 @@
                     } else {
                         currentDeliveryRating = value;
                     }
-                };
+                });
             });
         };
 
@@ -1589,6 +1597,21 @@
                     const deliveryDisplay = o.estimated_delivery ? 
                         '<div style="margin-top:5px; font-size:12px; color:#28a745;">🚚 Est. Delivery: ' + o.estimated_delivery + '</div>' : '';
                     
+                    // Delivery agent info
+                    const agentDisplay = o.delivery_agent ? 
+                        '<div style="margin-top:8px; padding:10px; background:#e8f0fe; border-radius:6px; font-size:12px;">' +
+                        '<strong>🚚 Delivery Agent:</strong><br>' +
+                        '<span style="color:#333;">' + window.escapeHtml(o.delivery_agent.name) + '</span><br>' +
+                        '<a href="https://wa.me/256' + o.delivery_agent.phone.replace(/^0+/, '') + '" target="_blank" style="color:#25D366; text-decoration:none; font-weight:500;">📱 Contact on WhatsApp</a>' +
+                        '</div>' : '';
+                    
+                    // Admin response
+                    const adminResponseDisplay = o.admin_response ? 
+                        '<div style="margin-top:8px; padding:10px; background:#fff3cd; border-radius:6px; font-size:12px;">' +
+                        '<strong>📝 Admin Response:</strong><br>' +
+                        '<span style="color:#333;">' + window.escapeHtml(o.admin_response) + '</span>' +
+                        '</div>' : '';
+                    
                     // Order status progress bar
                     const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered'];
                     const statusLabels = {
@@ -1633,7 +1656,7 @@
                         '<div class="order-items">' + itemsWithSizes + '</div>' +
                         '<div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div>' +
                         '<div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' +
-                        trackingDisplay + deliveryDisplay + cancelButton + ratingButton +
+                        trackingDisplay + deliveryDisplay + agentDisplay + adminResponseDisplay + cancelButton + ratingButton +
                         '</div>';
                 });
                 ordersList.innerHTML = html;
@@ -1663,6 +1686,117 @@
             document.getElementById('trackingTab').style.display = tab === 'tracking' ? 'block' : 'none';
             if (tab === 'orders') window.loadOrders();
             else if (tab === 'profile') window.loadProfileData();
+            else if (tab === 'tracking') window.loadTracking();
+        };
+
+        // ----- TRACKING TAB -----
+        window.loadTracking = async function() {
+            if (!db) { console.error('Database not initialized'); return; }
+            const trackingInfo = document.getElementById('trackingInfo');
+            trackingInfo.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+            try {
+                const snapshot = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
+                if (snapshot.empty) { 
+                    trackingInfo.innerHTML = '<div style="text-align:center; padding:2rem;">No orders to track</div>'; 
+                    return; 
+                }
+                
+                // Get the most recent active order
+                const orders = [];
+                snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+                orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                const activeOrder = orders.find(o => o.status !== 'delivered' && o.status !== 'cancelled') || orders[0];
+                
+                if (!activeOrder) {
+                    trackingInfo.innerHTML = '<div style="text-align:center; padding:2rem;">No orders found</div>';
+                    return;
+                }
+
+                const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered'];
+                const statusLabels = {
+                    'pending_payment': 'Payment Pending', 
+                    'pending': 'Order Placed', 
+                    'confirmed': 'Confirmed', 
+                    'on_way': 'Out for Delivery', 
+                    'delivered': 'Delivered'
+                };
+                const statusIcons = {
+                    'pending_payment': '💳',
+                    'pending': '📝',
+                    'confirmed': '✅',
+                    'on_way': '🚚',
+                    'delivered': '📦'
+                };
+                const currentIndex = statusSteps.indexOf(activeOrder.status);
+                
+                let trackingHtml = `
+                    <div style="background:#f8f9fa; padding:20px; border-radius:12px; margin-bottom:20px;">
+                        <h3 style="margin-bottom:15px;">📦 Order #${activeOrder.id.slice(-6)}</h3>
+                        <div style="margin-bottom:10px;"><strong>Tracking Number:</strong> <span style="color:#667eea; font-weight:bold;">${activeOrder.tracking_number || 'N/A'}</span></div>
+                        <div style="margin-bottom:10px;"><strong>Estimated Delivery:</strong> <span style="color:#28a745;">${activeOrder.estimated_delivery || 'N/A'}</span></div>
+                        <div style="margin-bottom:10px;"><strong>Total:</strong> UGX ${(activeOrder.total || activeOrder.subtotal).toLocaleString()}</div>
+                        <div style="margin-bottom:10px;"><strong>Status:</strong> <span class="order-status status-${activeOrder.status}">${activeOrder.status.toUpperCase()}</span></div>
+                        
+                        ${activeOrder.delivery_agent ? `
+                        <div style="margin-top:15px; padding:15px; background:#e8f0fe; border-radius:8px;">
+                            <h4 style="margin-bottom:10px;">🚚 Delivery Agent</h4>
+                            <div><strong>Name:</strong> ${activeOrder.delivery_agent.name}</div>
+                            <div><strong>Phone:</strong> ${activeOrder.delivery_agent.phone}</div>
+                            <a href="https://wa.me/256${activeOrder.delivery_agent.phone.replace(/^0+/, '')}" target="_blank" style="display:inline-block; margin-top:10px; background:#25D366; color:white; padding:8px 16px; border-radius:20px; text-decoration:none; font-size:14px;"><i class="fab fa-whatsapp"></i> Contact Agent</a>
+                        </div>
+                        ` : ''}
+                        
+                        ${activeOrder.admin_response ? `
+                        <div style="margin-top:15px; padding:15px; background:#fff3cd; border-radius:8px;">
+                            <h4 style="margin-bottom:10px;">📝 Admin Response</h4>
+                            <div>${window.escapeHtml(activeOrder.admin_response)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <h4 style="margin-bottom:15px;">Order Progress</h4>
+                    <div class="order-progress" style="margin-bottom:20px;">`;
+                
+                statusSteps.forEach((step, index) => {
+                    const isActive = index <= currentIndex;
+                    const isCurrent = index === currentIndex;
+                    const color = activeOrder.status === 'cancelled' ? '#dc3545' : (isActive ? '#28a745' : '#e0e0e0');
+                    const label = statusLabels[step];
+                    const icon = statusIcons[step];
+                    trackingHtml += `<div class="progress-step">
+                        <div class="step-line" style="background:${color};"></div>
+                        <div class="step-label ${isCurrent ? 'active' : ''}">${icon} ${label}</div>
+                    </div>`;
+                    if (index < statusSteps.length - 1) {
+                        trackingHtml += '<div class="progress-arrow">→</div>';
+                    }
+                });
+                trackingHtml += '</div>';
+                
+                // Order items
+                trackingHtml += `
+                    <h4 style="margin-bottom:10px;">Order Items</h4>
+                    <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
+                        ${activeOrder.items.map(i => `
+                            <div style="padding:8px 0; border-bottom:1px solid #eee;">
+                                <strong>${window.escapeHtml(i.name)}</strong>
+                                ${i.selectedSize ? '<span class="size-badge">' + window.escapeHtml(i.selectedSize) + '</span>' : ''}
+                                <span style="float:right;">x${i.quantity} - UGX ${(i.price * i.quantity).toLocaleString()}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="margin-top:20px; text-align:center;">
+                        <button onclick="window.switchTab('orders')" style="background:#667eea; color:white; padding:10px 20px; border:none; border-radius:8px; cursor:pointer;">View All Orders</button>
+                    </div>
+                `;
+                
+                trackingInfo.innerHTML = trackingHtml;
+            } catch(error) {
+                console.error('Error loading tracking:', error);
+                trackingInfo.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load tracking info</div>';
+            }
         };
 
         // ----- RECENTLY VIEWED -----
@@ -2026,6 +2160,18 @@
                     const config = configDoc.data();
                     if (config.whatsappNumber) {
                         whatsappNumber = config.whatsappNumber;
+                    }
+                    if (config.mtnNumber) {
+                        document.getElementById('mtnNumber').textContent = config.mtnNumber;
+                    }
+                    if (config.mtnName) {
+                        document.getElementById('mtnName').textContent = config.mtnName;
+                    }
+                    if (config.airtelNumber) {
+                        document.getElementById('airtelNumber').textContent = config.airtelNumber;
+                    }
+                    if (config.airtelName) {
+                        document.getElementById('airtelName').textContent = config.airtelName;
                     }
                 }
             } catch (error) {
