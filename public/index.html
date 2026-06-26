@@ -1254,8 +1254,30 @@
                     const itemsWithSizes = o.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + ' x' + i.quantity).join(', ');
                     const canCancel = o.status === 'pending' || o.status === 'pending_payment';
                     const cancelButton = canCancel ? '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
+                    
+                    // Order status progress bar
+                    const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered', 'cancelled'];
+                    const statusLabels = {'pending_payment': 'Payment Pending', 'pending': 'Pending', 'confirmed': 'Confirmed', 'on_way': 'On Way', 'delivered': 'Delivered', 'cancelled': 'Cancelled'};
+                    const currentIndex = statusSteps.indexOf(o.status);
+                    let progressBar = '<div class="order-progress" style="margin:10px 0; display:flex; align-items:center; gap:5px;">';
+                    statusSteps.forEach((step, index) => {
+                        if (step === 'cancelled') return;
+                        const isActive = index <= currentIndex;
+                        const isCurrent = index === currentIndex;
+                        const color = o.status === 'cancelled' ? '#dc3545' : (isActive ? '#28a745' : '#e0e0e0');
+                        const label = statusLabels[step];
+                        progressBar += `<div style="flex:1; text-align:center;">
+                            <div style="width:100%; height:4px; background:${color}; border-radius:2px; margin-bottom:5px;"></div>
+                            <span style="font-size:10px; color:${isCurrent ? '#333' : '#999'}; ${isCurrent ? 'font-weight:bold;' : ''}">${label}</span>
+                        </div>`;
+                        if (index < statusSteps.length - 2) {
+                            progressBar += '<div style="color:#ccc;">→</div>';
+                        }
+                    });
+                    progressBar += '</div>';
+                    
                     html +=
-                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div><div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' + cancelButton + '</div>';
+                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div>' + progressBar + '<div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' + cancelButton + '</div>';
                 });
                 ordersList.innerHTML = html;
             } catch(error) {
