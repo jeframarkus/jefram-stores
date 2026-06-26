@@ -49,7 +49,22 @@
         .search-bar input { width: 100%; padding: 12px 20px; border: 2px solid #e0e0e0; border-radius: 50px; font-size: 1rem; }
         .search-bar input:focus { outline: none; border-color: #667eea; }
         .search-bar i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #999; }
-        
+
+        /* Search Autocomplete */
+        #searchAutocomplete {
+            position: absolute; background: white; width: 100%; max-height: 250px; overflow-y: auto;
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; z-index: 100;
+            top: 100%; left: 0; margin-top: 5px;
+        }
+        #searchAutocomplete .autocomplete-item {
+            padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center; gap: 10px; transition: background 0.2s;
+        }
+        #searchAutocomplete .autocomplete-item:hover { background: #f0f0ff; }
+        #searchAutocomplete .autocomplete-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; }
+        #searchAutocomplete .autocomplete-item .item-name { font-size: 14px; font-weight: 500; }
+        #searchAutocomplete .autocomplete-item .item-price { font-size: 12px; color: #667eea; }
+
         .header-actions { display: flex; gap: 15px; align-items: center; }
         .wishlist-icon, .profile-icon, .cart-icon {
             cursor: pointer; background: #f5f5f5; padding: 10px; border-radius: 50%;
@@ -82,6 +97,35 @@
         .category-card i { font-size: 2.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
         .category-card h3 { font-size: 1rem; color: #333; }
 
+        /* Brands Grid */
+        .brands-section { margin-bottom: 3rem; }
+        .brands-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+        .brand-tag {
+            background: #f5f5f5; padding: 8px 18px; border-radius: 25px; cursor: pointer;
+            border: 1px solid #e0e0e0; transition: all 0.3s; font-size: 14px;
+        }
+        .brand-tag:hover { border-color: #667eea; }
+        .brand-tag.active { background: #667eea; color: white; border-color: #667eea; }
+
+        /* Recently Viewed */
+        .recently-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+
+        /* FAQ Section */
+        .faq-section { margin: 3rem 0; }
+        .faq-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .faq-question { font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; }
+        .faq-question:hover { color: #667eea; }
+        .faq-answer { display: none; padding-top: 10px; color: #666; font-size: 14px; line-height: 1.6; }
+        .faq-answer.open { display: block; }
+
+        /* Discount Timer */
+        .discount-timer {
+            background: #ff4757; color: white; padding: 10px 20px; border-radius: 10px;
+            text-align: center; margin: 20px 0; display: none;
+        }
+        .discount-timer .timer-display { font-size: 2rem; font-weight: bold; letter-spacing: 2px; }
+        .discount-timer .timer-label { font-size: 14px; opacity: 0.9; }
+
         .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
         .product-card { background: white; border-radius: 15px; overflow: hidden; transition: all 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
         .product-card:hover { transform: translateY(-5px); }
@@ -92,7 +136,8 @@
         .product-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #333; }
         .product-price { font-size: 1.3rem; color: #667eea; font-weight: bold; margin: 0.5rem 0; }
         .product-stock { font-size: 0.8rem; color: #28a745; margin-bottom: 1rem; }
-        
+        .product-brand { font-size: 0.75rem; color: #999; margin-bottom: 0.5rem; }
+
         /* Size Selection Styles */
         .size-select {
             width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
@@ -153,6 +198,17 @@
         .status-confirmed { background: #d4edda; color: #155724; }
         .status-on_way { background: #cce5ff; color: #004085; }
         .status-delivered { background: #d1ecf1; color: #0c5460; }
+        .status-pending_payment { background: #ffe0b2; color: #e65100; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+
+        /* Order Progress Bar */
+        .order-progress { margin: 10px 0; display: flex; align-items: center; gap: 5px; }
+        .progress-step { flex: 1; text-align: center; position: relative; }
+        .progress-step .step-line { width: 100%; height: 4px; border-radius: 2px; margin-bottom: 5px; }
+        .progress-step .step-label { font-size: 9px; color: #999; }
+        .progress-step .step-label.active { color: #333; font-weight: bold; }
+        .progress-arrow { color: #ccc; font-size: 12px; }
+
         .order-items { font-size: 14px; color: #666; margin: 10px 0; }
         .order-total { font-weight: bold; margin-top: 10px; text-align: right; }
         .delivery-info { background: #e8f0fe; padding: 12px; border-radius: 8px; margin: 10px 0; }
@@ -183,6 +239,7 @@
             .hero h2 { font-size: 1.5rem; }
             .hero { padding: 2rem; }
             .language-switcher { bottom: 70px; left: 10px; padding: 4px 8px; }
+            .recently-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
         }
     </style>
 </head>
@@ -207,6 +264,7 @@
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="Search products...">
                 <i class="fas fa-search"></i>
+                <div id="searchAutocomplete"></div>
             </div>
             <div class="header-actions">
                 <div class="wishlist-icon" onclick="window.openWishlist()">
@@ -243,14 +301,72 @@
             </div>
         </div>
 
+        <!-- Discount Timer -->
+        <div class="discount-timer" id="discountTimer">
+            <div class="timer-label">🔥 Limited Time Offer - Ends In:</div>
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+        </div>
+
         <div class="categories-section">
             <h2 class="section-title" id="shopByCategory">Shop by Category</h2>
             <div class="categories-grid" id="categoriesGrid"></div>
         </div>
 
+        <!-- Brand Filter -->
+        <div class="brands-section" id="brandsSection">
+            <h2 class="section-title">Shop by Brand</h2>
+            <div class="brands-grid" id="brandsGrid"></div>
+        </div>
+
         <div id="productsContainer">
             <h2 class="section-title" id="ourProducts">Our Products</h2>
             <div class="products-grid" id="productsGrid"></div>
+        </div>
+
+        <!-- Recently Viewed -->
+        <div id="recentlyViewedContainer" class="recently-section"></div>
+
+        <!-- Related Products -->
+        <div id="relatedProductsContainer"></div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section" id="faqSection">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-item">
+                <div class="faq-question" onclick="window.toggleFaq(this)">
+                    <span>How do I place an order?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">Simply browse our products, add items to your cart, and proceed to checkout. You'll receive order confirmation via WhatsApp.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="window.toggleFaq(this)">
+                    <span>What payment methods do you accept?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">We accept Cash on Delivery and Mobile Money (MTN and Airtel). For mobile money, please send payment and upload your transaction screenshot during checkout.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="window.toggleFaq(this)">
+                    <span>How long does delivery take?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">Delivery typically takes 2-3 business days within Kampala. Other locations may take longer. You'll receive a tracking number once your order is confirmed.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="window.toggleFaq(this)">
+                    <span>How do I track my order?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">Go to your profile and click on "My Orders". Each order has a unique tracking number and status. You can also contact us via WhatsApp for updates.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question" onclick="window.toggleFaq(this)">
+                    <span>Can I cancel my order?</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">Yes, you can cancel orders that are still pending or pending payment. Simply go to "My Orders" and click "Cancel Order".</div>
+            </div>
         </div>
     </div>
 
@@ -490,8 +606,10 @@
         let cart = [];
         let wishlist = [];
         let categories = [];
+        let brands = [];
         let currentUser = null;
         let currentCategory = 'all';
+        let currentBrand = 'all';
         let currentUserDocId = null;
         let appliedCoupon = null;
         let currentLanguage = 'en';
@@ -502,6 +620,13 @@
         let reviewRating = 0;
         let whatsappNumber = '256742533656';
         let customerSessionId = null;
+
+        // Recently Viewed
+        let recentlyViewed = [];
+
+        // Discount Timer
+        let discountTimerInterval = null;
+        let timerEndTime = null;
 
         const translations = {
             en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" },
@@ -785,6 +910,9 @@
             await window.saveCartToFirebase();
             window.updateCartCount();
             window.showToast(product.name + (selectedSize ? ' (' + selectedSize + ')' : '') + ' added to cart!');
+            
+            // Add to recently viewed
+            window.addToRecentlyViewed(product);
         };
 
         window.updateCartCount = function() {
@@ -878,7 +1006,7 @@
             });
         };
 
-        // UPDATED: proceedToCheckout with screenshot upload
+        // UPDATED: proceedToCheckout with screenshot upload and tracking number
         window.proceedToCheckout = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { window.showToast('Cart empty', 'error'); return; }
@@ -921,24 +1049,28 @@
                     ' x' + i.quantity + ' - UGX ' + (i.price * i.quantity).toLocaleString()
                 ).join('\n');
                 
+                // Generate unique tracking number
+                const trackingNumber = 'JF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+                
+                // Calculate estimated delivery time (2-3 business days)
+                const estimatedDelivery = new Date();
+                estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
+                const estimatedDeliveryStr = estimatedDelivery.toLocaleDateString();
+                
+                const orderNotes = document.getElementById('orderNotes').value.trim();
+                
                 const message = '*NEW ORDER* 🛍️\n\nCustomer: ' + currentUser.name + 
                     '\nPhone: ' + currentUser.phone + 
                     '\nLocation: ' + currentUser.location + 
+                    '\nTracking: ' + trackingNumber +
+                    '\nEst. Delivery: ' + estimatedDeliveryStr +
                     '\n\nItems:\n' + itemsList + 
                     '\n\nSubtotal: UGX ' + subtotal.toLocaleString() + 
                     (discount > 0 ? '\nDiscount: -UGX ' + discount.toLocaleString() : '') + 
                     '\nTotal: UGX ' + total.toLocaleString() + 
                     '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money (Payment Pending - Check Admin Panel)') + 
-                    (mobileNumber ? '\nMobile: ' + mobileNumber : '');
-                
-                const orderNotes = document.getElementById('orderNotes').value.trim();
-                if (orderNotes) {
-                    message += '\n\nNotes: ' + orderNotes;
-                }
-                
-                // Generate unique tracking number
-                const trackingNumber = 'JF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-                message += '\n\nTracking Number: ' + trackingNumber;
+                    (mobileNumber ? '\nMobile: ' + mobileNumber : '') +
+                    (orderNotes ? '\n\nNotes: ' + orderNotes : '');
                 
                 const orderData = {
                     customer: currentUser,
@@ -951,12 +1083,13 @@
                     payment_screenshot: paymentScreenshotUrl,
                     order_notes: orderNotes,
                     tracking_number: trackingNumber,
+                    estimated_delivery: estimatedDeliveryStr,
                     status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'pending',
                     createdAt: new Date().toISOString()
                 };
                 if (appliedCoupon) { orderData.coupon_code = appliedCoupon.code; }
                 
-                await addDoc(collection(db, 'orders'), orderData);
+                const orderRef = await addDoc(collection(db, 'orders'), orderData);
                 if (appliedCoupon) {
                     await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 });
                 }
@@ -985,12 +1118,14 @@
                 }
                 
                 // Show order confirmation modal
-                const orderId = orderData.id || 'Order';
+                const orderId = orderRef.id;
                 const confirmationDetails = `
-                    <strong>Order #:</strong> ${orderId}<br>
+                    <strong>Order #:</strong> ${orderId.slice(-6)}<br>
+                    <strong>Tracking #:</strong> ${trackingNumber}<br>
                     <strong>Total:</strong> UGX ${total.toLocaleString()}<br>
                     <strong>Payment:</strong> ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}<br>
                     <strong>Items:</strong> ${cart.length} item(s)<br>
+                    <strong>Estimated Delivery:</strong> ${estimatedDeliveryStr}<br>
                     <strong>Date:</strong> ${new Date().toLocaleString()}
                 `;
                 document.getElementById('confirmationOrderDetails').innerHTML = confirmationDetails;
@@ -1086,23 +1221,52 @@
         // Rating modal functions (for delivery/product rating after order)
         window.submitRating = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
-            if (deliveryRating === 0 && productRating === 0) { window.showToast('Select at least one rating', 'error'); return; }
+            if (currentProductRating === 0 && currentDeliveryRating === 0) { window.showToast('Select at least one rating', 'error'); return; }
             try {
-                await addDoc(collection(db, 'reviews'), {
-                    type: 'order_rating',
-                    userId: currentUserDocId,
-                    userName: currentUser.name,
-                    productRating: productRating,
-                    deliveryRating: deliveryRating,
-                    comment: document.getElementById('ratingComment').value,
-                    createdAt: new Date().toISOString()
+                const orderRef = doc(db, 'orders', currentRatingOrderId);
+                await updateDoc(orderRef, {
+                    product_rating: currentProductRating,
+                    delivery_rating: currentDeliveryRating,
+                    rating_comment: document.getElementById('ratingComment').value,
+                    rated_at: new Date().toISOString()
                 });
                 window.showToast('Rating submitted!', 'success');
                 window.closeRatingModal();
+                window.loadOrders();
             } catch(e) {
                 console.error('Rating submission error:', e);
                 window.showToast('Failed to submit rating', 'error');
             }
+        };
+
+        window.openRatingModal = function(orderId, orderData) {
+            currentRatingOrderId = orderId;
+            currentProductRating = 0;
+            currentDeliveryRating = 0;
+            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(s => s.className = 'far fa-star');
+            document.getElementById('ratingComment').value = '';
+            document.getElementById('ratingOrderInfo').innerHTML = 
+                '<p><strong>Order #' + orderId.slice(-6) + '</strong></p>' +
+                '<p>Total: UGX ' + (orderData.total || orderData.subtotal).toLocaleString() + '</p>' +
+                '<p>Items: ' + orderData.items.map(i => i.name).join(', ') + '</p>';
+            document.getElementById('ratingModal').style.display = 'flex';
+            
+            // Add click handlers
+            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
+                star.onclick = function() {
+                    const value = parseInt(this.dataset.value);
+                    const parent = this.parentElement;
+                    const isProduct = parent.id === 'productRating';
+                    parent.querySelectorAll('i').forEach((s, index) => {
+                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
+                    });
+                    if (isProduct) {
+                        currentProductRating = value;
+                    } else {
+                        currentDeliveryRating = value;
+                    }
+                };
+            });
         };
 
         window.closeRatingModal = function() {
@@ -1329,6 +1493,24 @@
             window.location.reload();
         };
 
+        window.deleteAccount = async function() {
+            if (!confirm('Are you sure you want to delete your account? This action cannot be undone and will delete all your data including orders, wishlist, and cart.')) return;
+            if (!confirm('This is your last chance. All your data will be permanently deleted. Continue?')) return;
+            
+            try {
+                await deleteDoc(doc(db, 'customers', currentUserDocId));
+                const sessionsSnap = await getDocs(query(collection(db, 'customer_sessions'), where("customerId", "==", currentUserDocId)));
+                sessionsSnap.forEach(async (doc) => {
+                    await deleteDoc(doc.ref);
+                });
+                window.logout();
+                window.showToast('Account deleted successfully', 'success');
+            } catch(e) {
+                console.error('Account deletion error:', e);
+                window.showToast('Failed to delete account', 'error');
+            }
+        };
+
         window.loadProfileData = function() {
             document.getElementById('profileInfo').innerHTML =
                 '<div class="info-row"><span class="info-label">Name:</span><span class="info-value">' + window.escapeHtml(currentUser.name) + '</span></div>' +
@@ -1381,36 +1563,7 @@
             }
         };
 
-        window.deleteAccount = async function() {
-            if (!confirm('Are you sure you want to delete your account? This action cannot be undone and will delete all your data including orders, wishlist, and cart.')) return;
-            if (!confirm('This is your last chance. All your data will be permanently deleted. Continue?')) return;
-            
-            try {
-                // Delete customer document
-                await deleteDoc(doc(db, 'customers', currentUserDocId));
-                
-                // Delete customer sessions
-                const sessionsSnap = await getDocs(query(collection(db, 'customer_sessions'), where("customerId", "==", currentUserDocId)));
-                sessionsSnap.forEach(async (doc) => {
-                    await deleteDoc(doc.ref);
-                });
-                
-                // Delete customer's orders (optional - keeping for business records)
-                // Uncomment below if you want to delete orders too
-                // const ordersSnap = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
-                // ordersSnap.forEach(async (doc) => {
-                //     await deleteDoc(doc.ref);
-                // });
-                
-                // Logout
-                window.logout();
-                window.showToast('Account deleted successfully', 'success');
-            } catch(e) {
-                console.error('Account deletion error:', e);
-                window.showToast('Failed to delete account', 'error');
-            }
-        };
-
+        // ----- ORDERS WITH CANCELLATION, TRACKING, PROGRESS BAR -----
         window.loadOrders = async function() {
             if (!db) { console.error('Database not initialized'); return; }
             const ordersList = document.getElementById('ordersList');
@@ -1422,33 +1575,66 @@
                 snapshot.forEach(doc => {
                     const o = doc.data();
                     const itemsWithSizes = o.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + ' x' + i.quantity).join(', ');
+                    
+                    // Check if order can be cancelled
                     const canCancel = o.status === 'pending' || o.status === 'pending_payment';
-                    const cancelButton = canCancel ? '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
-                    const trackingDisplay = o.tracking_number ? '<div style="margin-top:5px; font-size:12px; color:#667eea; font-weight:bold;">📦 Tracking: ' + o.tracking_number + '</div>' : '';
+                    const cancelButton = canCancel ? 
+                        '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
+                    
+                    // Tracking number
+                    const trackingDisplay = o.tracking_number ? 
+                        '<div style="margin-top:5px; font-size:12px; color:#667eea; font-weight:bold;">📦 Tracking: ' + o.tracking_number + '</div>' : '';
+                    
+                    // Delivery estimate
+                    const deliveryDisplay = o.estimated_delivery ? 
+                        '<div style="margin-top:5px; font-size:12px; color:#28a745;">🚚 Est. Delivery: ' + o.estimated_delivery + '</div>' : '';
                     
                     // Order status progress bar
-                    const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered', 'cancelled'];
-                    const statusLabels = {'pending_payment': 'Payment Pending', 'pending': 'Pending', 'confirmed': 'Confirmed', 'on_way': 'On Way', 'delivered': 'Delivered', 'cancelled': 'Cancelled'};
+                    const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered'];
+                    const statusLabels = {
+                        'pending_payment': 'Payment Pending', 
+                        'pending': 'Pending', 
+                        'confirmed': 'Confirmed', 
+                        'on_way': 'On Way', 
+                        'delivered': 'Delivered'
+                    };
                     const currentIndex = statusSteps.indexOf(o.status);
-                    let progressBar = '<div class="order-progress" style="margin:10px 0; display:flex; align-items:center; gap:5px;">';
+                    let progressBar = '<div class="order-progress">';
                     statusSteps.forEach((step, index) => {
-                        if (step === 'cancelled') return;
                         const isActive = index <= currentIndex;
                         const isCurrent = index === currentIndex;
                         const color = o.status === 'cancelled' ? '#dc3545' : (isActive ? '#28a745' : '#e0e0e0');
                         const label = statusLabels[step];
-                        progressBar += `<div style="flex:1; text-align:center;">
-                            <div style="width:100%; height:4px; background:${color}; border-radius:2px; margin-bottom:5px;"></div>
-                            <span style="font-size:10px; color:${isCurrent ? '#333' : '#999'}; ${isCurrent ? 'font-weight:bold;' : ''}">${label}</span>
+                        progressBar += `<div class="progress-step">
+                            <div class="step-line" style="background:${color};"></div>
+                            <div class="step-label ${isCurrent ? 'active' : ''}">${label}</div>
                         </div>`;
-                        if (index < statusSteps.length - 2) {
-                            progressBar += '<div style="color:#ccc;">→</div>';
+                        if (index < statusSteps.length - 1) {
+                            progressBar += '<div class="progress-arrow">→</div>';
                         }
                     });
                     progressBar += '</div>';
                     
+                    // Rating button for delivered orders
+                    const ratingButton = o.status === 'delivered' && !o.product_rating ? 
+                        '<button onclick="window.openRatingModal(\'' + doc.id + '\', ' + JSON.stringify(o).replace(/</g, '\\u003c') + ')" style="margin-top:10px; background:#667eea; color:white; padding:8px; border:none; border-radius:8px; width:100%;">⭐ Rate This Order</button>' : '';
+                    
+                    const ratingBadge = o.product_rating ? 
+                        '<span class="rated-badge">⭐ Rated ' + o.product_rating + '/5</span>' : '';
+                    
                     html +=
-                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div>' + progressBar + '<div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' + trackingDisplay + cancelButton + '</div>';
+                        '<div class="order-card">' +
+                        '<div class="order-header">' +
+                        '<span><strong>#' + doc.id.slice(-6) + '</strong></span>' +
+                        '<span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span>' +
+                        ratingBadge +
+                        '</div>' +
+                        progressBar +
+                        '<div class="order-items">' + itemsWithSizes + '</div>' +
+                        '<div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div>' +
+                        '<div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' +
+                        trackingDisplay + deliveryDisplay + cancelButton + ratingButton +
+                        '</div>';
                 });
                 ordersList.innerHTML = html;
             } catch(error) {
@@ -1477,6 +1663,223 @@
             document.getElementById('trackingTab').style.display = tab === 'tracking' ? 'block' : 'none';
             if (tab === 'orders') window.loadOrders();
             else if (tab === 'profile') window.loadProfileData();
+        };
+
+        // ----- RECENTLY VIEWED -----
+        window.addToRecentlyViewed = function(product) {
+            if (!product) return;
+            recentlyViewed = recentlyViewed.filter(p => p.id !== product.id);
+            recentlyViewed.unshift({ 
+                id: product.id, 
+                name: product.name, 
+                price: product.price, 
+                image_url: product.image_url,
+                category: product.category
+            });
+            if (recentlyViewed.length > 10) recentlyViewed = recentlyViewed.slice(0, 10);
+            localStorage.setItem('jefram_recently_viewed', JSON.stringify(recentlyViewed));
+            renderRecentlyViewed();
+        };
+
+        function renderRecentlyViewed() {
+            const container = document.getElementById('recentlyViewedContainer');
+            if (!container) return;
+            if (recentlyViewed.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            let html = '<h2 class="section-title">Recently Viewed</h2><div class="recently-grid">';
+            recentlyViewed.forEach(p => {
+                html += `
+                    <div class="product-card" style="cursor:pointer;" onclick="window.scrollToProduct('${p.id}')">
+                        <img src="${p.image_url || 'https://via.placeholder.com/150'}" style="width:100%; height:150px; object-fit:cover;">
+                        <div style="padding:10px;">
+                            <div style="font-size:13px; font-weight:600;">${window.escapeHtml(p.name)}</div>
+                            <div style="font-size:13px; color:#667eea;">UGX ${parseInt(p.price).toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        window.scrollToProduct = function(productId) {
+            const productElement = document.querySelector(`[data-product-id="${productId}"]`);
+            if (productElement) {
+                productElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                productElement.style.border = '2px solid #667eea';
+                productElement.style.boxShadow = '0 0 20px rgba(102,126,234,0.3)';
+                setTimeout(() => {
+                    productElement.style.border = 'none';
+                    productElement.style.boxShadow = 'none';
+                }, 3000);
+            }
+        };
+
+        // ----- RELATED PRODUCTS -----
+        window.loadRelatedProducts = function(productId, productCategory) {
+            const container = document.getElementById('relatedProductsContainer');
+            if (!container) return;
+            const related = products.filter(p => p.category === productCategory && p.id !== productId);
+            if (related.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            const displayRelated = related.slice(0, 4);
+            let html = '<h2 class="section-title">You Might Also Like</h2><div class="products-grid">';
+            displayRelated.forEach(p => {
+                html += `
+                    <div class="product-card" onclick="window.scrollToProduct('${p.id}')">
+                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" style="width:100%; height:200px; object-fit:cover;">
+                        <div class="product-info">
+                            <div class="product-name">${window.escapeHtml(p.name)}</div>
+                            <div class="product-price">UGX ${parseInt(p.price).toLocaleString()}</div>
+                            <button class="add-to-cart" onclick="event.stopPropagation(); window.addToCart('${p.id}')">Add to Cart</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        };
+
+        // ----- BRAND FILTER -----
+        function renderBrands() {
+            const grid = document.getElementById('brandsGrid');
+            if (!grid) return;
+            brands = [...new Set(products.map(p => p.brand).filter(b => b))];
+            if (brands.length === 0) {
+                document.getElementById('brandsSection').style.display = 'none';
+                return;
+            }
+            document.getElementById('brandsSection').style.display = 'block';
+            grid.innerHTML = '<span class="brand-tag active" onclick="window.filterByBrand(\'all\')">All Brands</span>' +
+                brands.map(brand => 
+                    `<span class="brand-tag" onclick="window.filterByBrand('${brand}')">${window.escapeHtml(brand)}</span>`
+                ).join('');
+        }
+
+        window.filterByBrand = function(brand) {
+            currentBrand = brand;
+            document.querySelectorAll('.brand-tag').forEach(tag => {
+                tag.classList.toggle('active', tag.textContent === brand || (brand === 'all' && tag.textContent === 'All Brands'));
+            });
+            window.renderProducts();
+        };
+
+        // ----- DISCOUNT TIMER -----
+        function startDiscountTimer() {
+            const timerElement = document.getElementById('discountTimer');
+            const displayElement = document.getElementById('timerDisplay');
+            
+            // Set timer to 24 hours from now (you can change this)
+            if (!timerEndTime) {
+                timerEndTime = Date.now() + 24 * 60 * 60 * 1000;
+                localStorage.setItem('jefram_timer_end', timerEndTime);
+            } else {
+                timerEndTime = parseInt(localStorage.getItem('jefram_timer_end')) || Date.now() + 24 * 60 * 60 * 1000;
+            }
+            
+            if (timerEndTime < Date.now()) {
+                timerElement.style.display = 'none';
+                return;
+            }
+            
+            timerElement.style.display = 'block';
+            
+            if (discountTimerInterval) clearInterval(discountTimerInterval);
+            
+            discountTimerInterval = setInterval(() => {
+                const now = Date.now();
+                const diff = timerEndTime - now;
+                
+                if (diff <= 0) {
+                    clearInterval(discountTimerInterval);
+                    timerElement.style.display = 'none';
+                    localStorage.removeItem('jefram_timer_end');
+                    return;
+                }
+                
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                displayElement.textContent = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+            }, 1000);
+        }
+
+        // ----- FAQ -----
+        window.toggleFaq = function(element) {
+            const answer = element.nextElementSibling;
+            const icon = element.querySelector('i');
+            if (answer.classList.contains('open')) {
+                answer.classList.remove('open');
+                icon.className = 'fas fa-chevron-down';
+            } else {
+                answer.classList.add('open');
+                icon.className = 'fas fa-chevron-up';
+            }
+        };
+
+        // ----- SEARCH AUTOCOMPLETE -----
+        function setupSearchAutocomplete() {
+            const input = document.getElementById('searchInput');
+            const container = document.getElementById('searchAutocomplete');
+            
+            input.addEventListener('focus', function() {
+                if (this.value.length > 0) {
+                    container.style.display = 'block';
+                }
+            });
+            
+            input.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+                if (query.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+                const results = products.filter(p => 
+                    p.name.toLowerCase().includes(query) || 
+                    (p.category && p.category.toLowerCase().includes(query))
+                ).slice(0, 6);
+                
+                if (results.length === 0) {
+                    container.innerHTML = '<div class="autocomplete-item">No results found</div>';
+                    container.style.display = 'block';
+                    return;
+                }
+                
+                container.innerHTML = results.map(p => `
+                    <div class="autocomplete-item" onclick="window.selectSearchResult('${p.id}')">
+                        <img src="${p.image_url || 'https://via.placeholder.com/40'}" alt="">
+                        <div>
+                            <div class="item-name">${window.escapeHtml(p.name)}</div>
+                            <div class="item-price">UGX ${parseInt(p.price).toLocaleString()}</div>
+                        </div>
+                    </div>
+                `).join('');
+                container.style.display = 'block';
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!container.contains(e.target) && e.target !== input) {
+                    container.style.display = 'none';
+                }
+            });
+        }
+
+        window.selectSearchResult = function(productId) {
+            document.getElementById('searchAutocomplete').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                window.scrollToProduct(productId);
+                window.addToRecentlyViewed(product);
+            }
         };
 
         // ----- PRODUCT FUNCTIONS WITH SIZE SUPPORT -----
@@ -1514,12 +1917,13 @@
             });
         };
 
-        // UPDATED: renderProducts with size selection dropdown
+        // UPDATED: renderProducts with size selection dropdown, brand, and related products
         window.renderProducts = async function() {
             const grid = document.getElementById('productsGrid');
             if (!grid) return;
             let filtered = products;
-            if (currentCategory !== 'all') filtered = products.filter(p => p.category === currentCategory);
+            if (currentCategory !== 'all') filtered = filtered.filter(p => p.category === currentCategory);
+            if (currentBrand !== 'all') filtered = filtered.filter(p => p.brand === currentBrand);
             const search = document.getElementById('searchInput').value.toLowerCase();
             if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search) || (p.description && p.description.toLowerCase().includes(search)));
             if (filtered.length === 0) {
@@ -1553,13 +1957,16 @@
                     '</select>' +
                     '</div>' : '';
 
+                const brandHtml = p.brand ? '<div class="product-brand">🏷️ ' + window.escapeHtml(p.brand) + '</div>' : '';
+
                 html +=
-                    '<div class="product-card">' +
+                    '<div class="product-card" data-product-id="' + p.id + '">' +
                     '<div class="wishlist-btn" data-id="' + p.id + '" onclick="window.toggleWishlist({id:\'' + p.id + '\', name:\'' + window.escapeHtml(p.name) + '\', price:' + p.price + '})">' +
                     '<i class="' + (wishlist.find(i => i.id == p.id) ? 'fas' : 'far') + ' fa-heart"></i></div>' +
                     '<img src="' + (p.image_url || 'https://via.placeholder.com/300') + '" class="product-image" onerror="this.src=\'https://via.placeholder.com/300\'">' +
                     '<div class="product-info">' +
                     '<div class="product-name">' + window.escapeHtml(p.name) + '</div>' +
+                    brandHtml +
                     '<div class="product-price">UGX ' + parseInt(p.price).toLocaleString() + '</div>' +
                     '<div class="product-stock">' + (totalStock > 0 ? window.t('inStock') + ' (' + totalStock + ')' : window.t('outOfStock')) + '</div>' +
                     sizeHtml +
@@ -1571,6 +1978,16 @@
             }
             grid.innerHTML = html;
             window.updateWishlistButtons();
+            
+            // Load related products for first product
+            if (filtered.length > 0) {
+                window.loadRelatedProducts(filtered[0].id, filtered[0].category);
+            }
+            
+            // Add to recently viewed
+            if (filtered.length > 0) {
+                window.addToRecentlyViewed(filtered[0]);
+            }
         };
 
         window.fetchProducts = async function() {
@@ -1585,13 +2002,15 @@
                 products = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Ensure sizes array exists for backward compatibility
                     if (data.hasSizes && !data.sizes) data.sizes = [];
                     products.push({ id: doc.id, ...data });
                 });
                 categories = [...new Set(products.map(p => p.category).filter(c => c))];
+                renderBrands();
                 window.renderCategories();
                 await window.renderProducts();
+                renderRecentlyViewed();
+                startDiscountTimer();
             } catch (error) {
                 console.error('Error fetching products:', error);
                 if (grid) grid.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load products. Please refresh the page.</div>';
@@ -1644,6 +2063,18 @@
         // ----- INITIALIZATION -----
         document.getElementById('searchInput').addEventListener('input', window.renderProducts);
 
+        // Load recently viewed from localStorage
+        const savedRecentlyViewed = localStorage.getItem('jefram_recently_viewed');
+        if (savedRecentlyViewed) {
+            recentlyViewed = JSON.parse(savedRecentlyViewed);
+        }
+        
+        // Load timer from localStorage
+        const savedTimerEnd = localStorage.getItem('jefram_timer_end');
+        if (savedTimerEnd) {
+            timerEndTime = parseInt(savedTimerEnd);
+        }
+
         (async function init() {
             await window.loadConfig();
             await window.fetchProducts();
@@ -1652,6 +2083,7 @@
                 await window.loadWishlistFromFirebase();
                 await window.loadCartFromFirebase();
             }
+            setupSearchAutocomplete();
         })();
 
         // ----- MODAL CLOSE EVENTS -----
