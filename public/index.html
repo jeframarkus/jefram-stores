@@ -1223,13 +1223,28 @@
                 snapshot.forEach(doc => {
                     const o = doc.data();
                     const itemsWithSizes = o.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + ' x' + i.quantity).join(', ');
+                    const canCancel = o.status === 'pending' || o.status === 'pending_payment';
+                    const cancelButton = canCancel ? '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
                     html +=
-                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div><div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div></div>';
+                        '<div class="order-card"><div class="order-header"><span><strong>#' + doc.id.slice(-6) + '</strong></span><span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span></div><div class="order-items">' + itemsWithSizes + '</div><div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div><div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' + cancelButton + '</div>';
                 });
                 ordersList.innerHTML = html;
             } catch(error) {
                 console.error('Error loading orders:', error);
                 ordersList.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load orders</div>';
+            }
+        };
+
+        window.cancelOrder = async function(orderId) {
+            if (!confirm('Are you sure you want to cancel this order? This action cannot be undone.')) return;
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                await updateDoc(orderRef, { status: 'cancelled' });
+                window.showToast('Order cancelled successfully', 'success');
+                window.loadOrders();
+            } catch(error) {
+                console.error('Error cancelling order:', error);
+                window.showToast('Failed to cancel order', 'error');
             }
         };
 
