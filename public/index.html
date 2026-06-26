@@ -912,6 +912,29 @@
                     await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 });
                 }
                 
+                // Update product stock
+                for (const item of cart) {
+                    const productRef = doc(db, 'products', item.id);
+                    const productSnap = await getDoc(productRef);
+                    if (productSnap.exists()) {
+                        const productData = productSnap.data();
+                        if (item.selectedSize && productData.sizes) {
+                            // Update specific size stock
+                            const updatedSizes = productData.sizes.map(s => {
+                                if (s.size === item.selectedSize) {
+                                    return { ...s, stock: Math.max(0, s.stock - item.quantity) };
+                                }
+                                return s;
+                            });
+                            const newTotalStock = updatedSizes.reduce((sum, s) => sum + s.stock, 0);
+                            await updateDoc(productRef, { sizes: updatedSizes, stock: newTotalStock });
+                        } else {
+                            // Update overall stock
+                            await updateDoc(productRef, { stock: Math.max(0, (productData.stock || 0) - item.quantity) });
+                        }
+                    }
+                }
+                
                 window.open('https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(message), '_blank');
                 cart = [];
                 appliedCoupon = null;
