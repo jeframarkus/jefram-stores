@@ -186,7 +186,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 600px;
+            min-width: 700px;
         }
 
         th, td {
@@ -211,6 +211,8 @@
         .status-confirmed { background: #d4edda; color: #155724; }
         .status-on_way { background: #cce5ff; color: #004085; }
         .status-delivered { background: #d1ecf1; color: #0c5460; }
+        .status-pending_payment { background: #ffe0b2; color: #e65100; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
 
         select, button, input {
             padding: 6px 12px;
@@ -457,6 +459,30 @@
             cursor: pointer;
         }
 
+        /* Brand input */
+        .brand-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Timer Management */
+        .timer-management {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .timer-management .timer-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff4757;
+            font-family: monospace;
+        }
+
         @media (max-width: 768px) {
             .sidebar { width: 70px; }
             .sidebar span { display: none; }
@@ -491,6 +517,9 @@
         </div>
         <div class="nav-item" data-section="add-product">
             <i class="fas fa-plus-circle"></i> <span>Add Product</span>
+        </div>
+        <div class="nav-item" data-section="settings">
+            <i class="fas fa-cog"></i> <span>Settings</span>
         </div>
         <div class="nav-item" data-section="coupons">
             <i class="fas fa-tags"></i> <span>Coupons</span>
@@ -586,7 +615,7 @@
             <div class="table-container">
                 <table id="ordersTable">
                     <thead>
-                        <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Discount</th><th>Delivery Fee</th><th>Total</th><th>Status</th><th>Agent</th><th>Ratings</th><th>Action</th>
+                        <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Discount</th><th>Delivery Fee</th><th>Total</th><th>Tracking</th><th>Status</th><th>Agent</th><th>Ratings</th><th>Action</th>
                         </thead>
                     <tbody id="ordersList"></tbody>
                 </table>
@@ -629,7 +658,7 @@
             </div>
             <div class="table-container">
                 <table>
-                    <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Total Stock</th><th>Sizes</th><th>Status</th><th>Avg Rating</th><th>Action</th></tr></thead>
+                    <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Brand</th><th>Total Stock</th><th>Sizes</th><th>Status</th><th>Avg Rating</th><th>Action</th></tr></thead>
                     <tbody id="productsList"></tbody>
                 </table>
             </div>
@@ -643,6 +672,7 @@
                 <input type="number" id="productPrice" placeholder="Base Price (UGX)">
                 <input type="text" id="productCategory" placeholder="Category (e.g., Clothing, Shoes, Electronics)">
                 <input type="text" id="productSubcategory" placeholder="Subcategory">
+                <input type="text" id="productBrand" placeholder="Brand (e.g., Nike, Adidas, Samsung)" class="brand-input">
                 
                 <!-- Size Management -->
                 <div class="size-section">
@@ -677,6 +707,59 @@
                 
                 <button class="btn-primary" onclick="addNewProduct()">Add Product</button>
                 <div id="productMessage" style="margin-top:10px;"></div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div id="settings" class="section">
+            <div class="section-title"><span>Store Settings</span></div>
+            
+            <!-- Discount Timer Settings -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">🔥 Discount Timer</h4>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                    <input type="datetime-local" id="timerEndTime" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <button class="btn-primary" onclick="setTimer()">Set Timer</button>
+                    <button class="btn-danger" onclick="clearTimer()">Clear Timer</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span style="font-weight: 500;">Current Timer:</span>
+                    <span id="currentTimerDisplay" style="font-family: monospace; font-size: 1.2rem; color: #ff4757;"></span>
+                </div>
+                <div style="margin-top: 8px; font-size: 12px; color: #666;">
+                    <strong>Note:</strong> Timer will show on the customer store. Set it to a future date/time to display a countdown.
+                </div>
+            </div>
+            
+            <!-- WhatsApp Settings -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">📱 WhatsApp Number</h4>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="whatsappNumber" placeholder="e.g., 256742533656" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                    <button class="btn-primary" onclick="updateWhatsAppNumber()">Update</button>
+                </div>
+                <div style="margin-top: 10px;">
+                    <span style="font-weight: 500;">Current Number:</span>
+                    <span id="currentWhatsappDisplay" style="font-family: monospace; font-size: 1.1rem; color: #28a745;"></span>
+                </div>
+            </div>
+            
+            <!-- Mobile Money Numbers -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">💰 Mobile Money Numbers</h4>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="mtnNumber" placeholder="MTN Number" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                    <input type="text" id="airtelNumber" placeholder="Airtel Number" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                    <button class="btn-primary" onclick="updateMobileMoneyNumbers()">Update</button>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current MTN:</span>
+                    <span id="currentMtnDisplay" style="font-family: monospace; font-size: 1.1rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Airtel:</span>
+                    <span id="currentAirtelDisplay" style="font-family: monospace; font-size: 1.1rem; color: #667eea;"></span>
+                </div>
             </div>
         </div>
 
@@ -746,6 +829,7 @@
             <input type="number" id="editProductPrice" placeholder="Price (UGX)" style="width:100%; margin-bottom:10px; padding:10px;">
             <input type="text" id="editProductCategory" placeholder="Category" style="width:100%; margin-bottom:10px; padding:10px;">
             <input type="text" id="editProductSubcategory" placeholder="Subcategory" style="width:100%; margin-bottom:10px; padding:10px;">
+            <input type="text" id="editProductBrand" placeholder="Brand" style="width:100%; margin-bottom:10px; padding:10px;">
             
             <div class="size-section">
                 <label class="toggle-size-label">
@@ -888,7 +972,7 @@
         const isSubAdmin = currentAdmin.role === 'subadmin';
 
         if (isSubAdmin) {
-            ['navOverview', 'navOrders', 'navDeliveryAgents', 'navUsers', 'navCoupons', 'navReviews', 'navSales', 'navExports', 'navAdmins'].forEach(id => {
+            ['navOverview', 'navOrders', 'navDeliveryAgents', 'navUsers', 'navCoupons', 'navReviews', 'navSales', 'navExports', 'navAdmins', 'navSettings'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.style.display = 'none';
             });
@@ -931,6 +1015,7 @@
                 if (section === 'overview') loadStats();
                 if (section === 'sales') loadSalesSummary();
                 if (section === 'admins') loadAdmins();
+                if (section === 'settings') loadSettings();
             });
         });
 
@@ -1052,6 +1137,7 @@
                 document.getElementById('editProductPrice').value = product.price || '';
                 document.getElementById('editProductCategory').value = product.category || '';
                 document.getElementById('editProductSubcategory').value = product.subcategory || '';
+                document.getElementById('editProductBrand').value = product.brand || '';
                 document.getElementById('editProductDesc').value = product.description || '';
                 
                 // Handle sizes
@@ -1109,6 +1195,7 @@
             const price = parseFloat(document.getElementById('editProductPrice').value);
             const category = document.getElementById('editProductCategory').value.trim();
             const subcategory = document.getElementById('editProductSubcategory').value.trim();
+            const brand = document.getElementById('editProductBrand').value.trim();
             const description = document.getElementById('editProductDesc').value.trim();
             const hasSizes = document.getElementById('editHasSizes').checked;
             
@@ -1124,6 +1211,7 @@
                     price,
                     category,
                     subcategory: subcategory || '',
+                    brand: brand || '',
                     description: description || '',
                     hasSizes: hasSizes
                 };
@@ -1167,6 +1255,102 @@
             } catch (error) {
                 console.error('Error deleting product:', error);
                 showToast('Failed to delete product', 'error');
+            }
+        };
+
+        // ----- SETTINGS FUNCTIONS -----
+        async function loadSettings() {
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                if (configDoc.exists()) {
+                    const config = configDoc.data();
+                    if (config.timerEndTime) {
+                        const timerDate = new Date(parseInt(config.timerEndTime));
+                        document.getElementById('currentTimerDisplay').innerHTML = timerDate.toLocaleString();
+                        document.getElementById('timerEndTime').value = timerDate.toISOString().slice(0, 16);
+                    } else {
+                        document.getElementById('currentTimerDisplay').innerHTML = 'Not set';
+                    }
+                    if (config.whatsappNumber) {
+                        document.getElementById('currentWhatsappDisplay').innerHTML = config.whatsappNumber;
+                        document.getElementById('whatsappNumber').value = config.whatsappNumber;
+                    }
+                    if (config.mtnNumber) {
+                        document.getElementById('currentMtnDisplay').innerHTML = config.mtnNumber;
+                        document.getElementById('mtnNumber').value = config.mtnNumber;
+                    }
+                    if (config.airtelNumber) {
+                        document.getElementById('currentAirtelDisplay').innerHTML = config.airtelNumber;
+                        document.getElementById('airtelNumber').value = config.airtelNumber;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        window.setTimer = async function() {
+            const timerEnd = document.getElementById('timerEndTime').value;
+            if (!timerEnd) {
+                showToast('Please select a date and time', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                await updateDoc(configRef, { timerEndTime: new Date(timerEnd).getTime() });
+                showToast('Timer set successfully!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error setting timer:', error);
+                showToast('Failed to set timer', 'error');
+            }
+        };
+
+        window.clearTimer = async function() {
+            if (!confirm('Clear the discount timer?')) return;
+            try {
+                const configRef = doc(db, 'config', 'store');
+                await updateDoc(configRef, { timerEndTime: null });
+                showToast('Timer cleared!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error clearing timer:', error);
+                showToast('Failed to clear timer', 'error');
+            }
+        };
+
+        window.updateWhatsAppNumber = async function() {
+            const number = document.getElementById('whatsappNumber').value.trim();
+            if (!number) {
+                showToast('Enter a WhatsApp number', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                await updateDoc(configRef, { whatsappNumber: number });
+                showToast('WhatsApp number updated!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error updating WhatsApp number:', error);
+                showToast('Failed to update number', 'error');
+            }
+        };
+
+        window.updateMobileMoneyNumbers = async function() {
+            const mtn = document.getElementById('mtnNumber').value.trim();
+            const airtel = document.getElementById('airtelNumber').value.trim();
+            if (!mtn && !airtel) {
+                showToast('Enter at least one number', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                await updateDoc(configRef, { mtnNumber: mtn, airtelNumber: airtel });
+                showToast('Mobile Money numbers updated!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error updating numbers:', error);
+                showToast('Failed to update numbers', 'error');
             }
         };
 
@@ -1243,19 +1427,38 @@
                     paymentInfo += `</div>`;
                 }
                 
+                // Show order notes if present
+                let orderNotes = '';
+                if (order.order_notes) {
+                    orderNotes = `<div style="margin-top:5px; font-size:12px; color:#666; background:#f8f9fa; padding:5px 8px; border-radius:4px;"><strong>📝 Notes:</strong> ${escapeHtml(order.order_notes)}</div>`;
+                }
+                
+                // Show tracking number
+                let trackingDisplay = '';
+                if (order.tracking_number) {
+                    trackingDisplay = `<div style="margin-top:3px; font-size:11px; color:#667eea; font-weight:bold;">📦 ${order.tracking_number}</div>`;
+                }
+                
+                // Show estimated delivery
+                let deliveryDisplay = '';
+                if (order.estimated_delivery) {
+                    deliveryDisplay = `<div style="margin-top:3px; font-size:11px; color:#28a745;">🚚 Est: ${order.estimated_delivery}</div>`;
+                }
+                
                 const statusOptions = order.status === 'pending_payment' 
                     ? `<option value="pending_payment" selected>Pending Payment</option>`
                     : `<option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option><option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option><option value="on_way" ${order.status === 'on_way' ? 'selected' : ''}>On Way</option><option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>`;
                 
                 ordersList.innerHTML += `
                     <tr>
-                        <td>${orderId.slice(-6)}</td>
-                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small>${paymentInfo}</td>
+                        <td>${orderId.slice(-6)}<br>${trackingDisplay}${deliveryDisplay}</td>
+                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small>${orderNotes}${paymentInfo}</td>
                         <td><small>${itemsWithSizes}</small></td>
                         <td>UGX ${(subtotal || 0).toLocaleString()}</td>
                         <td>${discount > 0 ? `-UGX ${discount.toLocaleString()}` : '-'}</td>
                         <td><input type="number" id="deliveryFee_${orderId}" value="${deliveryFee}" style="width:70px;" onchange="updateDeliveryFee('${orderId}', this.value)"></td>
                         <td><strong>UGX ${totalWithDelivery.toLocaleString()}</strong></td>
+                        <td>${order.tracking_number || '-'}</td>
                         <td><select onchange="updateOrderStatus('${orderId}', this.value, document.getElementById('deliveryFee_${orderId}').value)" ${order.status === 'pending_payment' ? 'disabled' : ''}>${statusOptions}</select></td>
                         <td><select id="agentSelect_${orderId}" onchange="assignDeliveryAgent('${orderId}', this.value)" class="agent-select"><option value="">Select</option>${deliveryAgents.map(a => `<option value="${a.id}" ${order.delivery_agent?.id === a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select></td>
                         <td>${order.product_rating ? `<span title="Product">📦 ${order.product_rating}/5</span><br>` : ''}${order.delivery_rating ? `<span title="Delivery">🚚 ${order.delivery_rating}/5</span>` : '-'}</td>
@@ -1345,6 +1548,7 @@
                         <td><img src="${product.image_url}" width="40" height="40" style="object-fit:cover;"></td>
                         <td>${escapeHtml(product.name)}</td>
                         <td>UGX ${product.price.toLocaleString()}</td>
+                        <td>${escapeHtml(product.brand || '-')}</td>
                         <td class="${stockClass}">${totalStock}</td>
                         <td><small>${sizeDisplay}</small></td>
                         <td><span class="stock-badge ${stockClass}">${totalStock > 0 ? (totalStock <= 5 ? 'Low Stock' : 'In Stock') : 'Out of Stock'}</span></td>
@@ -1440,11 +1644,11 @@
         // ----- EXPORT FUNCTIONS -----
         window.exportOrders = async function() {
             const ordersSnap = await getDocs(collection(db, 'orders'));
-            const data = [['Order ID', 'Customer', 'Phone', 'Items', 'Total', 'Status', 'Date']];
+            const data = [['Order ID', 'Customer', 'Phone', 'Items', 'Total', 'Status', 'Tracking', 'Date']];
             ordersSnap.forEach(doc => {
                 const order = doc.data();
                 const items = order.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '')).join(', ');
-                data.push([doc.id.slice(-6), order.customer.name, order.customer.phone, items, order.total, order.status, new Date(order.createdAt).toLocaleDateString()]);
+                data.push([doc.id.slice(-6), order.customer.name, order.customer.phone, items, order.total, order.status, order.tracking_number || '', new Date(order.createdAt).toLocaleDateString()]);
             });
             const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
@@ -1469,11 +1673,11 @@
 
         window.exportProducts = async function() {
             const productsSnap = await getDocs(collection(db, 'products'));
-            const data = [['Name', 'Price', 'Category', 'Has Sizes', 'Sizes', 'Created']];
+            const data = [['Name', 'Price', 'Category', 'Brand', 'Has Sizes', 'Sizes', 'Created']];
             productsSnap.forEach(doc => {
                 const p = doc.data();
                 const sizesInfo = p.hasSizes && p.sizes ? p.sizes.map(s => s.size + '(' + s.stock + ')').join('; ') : 'No';
-                data.push([p.name, p.price, p.category, p.hasSizes ? 'Yes' : 'No', sizesInfo, new Date(p.createdAt).toLocaleDateString()]);
+                data.push([p.name, p.price, p.category, p.brand || '', p.hasSizes ? 'Yes' : 'No', sizesInfo, new Date(p.createdAt).toLocaleDateString()]);
             });
             const ws = XLSX.utils.aoa_to_sheet(data);
             const wb = XLSX.utils.book_new();
@@ -1680,6 +1884,7 @@
             const price = parseFloat(document.getElementById('productPrice').value);
             const category = document.getElementById('productCategory').value.trim();
             const subcategory = document.getElementById('productSubcategory').value.trim();
+            const brand = document.getElementById('productBrand').value.trim();
             const description = document.getElementById('productDesc').value.trim();
             const hasSizes = document.getElementById('hasSizes').checked;
             
@@ -1693,6 +1898,7 @@
                 price,
                 category,
                 subcategory: subcategory || '',
+                brand: brand || '',
                 image_url: currentImageBase64 || 'https://via.placeholder.com/300',
                 description: description || '',
                 hasSizes: hasSizes,
@@ -1721,6 +1927,7 @@
                 document.getElementById('productPrice').value = '';
                 document.getElementById('productCategory').value = '';
                 document.getElementById('productSubcategory').value = '';
+                document.getElementById('productBrand').value = '';
                 document.getElementById('productDesc').value = '';
                 document.getElementById('productStock').value = '10';
                 document.getElementById('productImagePreview').style.display = 'none';
@@ -1795,6 +2002,7 @@
         loadProducts();
         loadCoupons();
         loadReviews();
+        loadSettings();
         
         // Initialize size section
         toggleSizeSection();
