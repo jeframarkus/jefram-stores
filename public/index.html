@@ -43,7 +43,7 @@
 
         .header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
         .header-content { max-width: 1400px; margin: 0 auto; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-        .logo h1 { font-size: 1.8rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; cursor: pointer; }
+        .logo h1 { font-size: 1.8rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; cursor: pointer; }
         .logo p { font-size: 0.8rem; color: #666; }
         .search-bar { flex: 1; max-width: 500px; position: relative; }
         .search-bar input { width: 100%; padding: 12px 20px; border: 2px solid #e0e0e0; border-radius: 50px; font-size: 1rem; }
@@ -94,7 +94,7 @@
         .categories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
         .category-card { background: white; border-radius: 15px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .category-card:hover { transform: translateY(-5px); }
-        .category-card i { font-size: 2.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+        .category-card i { font-size: 2.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
         .category-card h3 { font-size: 1rem; color: #333; }
 
         /* Brands Grid */
@@ -330,43 +330,9 @@
         <div id="relatedProductsContainer"></div>
 
         <!-- FAQ Section -->
-        <div class="faq-section" id="faqSection">
+        <div class="faq-section" id="faqSection" style="display: none;">
             <h2 class="section-title">Frequently Asked Questions</h2>
-            <div class="faq-item">
-                <div class="faq-question" onclick="window.toggleFaq(this)">
-                    <span>How do I place an order?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">Simply browse our products, add items to your cart, and proceed to checkout. You'll receive order confirmation via WhatsApp.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question" onclick="window.toggleFaq(this)">
-                    <span>What payment methods do you accept?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">We accept Cash on Delivery and Mobile Money (MTN and Airtel). For mobile money, please send payment and upload your transaction screenshot during checkout.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question" onclick="window.toggleFaq(this)">
-                    <span>How long does delivery take?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">Delivery typically takes 2-3 business days within Kampala. Other locations may take longer. You'll receive a tracking number once your order is confirmed.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question" onclick="window.toggleFaq(this)">
-                    <span>How do I track my order?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">Go to your profile and click on "My Orders". Each order has a unique tracking number and status. You can also contact us via WhatsApp for updates.</div>
-            </div>
-            <div class="faq-item">
-                <div class="faq-question" onclick="window.toggleFaq(this)">
-                    <span>Can I cancel my order?</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="faq-answer">Yes, you can cancel orders that are still pending or pending payment. Simply go to "My Orders" and click "Cancel Order".</div>
-            </div>
+            <div id="faqContainer"></div>
         </div>
     </div>
 
@@ -1243,38 +1209,36 @@
             currentRatingOrderId = orderId;
             currentProductRating = 0;
             currentDeliveryRating = 0;
-            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(s => s.className = 'far fa-star');
+            
+            // Reset stars
+            document.querySelectorAll('#productRating i').forEach(s => {
+                s.className = 'far fa-star';
+                s.onclick = function() {
+                    const value = parseInt(this.dataset.value);
+                    currentProductRating = value;
+                    document.querySelectorAll('#productRating i').forEach((s, index) => {
+                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
+                    });
+                };
+            });
+            
+            document.querySelectorAll('#deliveryRating i').forEach(s => {
+                s.className = 'far fa-star';
+                s.onclick = function() {
+                    const value = parseInt(this.dataset.value);
+                    currentDeliveryRating = value;
+                    document.querySelectorAll('#deliveryRating i').forEach((s, index) => {
+                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
+                    });
+                };
+            });
+            
             document.getElementById('ratingComment').value = '';
             document.getElementById('ratingOrderInfo').innerHTML = 
                 '<p><strong>Order #' + orderId.slice(-6) + '</strong></p>' +
                 '<p>Total: UGX ' + (orderData.total || orderData.subtotal).toLocaleString() + '</p>' +
                 '<p>Items: ' + orderData.items.map(i => i.name).join(', ') + '</p>';
             document.getElementById('ratingModal').style.display = 'flex';
-            
-            // Remove existing handlers by cloning nodes
-            const productRating = document.getElementById('productRating');
-            const deliveryRating = document.getElementById('deliveryRating');
-            const newProductRating = productRating.cloneNode(true);
-            const newDeliveryRating = deliveryRating.cloneNode(true);
-            productRating.parentNode.replaceChild(newProductRating, productRating);
-            deliveryRating.parentNode.replaceChild(newDeliveryRating, deliveryRating);
-            
-            // Add click handlers to new elements
-            document.querySelectorAll('#productRating i, #deliveryRating i').forEach(star => {
-                star.addEventListener('click', function() {
-                    const value = parseInt(this.dataset.value);
-                    const parent = this.parentElement;
-                    const isProduct = parent.id === 'productRating';
-                    parent.querySelectorAll('i').forEach((s, index) => {
-                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
-                    });
-                    if (isProduct) {
-                        currentProductRating = value;
-                    } else {
-                        currentDeliveryRating = value;
-                    }
-                });
-            });
         };
 
         window.closeRatingModal = function() {
@@ -1589,13 +1553,19 @@
                     const cancelButton = canCancel ? 
                         '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
                     
-                    // Tracking number
+                    // Tracking number - more prominent
                     const trackingDisplay = o.tracking_number ? 
-                        '<div style="margin-top:5px; font-size:12px; color:#667eea; font-weight:bold;">📦 Tracking: ' + o.tracking_number + '</div>' : '';
+                        '<div style="margin-top:8px; padding:8px; background:#e8f0fe; border-radius:6px; border-left:3px solid #667eea;">' +
+                        '<div style="font-size:11px; color:#666; margin-bottom:2px;">📦 TRACKING NUMBER</div>' +
+                        '<div style="font-size:14px; color:#667eea; font-weight:bold;">' + o.tracking_number + '</div>' +
+                        '</div>' : '';
                     
-                    // Delivery estimate
+                    // Delivery estimate - more prominent
                     const deliveryDisplay = o.estimated_delivery ? 
-                        '<div style="margin-top:5px; font-size:12px; color:#28a745;">🚚 Est. Delivery: ' + o.estimated_delivery + '</div>' : '';
+                        '<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:6px; border-left:3px solid #28a745;">' +
+                        '<div style="font-size:11px; color:#666; margin-bottom:2px;">🚚 ESTIMATED DELIVERY</div>' +
+                        '<div style="font-size:14px; color:#28a745; font-weight:bold;">' + o.estimated_delivery + '</div>' +
+                        '</div>' : '';
                     
                     // Delivery agent info
                     const agentDisplay = o.delivery_agent ? 
@@ -1826,7 +1796,7 @@
             recentlyViewed.forEach(p => {
                 html += `
                     <div class="product-card" style="cursor:pointer;" onclick="window.scrollToProduct('${p.id}')">
-                        <img src="${p.image_url || 'https://via.placeholder.com/150'}" style="width:100%; height:150px; object-fit:cover;">
+                        <img src="${p.image_url || 'https://via.placeholder.com/150'}" loading="lazy" style="width:100%; height:150px; object-fit:cover;">
                         <div style="padding:10px;">
                             <div style="font-size:13px; font-weight:600;">${window.escapeHtml(p.name)}</div>
                             <div style="font-size:13px; color:#667eea;">UGX ${parseInt(p.price).toLocaleString()}</div>
@@ -1865,7 +1835,7 @@
             displayRelated.forEach(p => {
                 html += `
                     <div class="product-card" onclick="window.scrollToProduct('${p.id}')">
-                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" style="width:100%; height:200px; object-fit:cover;">
+                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" loading="lazy" style="width:100%; height:200px; object-fit:cover;">
                         <div class="product-info">
                             <div class="product-name">${window.escapeHtml(p.name)}</div>
                             <div class="product-price">UGX ${parseInt(p.price).toLocaleString()}</div>
@@ -1907,43 +1877,48 @@
             const timerElement = document.getElementById('discountTimer');
             const displayElement = document.getElementById('timerDisplay');
             
-            // Set timer to 24 hours from now (you can change this)
-            if (!timerEndTime) {
-                timerEndTime = Date.now() + 24 * 60 * 60 * 1000;
-                localStorage.setItem('jefram_timer_end', timerEndTime);
-            } else {
-                timerEndTime = parseInt(localStorage.getItem('jefram_timer_end')) || Date.now() + 24 * 60 * 60 * 1000;
-            }
-            
-            if (timerEndTime < Date.now()) {
-                timerElement.style.display = 'none';
-                return;
-            }
-            
-            timerElement.style.display = 'block';
-            
-            if (discountTimerInterval) clearInterval(discountTimerInterval);
-            
-            discountTimerInterval = setInterval(() => {
-                const now = Date.now();
-                const diff = timerEndTime - now;
-                
-                if (diff <= 0) {
-                    clearInterval(discountTimerInterval);
+            // Listen for timer config from Firebase
+            onSnapshot(doc(db, 'config', 'store'), (doc) => {
+                if (doc.exists()) {
+                    const config = doc.data();
+                    if (config.timerEndTime) {
+                        timerEndTime = config.timerEndTime;
+                        
+                        if (timerEndTime < Date.now()) {
+                            timerElement.style.display = 'none';
+                            return;
+                        }
+                        
+                        timerElement.style.display = 'block';
+                        
+                        if (discountTimerInterval) clearInterval(discountTimerInterval);
+                        
+                        discountTimerInterval = setInterval(() => {
+                            const now = Date.now();
+                            const diff = timerEndTime - now;
+                            
+                            if (diff <= 0) {
+                                clearInterval(discountTimerInterval);
+                                timerElement.style.display = 'none';
+                                return;
+                            }
+                            
+                            const hours = Math.floor(diff / (1000 * 60 * 60));
+                            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                            
+                            displayElement.textContent = 
+                                String(hours).padStart(2, '0') + ':' + 
+                                String(minutes).padStart(2, '0') + ':' + 
+                                String(seconds).padStart(2, '0');
+                        }, 1000);
+                    } else {
+                        timerElement.style.display = 'none';
+                    }
+                } else {
                     timerElement.style.display = 'none';
-                    localStorage.removeItem('jefram_timer_end');
-                    return;
                 }
-                
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                
-                displayElement.textContent = 
-                    String(hours).padStart(2, '0') + ':' + 
-                    String(minutes).padStart(2, '0') + ':' + 
-                    String(seconds).padStart(2, '0');
-            }, 1000);
+            });
         }
 
         // ----- FAQ -----
@@ -1958,6 +1933,28 @@
                 icon.className = 'fas fa-chevron-up';
             }
         };
+
+        function renderFaqs(faqs) {
+            const container = document.getElementById('faqContainer');
+            const section = document.getElementById('faqSection');
+            if (!container || !section) return;
+            
+            if (!faqs || faqs.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            container.innerHTML = faqs.map(faq => `
+                <div class="faq-item">
+                    <div class="faq-question" onclick="window.toggleFaq(this)">
+                        <span>${window.escapeHtml(faq.question)}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">${window.escapeHtml(faq.answer)}</div>
+                </div>
+            `).join('');
+        }
 
         // ----- SEARCH AUTOCOMPLETE -----
         function setupSearchAutocomplete() {
@@ -1989,7 +1986,7 @@
                 
                 container.innerHTML = results.map(p => `
                     <div class="autocomplete-item" onclick="window.selectSearchResult('${p.id}')">
-                        <img src="${p.image_url || 'https://via.placeholder.com/40'}" alt="">
+                        <img src="${p.image_url || 'https://via.placeholder.com/40'}" loading="lazy" alt="">
                         <div>
                             <div class="item-name">${window.escapeHtml(p.name)}</div>
                             <div class="item-price">UGX ${parseInt(p.price).toLocaleString()}</div>
@@ -2097,7 +2094,7 @@
                     '<div class="product-card" data-product-id="' + p.id + '">' +
                     '<div class="wishlist-btn" data-id="' + p.id + '" onclick="window.toggleWishlist({id:\'' + p.id + '\', name:\'' + window.escapeHtml(p.name) + '\', price:' + p.price + '})">' +
                     '<i class="' + (wishlist.find(i => i.id == p.id) ? 'fas' : 'far') + ' fa-heart"></i></div>' +
-                    '<img src="' + (p.image_url || 'https://via.placeholder.com/300') + '" class="product-image" onerror="this.src=\'https://via.placeholder.com/300\'">' +
+                    '<img src="' + (p.image_url || 'https://via.placeholder.com/300') + '" loading="lazy" class="product-image" onerror="this.src=\'https://via.placeholder.com/300\'">' +
                     '<div class="product-info">' +
                     '<div class="product-name">' + window.escapeHtml(p.name) + '</div>' +
                     brandHtml +
@@ -2155,25 +2152,41 @@
         window.loadConfig = async function() {
             if (!db) return;
             try {
-                const configDoc = await getDoc(doc(db, 'config', 'store'));
-                if (configDoc.exists()) {
-                    const config = configDoc.data();
-                    if (config.whatsappNumber) {
-                        whatsappNumber = config.whatsappNumber;
+                onSnapshot(doc(db, 'config', 'store'), (doc) => {
+                    if (doc.exists()) {
+                        const config = doc.data();
+                        if (config.whatsappNumber) {
+                            whatsappNumber = config.whatsappNumber;
+                        }
+                        if (config.mtnNumber) {
+                            document.getElementById('mtnNumber').textContent = config.mtnNumber;
+                        }
+                        if (config.mtnName) {
+                            document.getElementById('mtnName').textContent = config.mtnName;
+                        }
+                        if (config.airtelNumber) {
+                            document.getElementById('airtelNumber').textContent = config.airtelNumber;
+                        }
+                        if (config.airtelName) {
+                            document.getElementById('airtelName').textContent = config.airtelName;
+                        }
+                        if (config.instagramUrl) {
+                            document.getElementById('footerInstagram').href = config.instagramUrl;
+                        }
+                        if (config.facebookUrl) {
+                            document.getElementById('footerFacebook').href = config.facebookUrl;
+                        }
+                        if (config.contactPhone) {
+                            document.getElementById('footerPhone').textContent = config.contactPhone;
+                        }
+                        if (config.contactEmail) {
+                            document.getElementById('footerEmail').textContent = config.contactEmail;
+                        }
+                        if (config.faqs && Array.isArray(config.faqs)) {
+                            renderFaqs(config.faqs);
+                        }
                     }
-                    if (config.mtnNumber) {
-                        document.getElementById('mtnNumber').textContent = config.mtnNumber;
-                    }
-                    if (config.mtnName) {
-                        document.getElementById('mtnName').textContent = config.mtnName;
-                    }
-                    if (config.airtelNumber) {
-                        document.getElementById('airtelNumber').textContent = config.airtelNumber;
-                    }
-                    if (config.airtelName) {
-                        document.getElementById('airtelName').textContent = config.airtelName;
-                    }
-                }
+                });
             } catch (error) {
                 console.error('Error loading config:', error);
             }
@@ -2251,5 +2264,34 @@
         window.wishlist = wishlist;
         window.currentUser = currentUser;
     </script>
+
+    <!-- Footer -->
+    <footer style="background: #2c3e50; color: white; padding: 3rem 2rem; margin-top: 4rem;">
+        <div style="max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+            <div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;">Jefram Stores</h3>
+                <p style="color: rgba(255,255,255,0.7); line-height: 1.6;">Kampala's Premier Online Store - Quality products delivered to your doorstep anywhere in Uganda.</p>
+            </div>
+            <div>
+                <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Follow Us</h4>
+                <div style="display: flex; gap: 1rem;">
+                    <a id="footerInstagram" href="https://instagram.com/jeframstores" target="_blank" style="background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: white; padding: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s;">
+                        <i class="fab fa-instagram" style="font-size: 1.5rem;"></i>
+                    </a>
+                    <a id="footerFacebook" href="https://facebook.com/jeframstores" target="_blank" style="background: #1877f2; color: white; padding: 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: transform 0.3s;">
+                        <i class="fab fa-facebook-f" style="font-size: 1.5rem;"></i>
+                    </a>
+                </div>
+            </div>
+            <div>
+                <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Contact</h4>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 0.5rem;"><i class="fas fa-phone" style="margin-right: 8px;"></i> <span id="footerPhone">+256 742 533 656</span></p>
+                <p style="color: rgba(255,255,255,0.7);"><i class="fas fa-envelope" style="margin-right: 8px;"></i> <span id="footerEmail">info@jeframstores.com</span></p>
+            </div>
+        </div>
+        <div style="max-width: 1400px; margin: 2rem auto 0; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: rgba(255,255,255,0.5); font-size: 0.9rem;">
+            &copy; 2024 Jefram Stores. All rights reserved.
+        </div>
+    </footer>
 </body>
 </html>

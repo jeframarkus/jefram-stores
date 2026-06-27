@@ -765,6 +765,57 @@
                     <span id="currentAirtelDisplay" style="font-family: monospace; font-size: 1.1rem; color: #667eea;"></span>
                 </div>
             </div>
+            
+            <!-- Social Media Links -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">🔗 Social Media Links</h4>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="instagramUrl" placeholder="Instagram URL (e.g., https://instagram.com/jeframstores)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 300px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="facebookUrl" placeholder="Facebook URL (e.g., https://facebook.com/jeframstores)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 300px;">
+                    <button class="btn-primary" onclick="updateSocialLinks()">Update</button>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Instagram:</span>
+                    <span id="currentInstagramDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Facebook:</span>
+                    <span id="currentFacebookDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">📞 Contact Information</h4>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="contactPhone" placeholder="Phone Number (e.g., +256 742 533 656)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 250px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="contactEmail" placeholder="Email (e.g., info@jeframstores.com)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 250px;">
+                    <button class="btn-primary" onclick="updateContactInfo()">Update</button>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Phone:</span>
+                    <span id="currentPhoneDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Email:</span>
+                    <span id="currentEmailDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+            </div>
+            
+            <!-- FAQ Management -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">❓ FAQ Management</h4>
+                <div id="faqList" style="margin-bottom: 15px;"></div>
+                <div style="border-top: 1px solid #ddd; padding-top: 15px;">
+                    <input type="text" id="faqQuestion" placeholder="Question" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-bottom: 10px;">
+                    <textarea id="faqAnswer" placeholder="Answer" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-bottom: 10px; min-height: 80px; font-family: 'Poppins', sans-serif;"></textarea>
+                    <button class="btn-primary" onclick="addFaq()">Add FAQ</button>
+                </div>
+            </div>
         </div>
 
         <!-- Coupons Section -->
@@ -1308,10 +1359,49 @@
                     if (config.airtelName) {
                         document.getElementById('airtelName').value = config.airtelName;
                     }
+                    if (config.instagramUrl) {
+                        document.getElementById('currentInstagramDisplay').innerHTML = config.instagramUrl;
+                        document.getElementById('instagramUrl').value = config.instagramUrl;
+                    }
+                    if (config.facebookUrl) {
+                        document.getElementById('currentFacebookDisplay').innerHTML = config.facebookUrl;
+                        document.getElementById('facebookUrl').value = config.facebookUrl;
+                    }
+                    if (config.contactPhone) {
+                        document.getElementById('currentPhoneDisplay').innerHTML = config.contactPhone;
+                        document.getElementById('contactPhone').value = config.contactPhone;
+                    }
+                    if (config.contactEmail) {
+                        document.getElementById('currentEmailDisplay').innerHTML = config.contactEmail;
+                        document.getElementById('contactEmail').value = config.contactEmail;
+                    }
+                    if (config.faqs && Array.isArray(config.faqs)) {
+                        renderFaqs(config.faqs);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
+        }
+
+        function renderFaqs(faqs) {
+            const container = document.getElementById('faqList');
+            if (!container) return;
+            container.innerHTML = faqs.map((faq, index) => `
+                <div style="background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; margin-bottom: 5px;">${escapeHtml(faq.question)}</div>
+                        <div style="font-size: 0.9rem; color: #666;">${escapeHtml(faq.answer)}</div>
+                    </div>
+                    <button class="btn-danger btn-sm" onclick="deleteFaq(${index})">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         window.setTimer = async function() {
@@ -1405,6 +1495,108 @@
             }
         };
 
+        window.updateSocialLinks = async function() {
+            const instagram = document.getElementById('instagramUrl').value.trim();
+            const facebook = document.getElementById('facebookUrl').value.trim();
+            if (!instagram && !facebook) {
+                showToast('Enter at least one social link', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const updateData = {};
+                if (instagram) updateData.instagramUrl = instagram;
+                if (facebook) updateData.facebookUrl = facebook;
+                
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, updateData);
+                } else {
+                    await setDoc(configRef, updateData);
+                }
+                showToast('Social links updated!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error updating social links:', error);
+                showToast('Failed to update social links', 'error');
+            }
+        };
+
+        window.updateContactInfo = async function() {
+            const phone = document.getElementById('contactPhone').value.trim();
+            const email = document.getElementById('contactEmail').value.trim();
+            if (!phone && !email) {
+                showToast('Enter at least one contact detail', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const updateData = {};
+                if (phone) updateData.contactPhone = phone;
+                if (email) updateData.contactEmail = email;
+                
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, updateData);
+                } else {
+                    await setDoc(configRef, updateData);
+                }
+                showToast('Contact info updated!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error updating contact info:', error);
+                showToast('Failed to update contact info', 'error');
+            }
+        };
+
+        window.addFaq = async function() {
+            const question = document.getElementById('faqQuestion').value.trim();
+            const answer = document.getElementById('faqAnswer').value.trim();
+            if (!question || !answer) {
+                showToast('Enter both question and answer', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                let faqs = [];
+                if (configDoc.exists() && configDoc.data().faqs) {
+                    faqs = configDoc.data().faqs;
+                }
+                faqs.push({ question, answer });
+                
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { faqs });
+                } else {
+                    await setDoc(configRef, { faqs });
+                }
+                showToast('FAQ added!', 'success');
+                document.getElementById('faqQuestion').value = '';
+                document.getElementById('faqAnswer').value = '';
+                loadSettings();
+            } catch (error) {
+                console.error('Error adding FAQ:', error);
+                showToast('Failed to add FAQ', 'error');
+            }
+        };
+
+        window.deleteFaq = async function(index) {
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                if (configDoc.exists() && configDoc.data().faqs) {
+                    const faqs = configDoc.data().faqs;
+                    faqs.splice(index, 1);
+                    await updateDoc(configRef, { faqs });
+                    showToast('FAQ deleted!', 'success');
+                    loadSettings();
+                }
+            } catch (error) {
+                console.error('Error deleting FAQ:', error);
+                showToast('Failed to delete FAQ', 'error');
+            }
+        };
+
         // ----- EXISTING FUNCTIONS -----
         async function loadStats() {
             if (!isMaster) return;
@@ -1493,17 +1685,23 @@
                 // Add response button
                 const responseButton = `<button onclick="sendOrderResponse('${orderId}')" style="background:#667eea; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px; font-size:11px;">💬 Respond</button>`;
                 
-                // Show tracking number
-                let trackingDisplay = '';
-                if (order.tracking_number) {
-                    trackingDisplay = `<div style="margin-top:3px; font-size:11px; color:#667eea; font-weight:bold;">📦 ${order.tracking_number}</div>`;
-                }
+                // Show tracking number with edit option - more prominent
+                let trackingDisplay = `
+                    <div style="margin-top:5px; padding:6px; background:#e8f0fe; border-radius:4px; border-left:3px solid #667eea;">
+                        <div style="font-size:10px; color:#666; margin-bottom:2px;">📦 TRACKING</div>
+                        <input type="text" id="tracking_${orderId}" value="${order.tracking_number || ''}" 
+                        style="width:100%; font-size:12px; padding:3px 5px; border:1px solid #ddd; border-radius:3px; font-weight:bold; color:#667eea;"
+                        onchange="updateTrackingNumber('${orderId}', this.value)" placeholder="Enter tracking #">
+                    </div>`;
                 
-                // Show estimated delivery
-                let deliveryDisplay = '';
-                if (order.estimated_delivery) {
-                    deliveryDisplay = `<div style="margin-top:3px; font-size:11px; color:#28a745;">🚚 Est: ${order.estimated_delivery}</div>`;
-                }
+                // Show estimated delivery with edit option - more prominent
+                let deliveryDisplay = `
+                    <div style="margin-top:5px; padding:6px; background:#e8f5e9; border-radius:4px; border-left:3px solid #28a745;">
+                        <div style="font-size:10px; color:#666; margin-bottom:2px;">🚚 EST. DELIVERY</div>
+                        <input type="date" id="delivery_${orderId}" value="${order.estimated_delivery_date || ''}" 
+                        style="width:100%; font-size:12px; padding:3px 5px; border:1px solid #ddd; border-radius:3px; font-weight:bold; color:#28a745;"
+                        onchange="updateEstimatedDelivery('${orderId}', this.value)">
+                    </div>`;
                 
                 const statusOptions = order.status === 'pending_payment' 
                     ? `<option value="pending_payment" selected>Pending Payment</option>`
@@ -1643,6 +1841,12 @@
 
         async function loadReviews() {
             const reviewsSnap = await getDocs(collection(db, 'reviews'));
+            const productsSnap = await getDocs(collection(db, 'products'));
+            const productMap = {};
+            productsSnap.forEach(doc => {
+                productMap[doc.id] = doc.data().name;
+            });
+            
             const reviewsList = document.getElementById('reviewsList');
             reviewsList.innerHTML = '';
             const reviews = [];
@@ -1651,7 +1855,8 @@
             });
             reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             reviews.forEach(review => {
-                reviewsList.innerHTML += `<tr><td>${escapeHtml(review.productName)}</td><td>${escapeHtml(review.userName)}</td><td>${'⭐'.repeat(review.rating)}</td><td>${escapeHtml(review.comment).substring(0, 100)}</td><td>${new Date(review.createdAt).toLocaleDateString()}</td><td><button class="btn-danger btn-sm" onclick="deleteReview('${review.id}')">Delete</button></td></tr>`;
+                const productName = review.productName || productMap[review.productId] || 'Unknown Product';
+                reviewsList.innerHTML += `<tr><td>${escapeHtml(productName)}</td><td>${escapeHtml(review.userName)}</td><td>${'⭐'.repeat(review.rating)}</td><td>${escapeHtml(review.comment || '').substring(0, 100)}</td><td>${new Date(review.createdAt).toLocaleDateString()}</td><td><button class="btn-danger btn-sm" onclick="deleteReview('${review.id}')">Delete</button></td></tr>`;
             });
         }
 
@@ -1789,6 +1994,22 @@
             await updateDoc(orderRef, { delivery_fee: parseInt(fee) || 0 });
             showToast('Delivery fee updated!', 'success');
             loadOrders();
+        };
+
+        window.updateTrackingNumber = async function(orderId, trackingNumber) {
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, { tracking_number: trackingNumber });
+            showToast('Tracking number updated!', 'success');
+        };
+
+        window.updateEstimatedDelivery = async function(orderId, deliveryDate) {
+            const orderRef = doc(db, 'orders', orderId);
+            const estimatedDeliveryStr = deliveryDate ? new Date(deliveryDate).toLocaleDateString() : '';
+            await updateDoc(orderRef, { 
+                estimated_delivery_date: deliveryDate,
+                estimated_delivery: estimatedDeliveryStr 
+            });
+            showToast('Estimated delivery updated!', 'success');
         };
 
         window.approvePayment = async function(orderId) {
