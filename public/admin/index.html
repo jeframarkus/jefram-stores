@@ -926,7 +926,7 @@
             <h3>Add New Admin</h3>
             <input type="text" id="adminUsername" placeholder="Username" style="width:100%; margin-bottom:10px; padding:10px;">
             <input type="password" id="adminPassword" placeholder="Password" style="width:100%; margin-bottom:10px; padding:10px;">
-            <select id="adminRole" style="width:100%; margin-bottom:10px; padding:10px;">
+            <select id="newAdminRole" style="width:100%; margin-bottom:10px; padding:10px;">
                 <option value="subadmin" selected>Sub Admin</option>
                 <option value="master">Master Admin</option>
             </select>
@@ -1069,7 +1069,7 @@
 
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
-                const section = item.datasection;
+                const section = item.dataset.section;
                 if (!section) return;
                 if (isSubAdmin && !['products', 'add-product'].includes(section)) {
                     alert('Products only access');
@@ -2290,7 +2290,7 @@
         window.addNewAdmin = async function() {
             const username = document.getElementById('adminUsername').value.trim();
             const password = document.getElementById('adminPassword').value.trim();
-            const roleSelect = document.getElementById('adminRole');
+            const roleSelect = document.getElementById('newAdminRole');
             let role = 'subadmin';
             if (roleSelect) {
                 role = roleSelect.value || 'subadmin';
