@@ -126,13 +126,44 @@
         .discount-timer .timer-display { font-size: 2rem; font-weight: bold; letter-spacing: 2px; }
         .discount-timer .timer-label { font-size: 14px; opacity: 0.9; }
 
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
-        .product-card { background: white; border-radius: 15px; overflow: hidden; transition: all 0.3s; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: relative; }
-        .product-card:hover { transform: translateY(-5px); }
-        .wishlist-btn { position: absolute; top: 10px; right: 10px; background: white; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
-        .wishlist-btn i { font-size: 1.2rem; }
-        .product-image { width: 100%; height: 200px; object-fit: cover; background: #f5f5f5; }
-        .product-info { padding: 1.5rem; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 2rem; }
+        .product-card { background: white; border-radius: 15px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 8px rgba(0,0,0,0.08); position: relative; cursor: pointer; }
+        .product-card:hover { transform: translateY(-3px); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
+        .wishlist-btn { position: absolute; top: 10px; right: 10px; background: white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10; }
+        .wishlist-btn i { font-size: 1rem; }
+        .product-image { width: 100%; height: 150px; object-fit: cover; background: #f5f5f5; }
+        .product-info { padding: 1rem; }
+        .product-info .product-name { font-size: 1rem; line-height: 1.3; margin-bottom: 0.45rem; }
+        .product-info .product-price { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .product-info .product-stock { font-size: 0.82rem; margin-bottom: 0.75rem; }
+        .product-info .add-to-cart { width: 100%; padding: 10px; }
+        .product-gallery-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 1rem; }
+        .product-gallery-modal.open { display: flex; }
+        .gallery-card { background: white; border-radius: 18px; max-width: 920px; width: 100%; max-height: 90vh; overflow: hidden; display: grid; grid-template-columns: 1fr 320px; gap: 1rem; }
+        .gallery-main { position: relative; background: #111; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .gallery-main img { max-width: 100%; max-height: 100%; transition: transform 0.3s ease; }
+        .gallery-main img.zoomed { transform: scale(1.7); cursor: zoom-out; }
+        .gallery-close, .gallery-prev, .gallery-next { position: absolute; background: rgba(0,0,0,0.5); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .gallery-close { top: 16px; right: 16px; }
+        .gallery-prev { left: 16px; top: calc(50% - 20px); }
+        .gallery-next { right: 16px; top: calc(50% - 20px); }
+        .gallery-thumbnails { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; }
+        .gallery-thumb { width: 100%; height: 72px; border-radius: 12px; overflow: hidden; cursor: pointer; border: 2px solid transparent; }
+        .gallery-thumb.active { border-color: #667eea; }
+        .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .gallery-details { padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; }
+        .gallery-details h2 { margin-bottom: 0.5rem; }
+        .gallery-details p { color: #555; line-height: 1.5; margin-bottom: 1rem; }
+        .gallery-details .gallery-price { font-size: 1.25rem; margin-bottom: 0.75rem; color: #667eea; }
+        .gallery-details .gallery-stock { font-size: 0.9rem; margin-bottom: 1rem; }
+        .gallery-details .gallery-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+        .gallery-details .gallery-actions button { flex: 1; }
+        @media (max-width: 900px) {
+            .gallery-card { grid-template-columns: 1fr; max-height: 95vh; }
+            .gallery-thumbnails { flex-direction: row; overflow-x: auto; }
+            .gallery-thumb { width: 84px; height: 84px; }
+            .gallery-main { min-height: 320px; }
+        }
         .product-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: #333; }
         .product-price { font-size: 1.3rem; color: #667eea; font-weight: bold; margin: 0.5rem 0; }
         .product-stock { font-size: 0.8rem; color: #28a745; margin-bottom: 1rem; }
@@ -328,6 +359,27 @@
 
         <!-- Related Products -->
         <div id="relatedProductsContainer"></div>
+
+        <div id="productGalleryModal" class="product-gallery-modal" onclick="window.closeProductGallery()">
+            <div class="gallery-card" onclick="event.stopPropagation()">
+                <div class="gallery-main">
+                    <button class="gallery-close" onclick="window.closeProductGallery()">&times;</button>
+                    <button class="gallery-prev" onclick="window.galleryPrev()"><i class="fas fa-chevron-left"></i></button>
+                    <img id="galleryMainImage" src="" alt="Product Image" onclick="window.toggleGalleryZoom(event)">
+                    <button class="gallery-next" onclick="window.galleryNext()"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="gallery-thumbnails" id="galleryThumbnails"></div>
+            </div>
+            <div class="gallery-card gallery-details">
+                <div>
+                    <h2 id="galleryTitle"></h2>
+                    <p id="galleryDescription"></p>
+                    <div class="gallery-price" id="galleryPrice"></div>
+                    <div class="gallery-stock" id="galleryStock"></div>
+                </div>
+                <div id="galleryActions" class="gallery-actions"></div>
+            </div>
+        </div>
 
         <!-- FAQ Section -->
         <div class="faq-section" id="faqSection" style="display: none;">
@@ -2091,17 +2143,17 @@
                 const brandHtml = p.brand ? '<div class="product-brand">🏷️ ' + window.escapeHtml(p.brand) + '</div>' : '';
 
                 html +=
-                    '<div class="product-card" data-product-id="' + p.id + '">' +
-                    '<div class="wishlist-btn" data-id="' + p.id + '" onclick="window.toggleWishlist({id:\'' + p.id + '\', name:\'' + window.escapeHtml(p.name) + '\', price:' + p.price + '})">' +
+                    '<div class="product-card" data-product-id="' + p.id + '" onclick="window.openProductGallery(\'' + p.id + '\')">' +
+                    '<div class="wishlist-btn" data-id="' + p.id + '" onclick="event.stopPropagation(); window.toggleWishlist({id:\'' + p.id + '\', name:\'' + window.escapeHtml(p.name) + '\', price:' + p.price + '})">' +
                     '<i class="' + (wishlist.find(i => i.id == p.id) ? 'fas' : 'far') + ' fa-heart"></i></div>' +
-                    '<img src="' + (p.image_url || 'https://via.placeholder.com/300') + '" loading="lazy" class="product-image" onerror="this.src=\'https://via.placeholder.com/300\'">' +
+                    '<img src="' + ((p.image_urls && p.image_urls.length) ? p.image_urls[0] : (p.image_url || 'https://via.placeholder.com/300')) + '" loading="lazy" class="product-image" onerror="this.src=\'https://via.placeholder.com/300\'">' +
                     '<div class="product-info">' +
                     '<div class="product-name">' + window.escapeHtml(p.name) + '</div>' +
                     brandHtml +
                     '<div class="product-price">UGX ' + parseInt(p.price).toLocaleString() + '</div>' +
                     '<div class="product-stock">' + (totalStock > 0 ? window.t('inStock') + ' (' + totalStock + ')' : window.t('outOfStock')) + '</div>' +
                     sizeHtml +
-                    '<button class="add-to-cart" onclick="window.addToCart(\'' + p.id + '\')" ' + (totalStock === 0 ? 'disabled' : '') + '>' + 
+                    '<button class="add-to-cart" onclick="event.stopPropagation(); window.addToCart(\'' + p.id + '\')" ' + (totalStock === 0 ? 'disabled' : '') + '>' + 
                     window.t('addToCart') + 
                     '</button>' +
                     reviews +
@@ -2119,6 +2171,81 @@
             if (filtered.length > 0) {
                 window.addToRecentlyViewed(filtered[0]);
             }
+        };
+
+        window.openProductGallery = function(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            const modal = document.getElementById('productGalleryModal');
+            const galleryImage = document.getElementById('galleryMainImage');
+            const galleryTitle = document.getElementById('galleryTitle');
+            const galleryDescription = document.getElementById('galleryDescription');
+            const galleryPrice = document.getElementById('galleryPrice');
+            const galleryStock = document.getElementById('galleryStock');
+            const thumbs = document.getElementById('galleryThumbnails');
+            const galleryActions = document.getElementById('galleryActions');
+            const imageUrls = (product.image_urls && product.image_urls.length) ? product.image_urls : [(product.image_url || 'https://via.placeholder.com/300')];
+            modal.dataset.productId = productId;
+            modal.dataset.imageIndex = '0';
+            galleryImage.src = imageUrls[0];
+            galleryImage.classList.remove('zoomed');
+            galleryTitle.textContent = product.name;
+            galleryDescription.textContent = product.description || '';
+            galleryPrice.textContent = 'UGX ' + parseInt(product.price).toLocaleString();
+            const totalStock = product.hasSizes && product.sizes ? product.sizes.reduce((sum, s) => sum + s.stock, 0) : (product.stock || 0);
+            galleryStock.textContent = totalStock > 0 ? 'In stock (' + totalStock + ')' : 'Out of stock';
+            thumbs.innerHTML = imageUrls.map((url, index) =>
+                '<div class="gallery-thumb' + (index === 0 ? ' active' : '') + '" onclick="window.showGalleryImage(' + index + ')"><img src="' + url + '" loading="lazy"></div>'
+            ).join('');
+            galleryActions.innerHTML = '<button class="add-to-cart" onclick="event.stopPropagation(); window.addToCart(\'' + productId + '\')">Add to Cart</button>' +
+                                       '<button class="btn-warning" onclick="event.stopPropagation(); window.closeProductGallery()">Close</button>';
+            modal.classList.add('open');
+        };
+
+        window.closeProductGallery = function() {
+            const modal = document.getElementById('productGalleryModal');
+            if (modal) modal.classList.remove('open');
+        };
+
+        window.showGalleryImage = function(index) {
+            const modal = document.getElementById('productGalleryModal');
+            const productId = modal.dataset.productId;
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+            const imageUrls = (product.image_urls && product.image_urls.length) ? product.image_urls : [(product.image_url || 'https://via.placeholder.com/300')];
+            const galleryImage = document.getElementById('galleryMainImage');
+            const thumbnails = document.querySelectorAll('.gallery-thumb');
+            const selectedIndex = Math.max(0, Math.min(index, imageUrls.length - 1));
+            modal.dataset.imageIndex = selectedIndex;
+            galleryImage.src = imageUrls[selectedIndex];
+            galleryImage.classList.remove('zoomed');
+            thumbnails.forEach((thumb, idx) => thumb.classList.toggle('active', idx === selectedIndex));
+        };
+
+        window.galleryNext = function() {
+            const modal = document.getElementById('productGalleryModal');
+            if (!modal || !modal.dataset.productId) return;
+            const currentIndex = parseInt(modal.dataset.imageIndex || '0', 10);
+            const product = products.find(p => p.id === modal.dataset.productId);
+            if (!product) return;
+            const imageUrls = (product.image_urls && product.image_urls.length) ? product.image_urls : [(product.image_url || 'https://via.placeholder.com/300')];
+            window.showGalleryImage((currentIndex + 1) % imageUrls.length);
+        };
+
+        window.galleryPrev = function() {
+            const modal = document.getElementById('productGalleryModal');
+            if (!modal || !modal.dataset.productId) return;
+            const currentIndex = parseInt(modal.dataset.imageIndex || '0', 10);
+            const product = products.find(p => p.id === modal.dataset.productId);
+            if (!product) return;
+            const imageUrls = (product.image_urls && product.image_urls.length) ? product.image_urls : [(product.image_url || 'https://via.placeholder.com/300')];
+            window.showGalleryImage((currentIndex - 1 + imageUrls.length) % imageUrls.length);
+        };
+
+        window.toggleGalleryZoom = function(event) {
+            event.stopPropagation();
+            const image = event.currentTarget;
+            image.classList.toggle('zoomed');
         };
 
         window.fetchProducts = async function() {
