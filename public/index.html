@@ -381,11 +381,6 @@
             </div>
         </div>
 
-        <!-- FAQ Section -->
-        <div class="faq-section" id="faqSection" style="display: none;">
-            <h2 class="section-title">Frequently Asked Questions</h2>
-            <div id="faqContainer"></div>
-        </div>
     </div>
 
     <!-- Cart Modal -->
@@ -2030,36 +2025,6 @@
             }
         };
 
-        function renderFaqs(faqs) {
-            const container = document.getElementById('faqContainer');
-            const section = document.getElementById('faqSection');
-            if (!container || !section) return;
-            
-            if (!faqs || faqs.length === 0) {
-                section.style.display = 'none';
-                return;
-            }
-            
-            section.style.display = 'block';
-            container.innerHTML = faqs.map(faq => `
-                <div class="faq-item">
-                    <div class="faq-question" onclick="window.toggleFaq(this)">
-                        <span>${window.escapeHtml(faq.question)}</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                    <div class="faq-answer">${window.escapeHtml(faq.answer)}</div>
-                </div>
-            `).join('');
-        }
-
-        window.toggleFaq = function(element) {
-            const answer = element.nextElementSibling;
-            answer.classList.toggle('open');
-            const icon = element.querySelector('i');
-            icon.classList.toggle('fa-chevron-down');
-            icon.classList.toggle('fa-chevron-up');
-        };
-
         window.openContact = function(type) {
             const phone = document.getElementById('footerPhone').textContent;
             const email = document.getElementById('footerEmail').textContent;
@@ -2067,14 +2032,6 @@
                 window.open('tel:' + phone.replace(/\s/g, ''), '_blank');
             } else if (type === 'email') {
                 window.open('mailto:' + email, '_blank');
-            }
-        };
-
-        window.openFaqModal = function() {
-            const section = document.getElementById('faqSection');
-            if (section) {
-                section.style.display = 'block';
-                section.scrollIntoView({ behavior: 'smooth' });
             }
         };
 
@@ -2477,9 +2434,9 @@
             </div>
             <div>
                 <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Help</h4>
-                <button onclick="window.openFaqModal()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.3s;">
+                <a href="faqs.html" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: transform 0.3s; text-decoration: none; display: inline-block;">
                     <i class="fas fa-question-circle" style="margin-right: 8px;"></i> FAQs
-                </button>
+                </a>
             </div>
         </div>
         <div style="max-width: 1400px; margin: 2rem auto 0; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: rgba(255,255,255,0.5); font-size: 0.9rem;">
