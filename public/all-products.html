@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Products - Jefram Stores</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: #f8f9fa; min-height: 100vh; }
+
+        .header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 1rem 2rem; }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo h1 { font-size: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800; cursor: pointer; }
+        .back-btn { background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; font-weight: 500; }
+
+        .main-content { max-width: 1400px; margin: 2rem auto; padding: 0 2rem; }
+        .page-title { font-size: 2rem; margin-bottom: 2rem; color: #333; }
+
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+        .product-card { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 8px rgba(0,0,0,0.08); position: relative; cursor: pointer; }
+        .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
+        .product-image { width: 100%; height: 90px; object-fit: contain; background: #f5f5f5; }
+        .product-info { padding: 6px; }
+        .product-info .product-name { font-size: 11px; line-height: 1.2; margin-bottom: 0.2rem; font-weight: 600; }
+        .product-info .product-price { font-size: 11px; margin-bottom: 0.2rem; color: #667eea; }
+        .discount-badge { position: absolute; top: 8px; right: 8px; background: #ff4757; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+
+        .loader { text-align: center; padding: 3rem; }
+        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .no-products { text-align: center; padding: 3rem; color: #999; }
+
+        @media (max-width: 768px) {
+            .header-content { flex-direction: column; gap: 1rem; text-align: center; }
+            .page-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo" onclick="window.location.href='index.html'">
+                <h1>Jefram Stores</h1>
+            </div>
+            <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Store</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <h1 class="page-title">All Products</h1>
+        <div id="productsGrid">
+            <div class="loader"><div class="spinner"></div></div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, collection, getDocs } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
+        };
+
+        let app, db, products = [];
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            document.getElementById('productsGrid').innerHTML = '<div class="no-products">Failed to load products. Please refresh the page.</div>';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function renderProductCard(product) {
+            const discount = product.discount_percent ? product.discount_percent : 0;
+            const discountBadge = discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : '';
+            return `
+                <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
+                    ${discountBadge}
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
+                    <div class="product-info">
+                        <div class="product-name">${escapeHtml(product.name)}</div>
+                        <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAllProducts() {
+            try {
+                const snapshot = await getDocs(collection(db, 'products'));
+                products = [];
+                snapshot.forEach((doc) => {
+                    products.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (products.length === 0) {
+                    document.getElementById('productsGrid').innerHTML = '<div class="no-products">No products available at the moment.</div>';
+                    return;
+                }
+
+                document.getElementById('productsGrid').innerHTML = '<div class="products-grid">' + products.map(renderProductCard).join('') + '</div>';
+            } catch (error) {
+                console.error('Error loading products:', error);
+                document.getElementById('productsGrid').innerHTML = '<div class="no-products">Failed to load products. Please refresh the page.</div>';
+            }
+        }
+
+        if (db) {
+            loadAllProducts();
+        }
+    </script>
+</body>
+</html>
