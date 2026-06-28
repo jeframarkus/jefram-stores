@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - Jefram Stores</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background: #f8f9fa; color: #222; }
+        .page-shell { max-width: 1280px; margin: 0 auto; padding: 20px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .brand { font-size: 1.5rem; font-weight: 800; color: #5b67f8; cursor: pointer; }
+        .back-btn, .cart-pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 999px; text-decoration: none; font-size: 0.95rem; font-weight: 600; }
+        .back-btn { background: #f2f4ff; color: #3d4adf; }
+        .cart-pill { background: #fff; color: #333; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+
+        .product-card { background: #fff; border-radius: 24px; box-shadow: 0 16px 40px rgba(31, 41, 55, 0.08); overflow: hidden; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; padding: 24px; }
+        .gallery { display: grid; gap: 12px; }
+        .main-image { width: 100%; min-height: 360px; max-height: 460px; object-fit: contain; border-radius: 18px; background: linear-gradient(135deg, #f8f9ff, #eef2ff); padding: 12px; }
+        .thumb-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+        .thumb { width: 72px; height: 72px; border-radius: 12px; border: 2px solid transparent; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+        .thumb.active { border-color: #5b67f8; }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+        .product-info { display: flex; flex-direction: column; gap: 14px; }
+        .product-name { font-size: 1.8rem; font-weight: 700; line-height: 1.2; }
+        .meta { display: flex; flex-wrap: wrap; gap: 10px; color: #68707d; font-size: 0.93rem; }
+        .meta span { background: #f5f7fb; padding: 6px 10px; border-radius: 999px; }
+        .price-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .price { font-size: 1.7rem; font-weight: 800; color: #111827; }
+        .old-price { font-size: 1rem; color: #8a94a6; text-decoration: line-through; }
+        .discount-badge { background: #ff4d67; color: white; padding: 6px 10px; border-radius: 999px; font-weight: 700; font-size: 0.9rem; }
+        .flash-box { background: linear-gradient(135deg, #ffefef, #fff5f5); border: 1px solid #ffd3dc; border-radius: 16px; padding: 14px; color: #6b1d2b; }
+        .flash-box strong { display: block; margin-bottom: 6px; }
+        .flash-timer { font-weight: 700; font-size: 1.05rem; }
+        .stock-pill { display: inline-block; padding: 6px 10px; border-radius: 999px; font-size: 0.9rem; font-weight: 600; background: #eefdf3; color: #157f3b; }
+        .stock-pill.low { background: #fff7e8; color: #a86c00; }
+        .stock-pill.out { background: #ffe8ea; color: #c13046; }
+        .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
+        .btn-primary, .btn-outline { border: none; padding: 12px 16px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-outline { background: #f5f7fb; color: #374151; }
+        .section { background: #fff; border-radius: 20px; box-shadow: 0 10px 24px rgba(17,24,39,0.06); padding: 20px; margin-top: 20px; }
+        .section h3 { margin-bottom: 8px; font-size: 1.1rem; }
+        .review-card { border-top: 1px solid #f0f2f5; padding: 12px 0; }
+        .review-card:first-of-type { border-top: none; }
+        .review-rating { color: #ffb703; font-size: 0.95rem; }
+        .review-comment { color: #4b5563; margin-top: 4px; }
+        .empty-state { color: #8a94a6; font-size: 0.95rem; }
+        .status-message { margin-top: 10px; font-size: 0.95rem; color: #157f3b; }
+        .status-message.error { color: #c13046; }
+        .loader { padding: 32px; text-align: center; color: #6b7280; }
+        @media (max-width: 900px) { .product-card { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <div class="topbar">
+            <div class="brand" onclick="window.location.href='index.html'">Jefram Stores</div>
+            <div class="topbar-actions">
+                <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to store</a>
+                <span class="cart-pill"><i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span> items</span>
+            </div>
+        </div>
+
+        <div id="productContent">
+            <div class="loader">Loading product...</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let product = null;
+        let config = null;
+        let reviews = [];
+        let selectedImageIndex = 0;
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/[&<>"']/g, function(m) {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+                return map[m];
+            });
+        }
+
+        function formatCurrency(value) {
+            const num = Number(value || 0);
+            return 'UGX ' + num.toLocaleString();
+        }
+
+        function getImages(productData) {
+            if (productData.image_urls && productData.image_urls.length) return productData.image_urls;
+            if (productData.image_url) return [productData.image_url];
+            return ['https://via.placeholder.com/800x800?text=No+Image'];
+        }
+
+        function getStockStatus(productData) {
+            if (productData.hasSizes && productData.sizes && productData.sizes.length) {
+                const totalStock = productData.sizes.reduce((sum, size) => sum + (Number(size.stock) || 0), 0);
+                if (totalStock <= 0) return { label: 'Out of stock', className: 'out' };
+                if (totalStock <= 5) return { label: `Only ${totalStock} left`, className: 'low' };
+                return { label: `In stock (${totalStock})`, className: '' };
+            }
+            const stock = Number(productData.stock || 0);
+            if (stock <= 0) return { label: 'Out of stock', className: 'out' };
+            if (stock <= 5) return { label: `Only ${stock} left`, className: 'low' };
+            return { label: `In stock (${stock})`, className: '' };
+        }
+
+        function getDiscountPercent(productData, saleEntry) {
+            const fromSale = saleEntry && (saleEntry.discountPercent ?? saleEntry.discount_percent ?? saleEntry.discount ?? null);
+            const fromProduct = productData.discount_percent ?? productData.discountPercent ?? null;
+            return Number(fromSale ?? fromProduct ?? 0);
+        }
+
+        function getCurrentPrice(productData, discountPercent) {
+            const original = Number(productData.price || 0);
+            if (!discountPercent || discountPercent <= 0) return original;
+            return Math.max(0, original - (original * (discountPercent / 100)));
+        }
+
+        function getFlashSaleEntry(productData) {
+            if (!config || !Array.isArray(config.flashSales)) return null;
+            return config.flashSales.find(entry => {
+                if (typeof entry === 'string') return entry === productData.id;
+                if (entry && entry.productId) return entry.productId === productData.id;
+                return false;
+            }) || null;
+        }
+
+        function renderImageGallery(images) {
+            return `
+                <img id="mainImage" class="main-image" src="${images[selectedImageIndex] || images[0]}" alt="${escapeHtml(product.name)}">
+                <div class="thumb-row">
+                    ${images.map((img, index) => `
+                        <div class="thumb ${index === selectedImageIndex ? 'active' : ''}" onclick="window.selectImage(${index})">
+                            <img src="${img}" alt="Thumbnail ${index + 1}">
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function renderReviews(reviewsList) {
+            if (!reviewsList.length) {
+                return '<div class="empty-state">No reviews yet for this product.</div>';
+            }
+            return reviewsList.map(review => `
+                <div class="review-card">
+                    <div class="review-rating">${'★'.repeat(Number(review.rating || 0))}${'☆'.repeat(5 - Number(review.rating || 0))}</div>
+                    <div class="review-comment">${escapeHtml(review.comment || 'Great product!')}</div>
+                    <div class="meta" style="margin-top:6px;"><span>${escapeHtml(review.userName || 'Guest')}</span></div>
+                </div>
+            `).join('');
+        }
+
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            const count = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+            document.getElementById('cartCount').textContent = count;
+        }
+
+        function setMessage(text, isError = false) {
+            const container = document.getElementById('statusMessage');
+            if (!container) return;
+            container.textContent = text;
+            container.className = 'status-message' + (isError ? ' error' : '');
+        }
+
+        window.selectImage = function(index) {
+            selectedImageIndex = index;
+            const container = document.getElementById('productContent');
+            if (!container || !product) return;
+            const images = getImages(product);
+            const mainImage = container.querySelector('#mainImage');
+            if (mainImage) mainImage.src = images[index] || images[0];
+            container.querySelectorAll('.thumb').forEach((thumb, thumbIndex) => thumb.classList.toggle('active', thumbIndex === index));
+        };
+
+        window.addToCart = function() {
+            if (!product) return;
+            const cart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            const existing = cart.find(item => item.id === product.id);
+            if (existing) {
+                existing.quantity = (Number(existing.quantity) || 1) + 1;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: Number(product.price || 0),
+                    image: getImages(product)[0],
+                    quantity: 1
+                });
+            }
+            localStorage.setItem('jefram-cart', JSON.stringify(cart));
+            updateCartCount();
+            setMessage(`${product.name} added to cart.`);
+        };
+
+        async function loadProduct() {
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('id');
+            const container = document.getElementById('productContent');
+            if (!productId) {
+                container.innerHTML = '<div class="loader">No product selected.</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="loader">Loading product...</div>';
+
+            try {
+                const productDoc = await getDoc(doc(db, 'products', productId));
+                if (!productDoc.exists()) {
+                    container.innerHTML = '<div class="loader">Product not found.</div>';
+                    return;
+                }
+
+                product = { id: productDoc.id, ...productDoc.data() };
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                if (configDoc.exists()) config = configDoc.data();
+
+                const reviewQuery = query(collection(db, 'reviews'), where('productId', '==', productId));
+                const reviewSnapshot = await getDocs(reviewQuery);
+                reviews = [];
+                reviewSnapshot.forEach((docSnap) => reviews.push({ id: docSnap.id, ...docSnap.data() }));
+                reviews.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+                const images = getImages(product);
+                const saleEntry = getFlashSaleEntry(product);
+                const discountPercent = getDiscountPercent(product, saleEntry);
+                const currentPrice = getCurrentPrice(product, discountPercent);
+                const stockStatus = getStockStatus(product);
+                const averageRating = reviews.length ? (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1) : '0.0';
+                const flashSaleEndTime = saleEntry && (saleEntry.endTime || saleEntry.endsAt || saleEntry.ends_at || saleEntry.endTime || config?.timerEndTime || null);
+
+                container.innerHTML = `
+                    <div class="product-card">
+                        <div class="gallery">
+                            ${renderImageGallery(images)}
+                        </div>
+                        <div class="product-info">
+                            <div class="product-name">${escapeHtml(product.name)}</div>
+                            <div class="meta">
+                                <span><i class="fas fa-tag"></i> ${escapeHtml(product.category || 'General')}</span>
+                                <span><i class="fas fa-copyright"></i> ${escapeHtml(product.brand || 'Brand')}</span>
+                                <span><i class="fas fa-star"></i> ${averageRating} (${reviews.length} reviews)</span>
+                            </div>
+
+                            <div class="price-row">
+                                <div class="price">${formatCurrency(currentPrice)}</div>
+                                ${discountPercent > 0 ? `<div class="old-price">${formatCurrency(Number(product.price || 0))}</div>` : ''}
+                                ${discountPercent > 0 ? `<div class="discount-badge">-${discountPercent}%</div>` : ''}
+                            </div>
+
+                            <div class="stock-pill ${stockStatus.className}">${stockStatus.label}</div>
+
+                            ${saleEntry ? `
+                                <div class="flash-box">
+                                    <strong>⚡ Flash sale details</strong>
+                                    <div>Current price: ${formatCurrency(currentPrice)}</div>
+                                    <div>Original price: ${formatCurrency(Number(product.price || 0))}</div>
+                                    <div>Discount: ${discountPercent}%</div>
+                                    <div>Items left: ${saleEntry.itemsLeft ?? product.stock ?? 'Unlimited'}</div>
+                                    <div class="flash-timer" id="flashTimerDisplay">Ends soon</div>
+                                </div>
+                            ` : ''}
+
+                            <div class="btn-row">
+                                <button class="btn-primary" onclick="window.addToCart()"><i class="fas fa-cart-plus"></i> Add to cart</button>
+                                <a class="btn-outline" href="index.html"><i class="fas fa-home"></i> Continue shopping</a>
+                            </div>
+                            <div id="statusMessage" class="status-message"></div>
+
+                            <div class="section">
+                                <h3>Product description</h3>
+                                <p style="color:#4b5563; line-height:1.7;">${escapeHtml(product.description || 'No description provided for this product yet.')}</p>
+                            </div>
+
+                            <div class="section">
+                                <h3>Ratings & reviews</h3>
+                                ${renderReviews(reviews)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (saleEntry && flashSaleEndTime) {
+                    startFlashTimer(flashSaleEndTime);
+                }
+                updateCartCount();
+            } catch (error) {
+                console.error('Error loading product:', error);
+                container.innerHTML = '<div class="loader">Failed to load this product. Please refresh and try again.</div>';
+            }
+        }
+
+        function startFlashTimer(endTime) {
+            const timerDisplay = document.getElementById('flashTimerDisplay');
+            if (!timerDisplay) return;
+            const targetTime = Number(endTime);
+            if (!targetTime) {
+                timerDisplay.textContent = 'Offer ends soon';
+                return;
+            }
+            const update = () => {
+                const now = Date.now();
+                const difference = targetTime - now;
+                if (difference <= 0) {
+                    timerDisplay.textContent = 'Flash sale ended';
+                    return;
+                }
+                const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+                const minutes = Math.floor((difference / (1000 * 60)) % 60);
+                const seconds = Math.floor((difference / 1000) % 60);
+                timerDisplay.textContent = `Ends in ${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+            };
+            update();
+            setInterval(update, 1000);
+        }
+
+        loadProduct();
+        updateCartCount();
+    </script>
+</body>
+</html>

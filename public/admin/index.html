@@ -673,6 +673,7 @@
                 <input type="text" id="productCategory" placeholder="Category (e.g., Clothing, Shoes, Electronics)">
                 <input type="text" id="productSubcategory" placeholder="Subcategory">
                 <input type="text" id="productBrand" placeholder="Brand (e.g., Nike, Adidas, Samsung)" class="brand-input">
+                <input type="number" id="productDiscountPercent" placeholder="Discount % (optional)" min="0" max="100">
                 
                 <!-- Size Management -->
                 <div class="size-section">
@@ -731,6 +732,30 @@
                 </div>
             </div>
             
+            <!-- Flash Sales Management -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">⚡ Flash Sales</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <select id="flashSaleProductSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 220px;"></select>
+                    <input type="number" id="flashSaleDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
+                    <input type="number" id="flashSaleItemsLeft" placeholder="Items left" min="0" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
+                    <input type="datetime-local" id="flashSaleEndTime" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                    <button class="btn-primary" onclick="addFlashSale()">Add</button>
+                </div>
+                <div id="flashSalesList"></div>
+            </div>
+
+            <!-- Top Selling Management -->
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">🔥 Top Selling</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <select id="topSellingProductSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 220px;"></select>
+                    <input type="number" id="topSellingDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
+                    <button class="btn-primary" onclick="addTopSelling()">Add</button>
+                </div>
+                <div id="topSellingList"></div>
+            </div>
+
             <!-- WhatsApp Settings -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">📱 WhatsApp Number</h4>
@@ -885,6 +910,7 @@
             <input type="text" id="editProductCategory" placeholder="Category" style="width:100%; margin-bottom:10px; padding:10px;">
             <input type="text" id="editProductSubcategory" placeholder="Subcategory" style="width:100%; margin-bottom:10px; padding:10px;">
             <input type="text" id="editProductBrand" placeholder="Brand" style="width:100%; margin-bottom:10px; padding:10px;">
+            <input type="number" id="editProductDiscountPercent" placeholder="Discount % (optional)" min="0" max="100" style="width:100%; margin-bottom:10px; padding:10px;">
             
             <div class="size-section">
                 <label class="toggle-size-label">
@@ -986,6 +1012,7 @@
         let editImageBase64List = [];
         let deliveryAgents = [];
         let salesChart = null;
+        let promoProducts = [];
 
         // Cookie helpers
         function setCookie(name, value, days) {
@@ -1210,6 +1237,7 @@
                 document.getElementById('editProductCategory').value = product.category || '';
                 document.getElementById('editProductSubcategory').value = product.subcategory || '';
                 document.getElementById('editProductBrand').value = product.brand || '';
+                document.getElementById('editProductDiscountPercent').value = product.discount_percent || 0;
                 document.getElementById('editProductDesc').value = product.description || '';
                 
                 // Handle sizes
@@ -1294,6 +1322,7 @@
             const category = document.getElementById('editProductCategory').value.trim();
             const subcategory = document.getElementById('editProductSubcategory').value.trim();
             const brand = document.getElementById('editProductBrand').value.trim();
+            const discountPercent = parseFloat(document.getElementById('editProductDiscountPercent').value) || 0;
             const description = document.getElementById('editProductDesc').value.trim();
             const hasSizes = document.getElementById('editHasSizes').checked;
             
@@ -1310,6 +1339,7 @@
                     category,
                     subcategory: subcategory || '',
                     brand: brand || '',
+                    discount_percent: Math.max(0, Math.min(100, discountPercent)),
                     description: description || '',
                     hasSizes: hasSizes
                 };
@@ -1358,8 +1388,179 @@
         };
 
         // ----- SETTINGS FUNCTIONS -----
+        async function loadPromoProducts() {
+            try {
+                const productsSnapshot = await getDocs(collection(db, 'products'));
+                promoProducts = [];
+                productsSnapshot.forEach((docSnap) => {
+                    promoProducts.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                const flashSelect = document.getElementById('flashSaleProductSelect');
+                const topSelect = document.getElementById('topSellingProductSelect');
+                const optionMarkup = '<option value="">Select a product</option>' + promoProducts.map(product => `<option value="${product.id}">${escapeHtml(product.name || product.id)}</option>`).join('');
+                if (flashSelect) flashSelect.innerHTML = optionMarkup;
+                if (topSelect) topSelect.innerHTML = optionMarkup;
+
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                const config = configDoc.exists() ? configDoc.data() : {};
+                renderFlashSalesList(config.flashSales || []);
+                renderTopSellingList(config.topSelling || []);
+            } catch (error) {
+                console.error('Error loading promo products:', error);
+            }
+        }
+
+        function renderFlashSalesList(flashSales = []) {
+            const container = document.getElementById('flashSalesList');
+            if (!container) return;
+            if (!flashSales.length) {
+                container.innerHTML = '<div style="color:#999; font-size:0.95rem;">No flash sale products configured.</div>';
+                return;
+            }
+            container.innerHTML = flashSales.map((item) => {
+                const product = promoProducts.find(p => p.id === item.productId) || null;
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f1f3f5;">
+                        <div>
+                            <div style="font-weight:600;">${escapeHtml(product?.name || item.productId)}</div>
+                            <div style="font-size:0.9rem; color:#666;">Discount: ${item.discountPercent || 0}% • Items left: ${item.itemsLeft || 0} • Ends: ${item.endTime ? new Date(item.endTime).toLocaleString() : 'Not set'}</div>
+                        </div>
+                        <button class="btn-danger btn-sm" onclick="removeFlashSale('${item.productId}')">Remove</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderTopSellingList(topSelling = []) {
+            const container = document.getElementById('topSellingList');
+            if (!container) return;
+            if (!topSelling.length) {
+                container.innerHTML = '<div style="color:#999; font-size:0.95rem;">No top selling products configured.</div>';
+                return;
+            }
+            container.innerHTML = topSelling.map((item) => {
+                const product = promoProducts.find(p => p.id === item.productId) || null;
+                return `
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f1f3f5;">
+                        <div>
+                            <div style="font-weight:600;">${escapeHtml(product?.name || item.productId)}</div>
+                            <div style="font-size:0.9rem; color:#666;">Discount: ${item.discountPercent || 0}%</div>
+                        </div>
+                        <button class="btn-danger btn-sm" onclick="removeTopSelling('${item.productId}')">Remove</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.addFlashSale = async function() {
+            const productId = document.getElementById('flashSaleProductSelect').value;
+            const discountPercent = parseFloat(document.getElementById('flashSaleDiscount').value) || 0;
+            const itemsLeft = parseInt(document.getElementById('flashSaleItemsLeft').value) || 0;
+            const endTime = document.getElementById('flashSaleEndTime').value;
+            if (!productId) {
+                showToast('Select a product first', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentFlashSales = configDoc.exists() && Array.isArray(configDoc.data().flashSales) ? configDoc.data().flashSales : [];
+                const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
+                updatedFlashSales.push({
+                    productId,
+                    discountPercent: Math.max(0, Math.min(100, discountPercent)),
+                    itemsLeft,
+                    endTime: endTime ? new Date(endTime).getTime() : null
+                });
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { flashSales: updatedFlashSales });
+                } else {
+                    await setDoc(configRef, { flashSales: updatedFlashSales });
+                }
+                await updateDoc(doc(db, 'products', productId), { discount_percent: Math.max(0, Math.min(100, discountPercent)) });
+                showToast('Flash sale updated!', 'success');
+                document.getElementById('flashSaleProductSelect').value = '';
+                document.getElementById('flashSaleDiscount').value = '';
+                document.getElementById('flashSaleItemsLeft').value = '';
+                document.getElementById('flashSaleEndTime').value = '';
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error saving flash sale:', error);
+                showToast('Failed to save flash sale', 'error');
+            }
+        };
+
+        window.removeFlashSale = async function(productId) {
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentFlashSales = configDoc.exists() && Array.isArray(configDoc.data().flashSales) ? configDoc.data().flashSales : [];
+                const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { flashSales: updatedFlashSales });
+                } else {
+                    await setDoc(configRef, { flashSales: updatedFlashSales });
+                }
+                showToast('Flash sale removed', 'success');
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error removing flash sale:', error);
+                showToast('Failed to remove flash sale', 'error');
+            }
+        };
+
+        window.addTopSelling = async function() {
+            const productId = document.getElementById('topSellingProductSelect').value;
+            const discountPercent = parseFloat(document.getElementById('topSellingDiscount').value) || 0;
+            if (!productId) {
+                showToast('Select a product first', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentTopSelling = configDoc.exists() && Array.isArray(configDoc.data().topSelling) ? configDoc.data().topSelling : [];
+                const updatedTopSelling = currentTopSelling.filter(item => item.productId !== productId);
+                updatedTopSelling.push({ productId, discountPercent: Math.max(0, Math.min(100, discountPercent)) });
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { topSelling: updatedTopSelling });
+                } else {
+                    await setDoc(configRef, { topSelling: updatedTopSelling });
+                }
+                await updateDoc(doc(db, 'products', productId), { discount_percent: Math.max(0, Math.min(100, discountPercent)) });
+                showToast('Top selling updated!', 'success');
+                document.getElementById('topSellingProductSelect').value = '';
+                document.getElementById('topSellingDiscount').value = '';
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error saving top selling entry:', error);
+                showToast('Failed to save top selling entry', 'error');
+            }
+        };
+
+        window.removeTopSelling = async function(productId) {
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentTopSelling = configDoc.exists() && Array.isArray(configDoc.data().topSelling) ? configDoc.data().topSelling : [];
+                const updatedTopSelling = currentTopSelling.filter(item => item.productId !== productId);
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { topSelling: updatedTopSelling });
+                } else {
+                    await setDoc(configRef, { topSelling: updatedTopSelling });
+                }
+                showToast('Top selling removed', 'success');
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error removing top selling entry:', error);
+                showToast('Failed to remove top selling entry', 'error');
+            }
+        };
+
         async function loadSettings() {
             try {
+                await loadPromoProducts();
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
                 if (configDoc.exists()) {
                     const config = configDoc.data();
@@ -2251,6 +2452,7 @@
             const category = document.getElementById('productCategory').value.trim();
             const subcategory = document.getElementById('productSubcategory').value.trim();
             const brand = document.getElementById('productBrand').value.trim();
+            const discountPercent = parseFloat(document.getElementById('productDiscountPercent').value) || 0;
             const description = document.getElementById('productDesc').value.trim();
             const hasSizes = document.getElementById('hasSizes').checked;
             
@@ -2265,6 +2467,7 @@
                 category,
                 subcategory: subcategory || '',
                 brand: brand || '',
+                discount_percent: Math.max(0, Math.min(100, discountPercent)),
                 image_url: (currentImageBase64List && currentImageBase64List.length) ? currentImageBase64List[0] : 'https://via.placeholder.com/300',
                 image_urls: (currentImageBase64List && currentImageBase64List.length) ? currentImageBase64List.slice() : [],
                 description: description || '',
@@ -2295,6 +2498,7 @@
                 document.getElementById('productCategory').value = '';
                 document.getElementById('productSubcategory').value = '';
                 document.getElementById('productBrand').value = '';
+                document.getElementById('productDiscountPercent').value = '';
                 document.getElementById('productDesc').value = '';
                 document.getElementById('productStock').value = '10';
                 document.getElementById('productImagePreview').style.display = 'none';
