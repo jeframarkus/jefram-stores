@@ -126,17 +126,17 @@
         .discount-timer .timer-display { font-size: 2rem; font-weight: bold; letter-spacing: 2px; }
         .discount-timer .timer-label { font-size: 14px; opacity: 0.9; }
 
-        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 2rem; }
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 2rem; }
         .product-card { background: white; border-radius: 15px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 8px rgba(0,0,0,0.08); position: relative; cursor: pointer; }
         .product-card:hover { transform: translateY(-3px); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
         .wishlist-btn { position: absolute; top: 10px; right: 10px; background: white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10; }
         .wishlist-btn i { font-size: 1rem; }
-        .product-image { width: 100%; height: 120px; object-fit: cover; background: #f5f5f5; }
-        .product-info { padding: 10px; }
-        .product-info .product-name { font-size: 13px; line-height: 1.3; margin-bottom: 0.3rem; font-weight: 600; }
-        .product-info .product-price { font-size: 13px; margin-bottom: 0.3rem; color: #667eea; }
-        .product-info .product-stock { font-size: 11px; margin-bottom: 0.5rem; }
-        .product-info .add-to-cart { width: 100%; padding: 8px; font-size: 13px; }
+        .product-image { width: 100%; height: 100px; object-fit: contain; background: #f5f5f5; }
+        .product-info { padding: 8px; }
+        .product-info .product-name { font-size: 12px; line-height: 1.3; margin-bottom: 0.3rem; font-weight: 600; }
+        .product-info .product-price { font-size: 12px; margin-bottom: 0.3rem; color: #667eea; }
+        .product-info .product-stock { font-size: 10px; margin-bottom: 0.5rem; }
+        .product-info .add-to-cart { width: 100%; padding: 6px; font-size: 12px; }
         .product-gallery-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 1rem; }
         .product-gallery-modal.open { display: flex; }
         .gallery-card { background: white; border-radius: 18px; max-width: 920px; width: 100%; max-height: 90vh; overflow: hidden; display: grid; grid-template-columns: 1fr 320px; gap: 1rem; }
