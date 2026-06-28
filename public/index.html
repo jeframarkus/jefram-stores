@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jefram Stores - Kampala's Premier Online Store</title>
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -131,12 +131,12 @@
         .product-card:hover { transform: translateY(-3px); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
         .wishlist-btn { position: absolute; top: 10px; right: 10px; background: white; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10; }
         .wishlist-btn i { font-size: 1rem; }
-        .product-image { width: 100%; height: 150px; object-fit: cover; background: #f5f5f5; }
-        .product-info { padding: 1rem; }
-        .product-info .product-name { font-size: 1rem; line-height: 1.3; margin-bottom: 0.45rem; }
-        .product-info .product-price { font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .product-info .product-stock { font-size: 0.82rem; margin-bottom: 0.75rem; }
-        .product-info .add-to-cart { width: 100%; padding: 10px; }
+        .product-image { width: 100%; height: 120px; object-fit: cover; background: #f5f5f5; }
+        .product-info { padding: 10px; }
+        .product-info .product-name { font-size: 13px; line-height: 1.3; margin-bottom: 0.3rem; font-weight: 600; }
+        .product-info .product-price { font-size: 13px; margin-bottom: 0.3rem; color: #667eea; }
+        .product-info .product-stock { font-size: 11px; margin-bottom: 0.5rem; }
+        .product-info .add-to-cart { width: 100%; padding: 8px; font-size: 13px; }
         .product-gallery-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 3000; justify-content: center; align-items: center; padding: 1rem; }
         .product-gallery-modal.open { display: flex; }
         .gallery-card { background: white; border-radius: 18px; max-width: 920px; width: 100%; max-height: 90vh; overflow: hidden; display: grid; grid-template-columns: 1fr 320px; gap: 1rem; }
@@ -1848,7 +1848,25 @@
         };
 
         // ----- RECENTLY VIEWED -----
-        window.addToRecentlyViewed = function(product) {
+        window.saveRecentlyViewedToFirebase = async function() {
+            if (!db || !currentUserDocId) return;
+            try {
+                await updateDoc(doc(db, 'customers', currentUserDocId), { recentlyViewed: recentlyViewed });
+            } catch(e) { console.error('Error saving recently viewed:', e); }
+        };
+
+        window.loadRecentlyViewedFromFirebase = async function() {
+            if (!db || !currentUserDocId) return;
+            try {
+                const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
+                if (docSnap.exists() && docSnap.data().recentlyViewed) {
+                    recentlyViewed = docSnap.data().recentlyViewed;
+                    renderRecentlyViewed();
+                }
+            } catch(e) { console.error('Error loading recently viewed:', e); }
+        };
+
+        window.addToRecentlyViewed = async function(product) {
             if (!product) return;
             recentlyViewed = recentlyViewed.filter(p => p.id !== product.id);
             recentlyViewed.unshift({ 
@@ -1859,7 +1877,7 @@
                 category: product.category
             });
             if (recentlyViewed.length > 10) recentlyViewed = recentlyViewed.slice(0, 10);
-            localStorage.setItem('jefram_recently_viewed', JSON.stringify(recentlyViewed));
+            await window.saveRecentlyViewedToFirebase();
             renderRecentlyViewed();
         };
 
@@ -2375,18 +2393,6 @@
         // ----- INITIALIZATION -----
         document.getElementById('searchInput').addEventListener('input', window.renderProducts);
 
-        // Load recently viewed from localStorage
-        const savedRecentlyViewed = localStorage.getItem('jefram_recently_viewed');
-        if (savedRecentlyViewed) {
-            recentlyViewed = JSON.parse(savedRecentlyViewed);
-        }
-        
-        // Load timer from localStorage
-        const savedTimerEnd = localStorage.getItem('jefram_timer_end');
-        if (savedTimerEnd) {
-            timerEndTime = parseInt(savedTimerEnd);
-        }
-
         (async function init() {
             await window.loadConfig();
             await window.fetchProducts();
@@ -2394,6 +2400,7 @@
             if (isValid) {
                 await window.loadWishlistFromFirebase();
                 await window.loadCartFromFirebase();
+                await window.loadRecentlyViewedFromFirebase();
             }
             setupSearchAutocomplete();
             window.setupRatingStars();
