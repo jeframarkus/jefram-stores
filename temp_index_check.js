@@ -1,50 +1,4 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Jefram Stores</title>
-  <style>
-    body { font-family: Arial; margin:0; }
-    header { background:#111; color:#fff; padding:15px; display:flex; justify-content:space-between; }
-    input { padding:8px; }
-    .container { display:flex; }
-    .sidebar { width:200px; background:#f4f4f4; padding:10px; }
-    .products { flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px; }
-    .card { border:1px solid #ddd; padding:10px; }
-    img { width:100%; height:150px; object-fit:cover; }
-    button { background:#28a745; color:#fff; border:none; padding:8px; cursor:pointer; }
-  </style>
-  <script type="importmap">
-    {
-      "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
-      }
-    }
-  </script>
-</head>
-<body>
 
-<header>
-  <h2>Jefram Stores</h2>
-  <input id="search" placeholder="Search..." onkeyup="searchProducts()">
-</header>
-
-<div style="padding:10px;">
-  <input id="phone" placeholder="Enter Phone Number">
-  <button onclick="saveUser()">Start Shopping</button>
-</div>
-
-<div class="container">
-  <div class="sidebar">
-    <h3>Cart</h3>
-    <div id="cart"></div>
-    <button onclick="checkout()">Checkout</button>
-  </div>
-
-  <div class="products" id="products"></div>
-</div>
-
-<script type="module">
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 
@@ -208,7 +162,4 @@ if (currentUserPhone) {
 }
 renderCart();
 loadProducts();
-</script>
 
-</body>
-</html>
