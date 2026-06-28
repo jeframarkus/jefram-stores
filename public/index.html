@@ -162,7 +162,8 @@
         .product-image { width: 100%; height: 90px; object-fit: contain; background: #f5f5f5; }
         .product-info { padding: 6px; }
         .product-info .product-name { font-size: 11px; line-height: 1.2; margin-bottom: 0.2rem; font-weight: 600; }
-        .product-info .product-price { font-size: 11px; margin-bottom: 0.2rem; color: #667eea; }
+        .product-info .product-price { font-size: 11px; margin-bottom: 0.1rem; color: #667eea; font-weight: 700; }
+        .product-info .product-old-price { font-size: 10px; color: #999; text-decoration: line-through; }
         .product-info .product-stock { font-size: 9px; margin-bottom: 0.4rem; }
         .product-info .add-to-cart { width: 100%; padding: 5px; font-size: 11px; }
         .discount-badge { position: absolute; top: 8px; right: 8px; background: #ff4757; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 5; }
@@ -2209,15 +2210,20 @@
         });
 
         function renderProductCard(product) {
-            const discount = product.discount_percent ? product.discount_percent : 0;
+            const discount = Number(product.discount_percent || 0);
+            const originalPrice = Number(product.price || 0);
+            const discountedPrice = discount > 0 ? Math.max(0, originalPrice - (originalPrice * discount / 100)) : originalPrice;
             const discountBadge = discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : '';
+            const priceDisplay = discount > 0
+                ? `<div class="product-price">UGX ${Math.round(discountedPrice).toLocaleString()}</div><div class="product-old-price">UGX ${Math.round(originalPrice).toLocaleString()}</div>`
+                : `<div class="product-price">UGX ${Math.round(originalPrice).toLocaleString()}</div>`;
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${window.escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${window.escapeHtml(product.name)}</div>
-                        <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
+                        ${priceDisplay}
                     </div>
                 </div>
             `;
