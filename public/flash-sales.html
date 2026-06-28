@@ -133,12 +133,13 @@
             });
         }
 
-        function renderProductCard(product, flashSaleData) {
-            const discount = product.discount_percent ? product.discount_percent : 0;
+        function renderProductCard(product, flashSaleProductData) {
+            const discount = flashSaleProductData?.discountPercent || 0;
             const originalPrice = parseInt(product.price);
             const discountedPrice = Math.floor(originalPrice * (1 - discount / 100));
+            const itemsLeft = flashSaleProductData?.itemsLeft || 0;
             const discountBadge = discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : '';
-            const itemsLeftHtml = flashSaleData?.itemsLeft ? `<div style="font-size: 9px; color: #ff4757; font-weight: bold; margin-top: 2px;">📦 ${flashSaleData.itemsLeft} left</div>` : '';
+            const itemsLeftHtml = itemsLeft > 0 ? `<div style="font-size: 9px; color: #ff4757; font-weight: bold; margin-top: 3px;">📦 ${itemsLeft} left</div>` : '<div style="font-size: 9px; color: #999; font-weight: bold; margin-top: 3px;">📦 Sold Out</div>';
             
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
@@ -146,9 +147,9 @@
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
-                        <div style="display: flex; gap: 6px; margin-bottom: 0.2rem;">
+                        <div style="display: flex; gap: 6px; margin-bottom: 0.3rem; align-items: center;">
                             <div class="product-price">UGX ${discountedPrice.toLocaleString()}</div>
-                            ${discount > 0 ? `<div style="font-size: 10px; color: #999; text-decoration: line-through;">UGX ${originalPrice.toLocaleString()}</div>` : ''}
+                            ${discount > 0 ? `<div style="font-size: 9px; color: #999; text-decoration: line-through;">UGX ${originalPrice.toLocaleString()}</div>` : ''}
                         </div>
                         ${itemsLeftHtml}
                     </div>
@@ -165,27 +166,38 @@
                 });
 
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
-                if (configDoc.exists() && configDoc.data().flashSales && Array.isArray(configDoc.data().flashSales)) {
-                    const flashSalesData = configDoc.data().flashSales;
-                    const flashSaleProducts = products.filter(p => flashSalesData.some(fs => fs.productId === p.id));
+                if (configDoc.exists() && configDoc.data().currentFlashEvent) {
+                    const flashEvent = configDoc.data().currentFlashEvent;
+                    
+                    // Check if event is still active
+                    const endTime = typeof flashEvent.endTime === 'number' ? flashEvent.endTime : new Date(flashEvent.endTime).getTime();
+                    if (endTime <= Date.now()) {
+                        document.getElementById('productsGrid').innerHTML = '<div class="no-products">Flash sale has ended. Check back soon!</div>';
+                        return;
+                    }
 
-                    if (flashSaleProducts.length === 0) {
+                    window.currentFlashEvent = flashEvent;
+                    
+                    // Get products in this flash event
+                    const flashProductIds = flashEvent.products.map(p => p.productId);
+                    const flashProducts = products.filter(p => flashProductIds.includes(p.id));
+
+                    if (flashProducts.length === 0) {
                         document.getElementById('productsGrid').innerHTML = '<div class="no-products">No flash sale products available at the moment.</div>';
                         return;
                     }
 
-                    const cardsHtml = flashSaleProducts.map(product => {
-                        const flashData = flashSalesData.find(fs => fs.productId === product.id);
+                    // Render cards with flash sale data
+                    const cardsHtml = flashProducts.map(product => {
+                        const flashData = flashEvent.products.find(p => p.productId === product.id);
                         return renderProductCard(product, flashData);
                     }).join('');
                     
                     document.getElementById('productsGrid').innerHTML = '<div class="products-grid">' + cardsHtml + '</div>';
-                    
-                    // Store flashSalesData for timer updates
-                    window.activeFlashSales = flashSalesData;
                     updateFlashTimer();
                 } else {
-                    document.getElementById('productsGrid').innerHTML = '<div class="no-products">No flash sale products available at the moment.</div>';
+                    document.getElementById('productsGrid').innerHTML = '<div class="no-products">No active flash sale at the moment.</div>';
+                    window.currentFlashEvent = null;
                 }
             } catch (error) {
                 console.error('Error loading flash sales:', error);
@@ -193,34 +205,20 @@
             }
         }
 
-        // Flash sale timer - shows earliest end time
+        // Flash sale timer - shows time until event ends
         function updateFlashTimer() {
             const timerDisplay = document.getElementById('flashTimerDisplay');
-            if (!timerDisplay) return;
-
-            if (!window.activeFlashSales || window.activeFlashSales.length === 0) {
+            if (!timerDisplay || !window.currentFlashEvent) {
                 timerDisplay.textContent = '--:--:--';
                 return;
             }
 
-            // Find the earliest end time
-            let earliestEndTime = null;
-            for (const flashSale of window.activeFlashSales) {
-                if (flashSale.endTime) {
-                    const endTime = typeof flashSale.endTime === 'number' ? flashSale.endTime : new Date(flashSale.endTime).getTime();
-                    if (!earliestEndTime || endTime < earliestEndTime) {
-                        earliestEndTime = endTime;
-                    }
-                }
-            }
-
-            if (!earliestEndTime) {
-                timerDisplay.textContent = '∞';
-                return;
-            }
-
+            const endTime = typeof window.currentFlashEvent.endTime === 'number' 
+                ? window.currentFlashEvent.endTime 
+                : new Date(window.currentFlashEvent.endTime).getTime();
+            
             const now = Date.now();
-            const diff = earliestEndTime - now;
+            const diff = endTime - now;
 
             if (diff <= 0) {
                 timerDisplay.textContent = '00:00:00';
@@ -242,18 +240,31 @@
             setInterval(updateFlashTimer, 1000);
             updateFlashTimer();
 
-            // Real-time listener for flash sales updates
+            // Real-time listener for flash sales event updates
             const configRef = doc(db, 'config', 'store');
-            onSnapshot(configRef, (doc) => {
-                if (doc.exists() && doc.data().flashSales && Array.isArray(doc.data().flashSales)) {
-                    window.activeFlashSales = doc.data().flashSales;
-                    // Check if any products need to be re-rendered
-                    const flashSaleIds = doc.data().flashSales.map(fs => fs.productId);
-                    const currentCards = document.querySelectorAll('.product-card');
+            onSnapshot(configRef, (docSnapshot) => {
+                if (docSnapshot.exists()) {
+                    const flashEvent = docSnapshot.data().currentFlashEvent;
                     
-                    // If number of products changed, reload
-                    if (currentCards.length !== flashSaleIds.length) {
-                        loadFlashSales();
+                    if (flashEvent) {
+                        // Check if event ended
+                        const endTime = typeof flashEvent.endTime === 'number' ? flashEvent.endTime : new Date(flashEvent.endTime).getTime();
+                        if (endTime <= Date.now()) {
+                            loadFlashSales(); // Will show "Flash sale has ended"
+                            return;
+                        }
+                        
+                        // Update current event reference
+                        if (!window.currentFlashEvent || JSON.stringify(window.currentFlashEvent) !== JSON.stringify(flashEvent)) {
+                            window.currentFlashEvent = flashEvent;
+                            loadFlashSales(); // Reload to show updated items
+                        }
+                    } else {
+                        // No active event
+                        if (window.currentFlashEvent) {
+                            window.currentFlashEvent = null;
+                            loadFlashSales();
+                        }
                     }
                 }
             });

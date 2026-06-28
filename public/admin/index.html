@@ -732,17 +732,58 @@
                 </div>
             </div>
             
-            <!-- Flash Sales Management -->
+            <!-- Flash Sales Management - New Event Based System -->
             <div class="timer-management">
-                <h4 style="margin-bottom: 10px;">⚡ Flash Sales</h4>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
-                    <select id="flashSaleProductSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 220px;"></select>
-                    <input type="number" id="flashSaleDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
-                    <input type="number" id="flashSaleItemsLeft" placeholder="Items left" min="0" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
-                    <input type="datetime-local" id="flashSaleEndTime" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
-                    <button class="btn-primary" onclick="addFlashSale()">Add</button>
+                <h4 style="margin-bottom: 10px;">⚡ Flash Sales Event</h4>
+                
+                <!-- Step 1: Create or Update Flash Sale Event -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h5 style="margin-bottom: 10px; color: #333;">Step 1: Set Flash Sale Time Frame</h5>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="datetime-local" id="flashSaleEventEndTime" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                        <button class="btn-primary" onclick="createFlashSaleEvent()">Create Event</button>
+                        <button class="btn-warning" onclick="endFlashSaleEvent()">End Event</button>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <span style="font-weight: 500;">Current Event:</span>
+                        <span id="currentFlashEventDisplay" style="font-family: monospace; color: #666; margin-left: 8px;">No active event</span>
+                    </div>
                 </div>
-                <div id="flashSalesList"></div>
+                
+                <!-- Step 2: Add Products to Flash Sale Event -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h5 style="margin-bottom: 10px; color: #333;">Step 2: Add Products to Sale</h5>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                        <select id="flashSaleProductSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 220px;">
+                            <option value="">Select Product...</option>
+                        </select>
+                        <input type="number" id="flashSaleDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
+                        <input type="number" id="flashSaleInitialItems" placeholder="Total Items" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
+                        <button class="btn-primary" onclick="addProductToFlashSale()">Add Product</button>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Active Products in Flash Sale -->
+                <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                    <h5 style="margin-bottom: 10px; color: #333;">Step 3: Products in Sale (Real-time Inventory)</h5>
+                    <div id="flashSaleProductsList" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- Step 4: Manual Inventory Adjustment -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <h5 style="margin-bottom: 10px; color: #333;">Step 4: Adjust Inventory (When Items Sell)</h5>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                        <select id="inventoryAdjustProduct" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 200px;">
+                            <option value="">Select Product to Adjust...</option>
+                        </select>
+                        <span style="color: #666; font-size: 0.9rem;">Sold:</span>
+                        <input type="number" id="inventorySoldCount" placeholder="0" min="0" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 80px;">
+                        <button class="btn-primary" onclick="updateInventoryAfterSale()">Update Items Sold</button>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #666; background: #fff; padding: 8px; border-radius: 4px; border-left: 3px solid #667eea;">
+                        <strong>📝 Note:</strong> If 5 items sold, enter 5 here. System will reduce "Items Left" by 5. Or set this to auto-decrease on order completion.
+                    </div>
+                </div>
             </div>
 
             <!-- Top Selling Management -->
@@ -1398,39 +1439,304 @@
 
                 const flashSelect = document.getElementById('flashSaleProductSelect');
                 const topSelect = document.getElementById('topSellingProductSelect');
+                const inventorySelect = document.getElementById('inventoryAdjustProduct');
+                
                 const optionMarkup = '<option value="">Select a product</option>' + promoProducts.map(product => `<option value="${product.id}">${escapeHtml(product.name || product.id)}</option>`).join('');
                 if (flashSelect) flashSelect.innerHTML = optionMarkup;
                 if (topSelect) topSelect.innerHTML = optionMarkup;
+                if (inventorySelect) {
+                    // Only show products currently in flash sale
+                    if (window.currentFlashEvent && window.currentFlashEvent.products) {
+                        const flashProductIds = window.currentFlashEvent.products.map(p => p.productId);
+                        const inventoryOptions = '<option value="">Select a product</option>' + window.currentFlashEvent.products.map(item => {
+                            const product = promoProducts.find(p => p.id === item.productId);
+                            return `<option value="${item.productId}">${escapeHtml(product?.name || item.productId)}</option>`;
+                        }).join('');
+                        inventorySelect.innerHTML = inventoryOptions;
+                    } else {
+                        inventorySelect.innerHTML = '<option value="">No active event</option>';
+                    }
+                }
 
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
                 const config = configDoc.exists() ? configDoc.data() : {};
-                renderFlashSalesList(config.flashSales || []);
+                
+                // Load new flash sale event system
+                if (config.currentFlashEvent) {
+                    window.currentFlashEvent = config.currentFlashEvent;
+                    renderFlashSalesList(config.currentFlashEvent);
+                    updateCurrentFlashEventDisplay();
+                } else {
+                    window.currentFlashEvent = null;
+                    renderFlashSalesList(null);
+                    updateCurrentFlashEventDisplay();
+                }
+                
                 renderTopSellingList(config.topSelling || []);
             } catch (error) {
                 console.error('Error loading promo products:', error);
             }
         }
 
-        function renderFlashSalesList(flashSales = []) {
-            const container = document.getElementById('flashSalesList');
+        function renderFlashSalesList(flashSalesData = null) {
+            const container = document.getElementById('flashSaleProductsList');
             if (!container) return;
-            if (!flashSales.length) {
-                container.innerHTML = '<div style="color:#999; font-size:0.95rem;">No flash sale products configured.</div>';
+
+            if (!flashSalesData || !flashSalesData.products || flashSalesData.products.length === 0) {
+                container.innerHTML = '<div style="color:#999; font-size:0.95rem;">No products in this flash sale event yet. Add products in Step 2.</div>';
                 return;
             }
-            container.innerHTML = flashSales.map((item) => {
+
+            container.innerHTML = flashSalesData.products.map((item) => {
                 const product = promoProducts.find(p => p.id === item.productId) || null;
+                const sold = item.initialItems - (item.itemsLeft || 0);
+                const progressPercent = Math.round((sold / item.initialItems) * 100);
+                
                 return `
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-top:1px solid #f1f3f5;">
-                        <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:12px; border-bottom:1px solid #f1f3f5; background: #fafafa;">
+                        <div style="flex: 1;">
                             <div style="font-weight:600;">${escapeHtml(product?.name || item.productId)}</div>
-                            <div style="font-size:0.9rem; color:#666;">Discount: ${item.discountPercent || 0}% • Items left: ${item.itemsLeft || 0} • Ends: ${item.endTime ? new Date(item.endTime).toLocaleString() : 'Not set'}</div>
+                            <div style="font-size:0.85rem; color:#666; margin-top:4px;">
+                                Discount: ${item.discountPercent || 0}% | 
+                                Sold: ${sold} / ${item.initialItems} |
+                                Left: ${item.itemsLeft || 0}
+                            </div>
+                            <div style="width:100%; height:6px; background:#e0e0e0; border-radius:3px; margin-top:6px; overflow:hidden;">
+                                <div style="width:${progressPercent}%; height:100%; background:linear-gradient(90deg, #ff4757, #ff6b81);"></div>
+                            </div>
                         </div>
-                        <button class="btn-danger btn-sm" onclick="removeFlashSale('${item.productId}')">Remove</button>
+                        <button class="btn-danger btn-sm" onclick="removeProductFromFlashSale('${item.productId}')">Remove</button>
                     </div>
                 `;
             }).join('');
         }
+
+        function updateCurrentFlashEventDisplay() {
+            const display = document.getElementById('currentFlashEventDisplay');
+            if (!window.currentFlashEvent || !window.currentFlashEvent.endTime) {
+                display.textContent = 'No active event';
+                display.style.color = '#999';
+                return;
+            }
+
+            const endTime = typeof window.currentFlashEvent.endTime === 'number' 
+                ? window.currentFlashEvent.endTime 
+                : new Date(window.currentFlashEvent.endTime).getTime();
+            
+            const now = Date.now();
+            if (endTime <= now) {
+                display.textContent = 'Event ended';
+                display.style.color = '#dc3545';
+                return;
+            }
+
+            const eventDate = new Date(endTime);
+            display.textContent = `Active until ${eventDate.toLocaleString()}`;
+            display.style.color = '#28a745';
+        }
+
+        window.createFlashSaleEvent = async function() {
+            const endTimeInput = document.getElementById('flashSaleEventEndTime').value;
+            if (!endTimeInput) {
+                showToast('Please select an end time', 'error');
+                return;
+            }
+
+            const endTime = new Date(endTimeInput).getTime();
+            if (endTime <= Date.now()) {
+                showToast('End time must be in the future', 'error');
+                return;
+            }
+
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                
+                const flashEvent = {
+                    endTime: endTime,
+                    products: [],
+                    createdAt: Date.now()
+                };
+
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, { currentFlashEvent: flashEvent });
+                } else {
+                    await setDoc(configRef, { currentFlashEvent: flashEvent });
+                }
+
+                window.currentFlashEvent = flashEvent;
+                updateCurrentFlashEventDisplay();
+                renderFlashSalesList(flashEvent);
+                
+                document.getElementById('flashSaleEventEndTime').value = '';
+                showToast('Flash sale event created!', 'success');
+            } catch (error) {
+                console.error('Error creating flash sale event:', error);
+                showToast('Failed to create event', 'error');
+            }
+        };
+
+        window.endFlashSaleEvent = async function() {
+            if (!window.currentFlashEvent) {
+                showToast('No active event to end', 'error');
+                return;
+            }
+
+            try {
+                const configRef = doc(db, 'config', 'store');
+                await updateDoc(configRef, { currentFlashEvent: null });
+                window.currentFlashEvent = null;
+                updateCurrentFlashEventDisplay();
+                renderFlashSalesList(null);
+                showToast('Flash sale event ended', 'success');
+            } catch (error) {
+                console.error('Error ending flash sale event:', error);
+                showToast('Failed to end event', 'error');
+            }
+        };
+
+        window.addProductToFlashSale = async function() {
+            if (!window.currentFlashEvent) {
+                showToast('Create a flash sale event first', 'error');
+                return;
+            }
+
+            const productId = document.getElementById('flashSaleProductSelect').value;
+            const discountPercent = parseFloat(document.getElementById('flashSaleDiscount').value) || 0;
+            const initialItems = parseInt(document.getElementById('flashSaleInitialItems').value) || 0;
+
+            if (!productId || initialItems <= 0) {
+                showToast('Select product and items count', 'error');
+                return;
+            }
+
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentEvent = configDoc.exists() ? configDoc.data().currentFlashEvent : null;
+
+                if (!currentEvent) {
+                    showToast('Flash sale event not found', 'error');
+                    return;
+                }
+
+                // Check if product already in event
+                const existingIndex = currentEvent.products.findIndex(p => p.productId === productId);
+                if (existingIndex >= 0) {
+                    currentEvent.products[existingIndex] = {
+                        productId,
+                        discountPercent: Math.max(0, Math.min(100, discountPercent)),
+                        initialItems,
+                        itemsLeft: Math.max(0, currentEvent.products[existingIndex].itemsLeft)
+                    };
+                } else {
+                    currentEvent.products.push({
+                        productId,
+                        discountPercent: Math.max(0, Math.min(100, discountPercent)),
+                        initialItems,
+                        itemsLeft: initialItems
+                    });
+                }
+
+                await updateDoc(configRef, { currentFlashEvent: currentEvent });
+                
+                // Update product's discount in products collection
+                await updateDoc(doc(db, 'products', productId), { 
+                    discount_percent: Math.max(0, Math.min(100, discountPercent)),
+                    in_flash_sale: true
+                });
+
+                window.currentFlashEvent = currentEvent;
+                renderFlashSalesList(currentEvent);
+                
+                document.getElementById('flashSaleProductSelect').value = '';
+                document.getElementById('flashSaleDiscount').value = '';
+                document.getElementById('flashSaleInitialItems').value = '';
+                
+                showToast('Product added to flash sale!', 'success');
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error adding product:', error);
+                showToast('Failed to add product', 'error');
+            }
+        };
+
+        window.removeProductFromFlashSale = async function(productId) {
+            if (!window.currentFlashEvent) {
+                showToast('No active event', 'error');
+                return;
+            }
+
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const currentEvent = { ...window.currentFlashEvent };
+                currentEvent.products = currentEvent.products.filter(p => p.productId !== productId);
+
+                await updateDoc(configRef, { currentFlashEvent: currentEvent });
+                
+                // Remove discount from product
+                await updateDoc(doc(db, 'products', productId), { 
+                    discount_percent: 0,
+                    in_flash_sale: false
+                });
+
+                window.currentFlashEvent = currentEvent;
+                renderFlashSalesList(currentEvent);
+                showToast('Product removed from flash sale', 'success');
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error removing product:', error);
+                showToast('Failed to remove product', 'error');
+            }
+        };
+
+        window.updateInventoryAfterSale = async function() {
+            if (!window.currentFlashEvent) {
+                showToast('No active flash sale event', 'error');
+                return;
+            }
+
+            const productId = document.getElementById('inventoryAdjustProduct').value;
+            const soldCount = parseInt(document.getElementById('inventorySoldCount').value) || 0;
+
+            if (!productId || soldCount <= 0) {
+                showToast('Select product and enter sold count', 'error');
+                return;
+            }
+
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const currentEvent = { ...window.currentFlashEvent };
+                const productIndex = currentEvent.products.findIndex(p => p.productId === productId);
+
+                if (productIndex === -1) {
+                    showToast('Product not found in flash sale', 'error');
+                    return;
+                }
+
+                const product = currentEvent.products[productIndex];
+                const newItemsLeft = Math.max(0, product.itemsLeft - soldCount);
+                
+                currentEvent.products[productIndex] = {
+                    ...product,
+                    itemsLeft: newItemsLeft
+                };
+
+                await updateDoc(configRef, { currentFlashEvent: currentEvent });
+                
+                window.currentFlashEvent = currentEvent;
+                renderFlashSalesList(currentEvent);
+                
+                document.getElementById('inventoryAdjustProduct').value = '';
+                document.getElementById('inventorySoldCount').value = '';
+                
+                showToast(`✅ Items sold updated! ${newItemsLeft} items remaining.`, 'success');
+            } catch (error) {
+                console.error('Error updating inventory:', error);
+                showToast('Failed to update inventory', 'error');
+            }
+        };
+        };
 
         function renderTopSellingList(topSelling = []) {
             const container = document.getElementById('topSellingList');
@@ -1452,63 +1758,6 @@
                 `;
             }).join('');
         }
-
-        window.addFlashSale = async function() {
-            const productId = document.getElementById('flashSaleProductSelect').value;
-            const discountPercent = parseFloat(document.getElementById('flashSaleDiscount').value) || 0;
-            const itemsLeft = parseInt(document.getElementById('flashSaleItemsLeft').value) || 0;
-            const endTime = document.getElementById('flashSaleEndTime').value;
-            if (!productId) {
-                showToast('Select a product first', 'error');
-                return;
-            }
-            try {
-                const configRef = doc(db, 'config', 'store');
-                const configDoc = await getDoc(configRef);
-                const currentFlashSales = configDoc.exists() && Array.isArray(configDoc.data().flashSales) ? configDoc.data().flashSales : [];
-                const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
-                updatedFlashSales.push({
-                    productId,
-                    discountPercent: Math.max(0, Math.min(100, discountPercent)),
-                    itemsLeft,
-                    endTime: endTime ? new Date(endTime).getTime() : null
-                });
-                if (configDoc.exists()) {
-                    await updateDoc(configRef, { flashSales: updatedFlashSales });
-                } else {
-                    await setDoc(configRef, { flashSales: updatedFlashSales });
-                }
-                await updateDoc(doc(db, 'products', productId), { discount_percent: Math.max(0, Math.min(100, discountPercent)) });
-                showToast('Flash sale updated!', 'success');
-                document.getElementById('flashSaleProductSelect').value = '';
-                document.getElementById('flashSaleDiscount').value = '';
-                document.getElementById('flashSaleItemsLeft').value = '';
-                document.getElementById('flashSaleEndTime').value = '';
-                loadPromoProducts();
-            } catch (error) {
-                console.error('Error saving flash sale:', error);
-                showToast('Failed to save flash sale', 'error');
-            }
-        };
-
-        window.removeFlashSale = async function(productId) {
-            try {
-                const configRef = doc(db, 'config', 'store');
-                const configDoc = await getDoc(configRef);
-                const currentFlashSales = configDoc.exists() && Array.isArray(configDoc.data().flashSales) ? configDoc.data().flashSales : [];
-                const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
-                if (configDoc.exists()) {
-                    await updateDoc(configRef, { flashSales: updatedFlashSales });
-                } else {
-                    await setDoc(configRef, { flashSales: updatedFlashSales });
-                }
-                showToast('Flash sale removed', 'success');
-                loadPromoProducts();
-            } catch (error) {
-                console.error('Error removing flash sale:', error);
-                showToast('Failed to remove flash sale', 'error');
-            }
-        };
 
         window.addTopSelling = async function() {
             const productId = document.getElementById('topSellingProductSelect').value;
