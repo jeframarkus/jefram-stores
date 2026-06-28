@@ -1250,6 +1250,30 @@
         };
 
         // Rating modal functions (for delivery/product rating after order)
+        window.setupRatingStars = function() {
+            // Product rating stars
+            document.querySelectorAll('#productRating i').forEach(star => {
+                star.addEventListener('click', function() {
+                    const value = parseInt(this.dataset.value);
+                    currentProductRating = value;
+                    document.querySelectorAll('#productRating i').forEach((s, index) => {
+                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
+                    });
+                });
+            });
+
+            // Delivery rating stars
+            document.querySelectorAll('#deliveryRating i').forEach(star => {
+                star.addEventListener('click', function() {
+                    const value = parseInt(this.dataset.value);
+                    currentDeliveryRating = value;
+                    document.querySelectorAll('#deliveryRating i').forEach((s, index) => {
+                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
+                    });
+                });
+            });
+        };
+
         window.submitRating = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
             if (currentProductRating === 0 && currentDeliveryRating === 0) { window.showToast('Select at least one rating', 'error'); return; }
@@ -1275,28 +1299,9 @@
             currentProductRating = 0;
             currentDeliveryRating = 0;
             
-            // Reset stars
-            document.querySelectorAll('#productRating i').forEach(s => {
-                s.className = 'far fa-star';
-                s.onclick = function() {
-                    const value = parseInt(this.dataset.value);
-                    currentProductRating = value;
-                    document.querySelectorAll('#productRating i').forEach((s, index) => {
-                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
-                    });
-                };
-            });
-            
-            document.querySelectorAll('#deliveryRating i').forEach(s => {
-                s.className = 'far fa-star';
-                s.onclick = function() {
-                    const value = parseInt(this.dataset.value);
-                    currentDeliveryRating = value;
-                    document.querySelectorAll('#deliveryRating i').forEach((s, index) => {
-                        s.className = index < value ? 'fas fa-star' : 'far fa-star';
-                    });
-                };
-            });
+            // Reset star visuals
+            document.querySelectorAll('#productRating i').forEach(s => s.className = 'far fa-star');
+            document.querySelectorAll('#deliveryRating i').forEach(s => s.className = 'far fa-star');
             
             document.getElementById('ratingComment').value = '';
             let orderData = {};
@@ -2391,6 +2396,7 @@
                 await window.loadCartFromFirebase();
             }
             setupSearchAutocomplete();
+            window.setupRatingStars();
         })();
 
         // ----- MODAL CLOSE EVENTS -----
