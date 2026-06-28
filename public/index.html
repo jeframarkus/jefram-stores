@@ -1270,7 +1270,7 @@
             }
         };
 
-        window.openRatingModal = function(orderId, orderData) {
+        window.openRatingModal = async function(orderId) {
             currentRatingOrderId = orderId;
             currentProductRating = 0;
             currentDeliveryRating = 0;
@@ -1299,10 +1299,18 @@
             });
             
             document.getElementById('ratingComment').value = '';
+            let orderData = {};
+            try {
+                const orderSnap = await getDoc(doc(db, 'orders', orderId));
+                if (orderSnap.exists()) orderData = orderSnap.data();
+            } catch (err) {
+                console.error('Error loading order details for rating:', err);
+            }
+            const itemsText = Array.isArray(orderData.items) ? orderData.items.map(i => window.escapeHtml(i.name || '')).join(', ') : '';
             document.getElementById('ratingOrderInfo').innerHTML = 
                 '<p><strong>Order #' + orderId.slice(-6) + '</strong></p>' +
-                '<p>Total: UGX ' + (orderData.total || orderData.subtotal).toLocaleString() + '</p>' +
-                '<p>Items: ' + orderData.items.map(i => i.name).join(', ') + '</p>';
+                '<p>Total: UGX ' + ((orderData.total || orderData.subtotal) ? (orderData.total || orderData.subtotal).toLocaleString() : 'N/A') + '</p>' +
+                '<p>Items: ' + itemsText + '</p>';
             document.getElementById('ratingModal').style.display = 'flex';
         };
 
@@ -1675,7 +1683,7 @@
                     
                     // Rating button for delivered orders
                     const ratingButton = o.status === 'delivered' && !o.product_rating ? 
-                        '<button onclick="window.openRatingModal(\'' + doc.id + '\', ' + JSON.stringify(o).replace(/</g, '\\u003c') + ')" style="margin-top:10px; background:#667eea; color:white; padding:8px; border:none; border-radius:8px; width:100%;">⭐ Rate This Order</button>' : '';
+                        '<button onclick="window.openRatingModal(\'' + doc.id + '\')" style="margin-top:10px; background:#667eea; color:white; padding:8px; border:none; border-radius:8px; width:100%;">⭐ Rate This Order</button>' : '';
                     
                     const ratingBadge = o.product_rating ? 
                         '<span class="rated-badge">⭐ Rated ' + o.product_rating + '/5</span>' : '';
