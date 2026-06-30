@@ -2261,18 +2261,17 @@
                     const flashSaleProducts = products.filter(p => flashSaleIds.includes(p.id));
                     
                     if (flashSaleProducts.length === 0) {
-                        document.getElementById('flashSalesSection').style.display = 'none';
+                        roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No flash sale items yet</div>';
                         return;
                     }
                     
-                    document.getElementById('flashSalesSection').style.display = 'block';
                     roll.innerHTML = flashSaleProducts.map(renderProductCard).join('');
                 } else {
-                    document.getElementById('flashSalesSection').style.display = 'none';
+                    roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No flash sale items yet</div>';
                 }
             } catch (error) {
                 console.error('Error loading flash sales:', error);
-                document.getElementById('flashSalesSection').style.display = 'none';
+                roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">Failed to load flash sale items</div>';
             }
         };
 
@@ -2287,18 +2286,17 @@
                     const topSellingProducts = products.filter(p => topSellingIds.includes(p.id));
                     
                     if (topSellingProducts.length === 0) {
-                        document.getElementById('topSellingSection').style.display = 'none';
+                        roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No top selling items yet</div>';
                         return;
                     }
                     
-                    document.getElementById('topSellingSection').style.display = 'block';
                     roll.innerHTML = topSellingProducts.map(renderProductCard).join('');
                 } else {
-                    document.getElementById('topSellingSection').style.display = 'none';
+                    roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No top selling items yet</div>';
                 }
             } catch (error) {
                 console.error('Error loading top selling:', error);
-                document.getElementById('topSellingSection').style.display = 'none';
+                roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">Failed to load top selling items</div>';
             }
         };
 
