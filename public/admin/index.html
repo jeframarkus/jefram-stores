@@ -1806,6 +1806,74 @@
             }
         };
 
+        window.toggleTopSelling = async function(productId, isCurrentlyTopSelling) {
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentTopSelling = configDoc.exists() && Array.isArray(configDoc.data().topSelling) ? configDoc.data().topSelling : [];
+
+                if (isCurrentlyTopSelling) {
+                    // Remove from top selling
+                    const updatedTopSelling = currentTopSelling.filter(item => item.productId !== productId);
+                    if (configDoc.exists()) {
+                        await updateDoc(configRef, { topSelling: updatedTopSelling });
+                    } else {
+                        await setDoc(configRef, { topSelling: updatedTopSelling });
+                    }
+                    showToast('Removed from top selling', 'success');
+                } else {
+                    // Add to top selling with default 0% discount
+                    const updatedTopSelling = currentTopSelling.filter(item => item.productId !== productId);
+                    updatedTopSelling.push({ productId, discountPercent: 0 });
+                    if (configDoc.exists()) {
+                        await updateDoc(configRef, { topSelling: updatedTopSelling });
+                    } else {
+                        await setDoc(configRef, { topSelling: updatedTopSelling });
+                    }
+                    showToast('Added to top selling', 'success');
+                }
+                loadProducts();
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error toggling top selling:', error);
+                showToast('Failed to update top selling', 'error');
+            }
+        };
+
+        window.toggleFlashSale = async function(productId, isCurrentlyFlashSale) {
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const currentFlashSales = configDoc.exists() && Array.isArray(configDoc.data().flashSales) ? configDoc.data().flashSales : [];
+
+                if (isCurrentlyFlashSale) {
+                    // Remove from flash sales
+                    const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
+                    if (configDoc.exists()) {
+                        await updateDoc(configRef, { flashSales: updatedFlashSales });
+                    } else {
+                        await setDoc(configRef, { flashSales: updatedFlashSales });
+                    }
+                    showToast('Removed from flash sales', 'success');
+                } else {
+                    // Add to flash sales with default 0% discount
+                    const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
+                    updatedFlashSales.push({ productId, discountPercent: 0 });
+                    if (configDoc.exists()) {
+                        await updateDoc(configRef, { flashSales: updatedFlashSales });
+                    } else {
+                        await setDoc(configRef, { flashSales: updatedFlashSales });
+                    }
+                    showToast('Added to flash sales', 'success');
+                }
+                loadProducts();
+                loadPromoProducts();
+            } catch (error) {
+                console.error('Error toggling flash sale:', error);
+                showToast('Failed to update flash sale', 'error');
+            }
+        };
+
         async function loadSettings() {
             try {
                 await loadPromoProducts();
@@ -2265,22 +2333,33 @@
                 productRatings[review.productId].sum += review.rating;
                 productRatings[review.productId].count++;
             });
-            
+
+            // Load top selling and flash sale products
+            const configDoc = await getDoc(doc(db, 'config', 'store'));
+            const topSellingProducts = configDoc.exists() && configDoc.data().topSelling ? configDoc.data().topSelling : [];
+            const topSellingIds = topSellingProducts.map(ts => ts.productId);
+            const flashSaleProducts = configDoc.exists() && configDoc.data().flashSales ? configDoc.data().flashSales : [];
+            const flashSaleIds = flashSaleProducts.map(fs => fs.productId);
+
             const productsList = document.getElementById('productsList');
             productsList.innerHTML = '';
             for (const docSnap of productsSnap.docs) {
                 const product = docSnap.data();
                 const avgRating = productRatings[docSnap.id] ? (productRatings[docSnap.id].sum / productRatings[docSnap.id].count).toFixed(1) : 'N/A';
-                
+                const isTopSelling = topSellingIds.includes(docSnap.id);
+                const topSellingDiscount = topSellingProducts.find(ts => ts.productId === docSnap.id)?.discountPercent || 0;
+                const isFlashSale = flashSaleIds.includes(docSnap.id);
+                const flashSaleDiscount = flashSaleProducts.find(fs => fs.productId === docSnap.id)?.discountPercent || 0;
+
                 let totalStock = product.stock || 0;
                 let sizeDisplay = 'No sizes';
                 if (product.hasSizes && product.sizes && product.sizes.length > 0) {
                     totalStock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
                     sizeDisplay = product.sizes.map(s => s.size + '(' + s.stock + ')').join(', ');
                 }
-                
+
                 const stockClass = totalStock <= 0 ? 'stock-out' : (totalStock <= 5 ? 'stock-low' : 'stock-in');
-                
+
                 productsList.innerHTML += `
                     <tr>
                         <td><img src="${product.image_url}" width="40" height="40" style="object-fit:cover;"></td>
@@ -2292,7 +2371,17 @@
                         <td><span class="stock-badge ${stockClass}">${totalStock > 0 ? (totalStock <= 5 ? 'Low Stock' : 'In Stock') : 'Out of Stock'}</span></td>
                         <td>${avgRating !== 'N/A' ? '⭐ ' + avgRating : '-'}</td>
                         <td>
+                            ${isTopSelling ? '<span style="color:#ff4757; font-weight:bold; font-size:0.85rem;">🔥 Top Selling</span>' : ''}
+                            ${isFlashSale ? '<span style="color:#ff6b81; font-weight:bold; font-size:0.85rem; margin-left:8px;">⚡ Flash Sale</span>' : ''}
+                        </td>
+                        <td>
                             <button class="btn-primary btn-sm" onclick="editProduct('${docSnap.id}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="${isTopSelling ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleTopSelling('${docSnap.id}', ${isTopSelling})">
+                                <i class="fas ${isTopSelling ? 'fa-minus' : 'fa-fire'}"></i> ${isTopSelling ? 'Remove' : 'Top Sell'}
+                            </button>
+                            <button class="${isFlashSale ? 'btn-warning' : 'btn-info'} btn-sm" onclick="toggleFlashSale('${docSnap.id}', ${isFlashSale})">
+                                <i class="fas ${isFlashSale ? 'fa-minus' : 'fa-bolt'}"></i> ${isFlashSale ? 'Remove' : 'Flash'}
+                            </button>
                             <button class="btn-danger btn-sm" onclick="deleteProduct('${docSnap.id}')"><i class="fas fa-trash"></i> Delete</button>
                         </td>
                     </tr>
