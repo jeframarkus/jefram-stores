@@ -2252,11 +2252,21 @@
 
         window.renderFlashSales = async function() {
             const roll = document.getElementById('flashSalesRoll');
-            if (!roll) return;
+            const section = document.getElementById('flashSalesSection');
+            if (!roll || !section) return;
             
             try {
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
                 if (configDoc.exists() && configDoc.data().flashSales && Array.isArray(configDoc.data().flashSales)) {
+                    // Check if flash sale has expired
+                    const flashSaleEndTime = configDoc.data().flashSaleEndTime;
+                    const now = Date.now();
+                    
+                    if (flashSaleEndTime && now > flashSaleEndTime) {
+                        section.style.display = 'none';
+                        return;
+                    }
+                    
                     const flashSaleIds = configDoc.data().flashSales.map(fs => fs.productId);
                     const flashSaleProducts = products.filter(p => flashSaleIds.includes(p.id));
                     
@@ -2265,14 +2275,48 @@
                         return;
                     }
                     
+                    section.style.display = 'block';
                     roll.innerHTML = flashSaleProducts.map(renderProductCard).join('');
+                    
+                    // Start flash sale timer if end time is set
+                    if (flashSaleEndTime) {
+                        window.startFlashSaleTimer(flashSaleEndTime);
+                    }
                 } else {
-                    roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No flash sale items yet</div>';
+                    section.style.display = 'none';
                 }
             } catch (error) {
                 console.error('Error loading flash sales:', error);
-                roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">Failed to load flash sale items</div>';
+                section.style.display = 'none';
             }
+        };
+
+        window.startFlashSaleTimer = function(endTime) {
+            const timerDisplay = document.getElementById('flashTimerDisplay');
+            if (!timerDisplay) return;
+
+            const updateTimer = function() {
+                const now = Date.now();
+                const diff = endTime - now;
+
+                if (diff <= 0) {
+                    timerDisplay.textContent = '00:00:00';
+                    document.getElementById('flashSalesSection').style.display = 'none';
+                    return;
+                }
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                timerDisplay.textContent = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+            };
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
         };
 
         window.renderTopSelling = async function() {

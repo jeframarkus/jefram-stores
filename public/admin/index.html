@@ -1559,9 +1559,9 @@
                 };
 
                 if (configDoc.exists()) {
-                    await updateDoc(configRef, { currentFlashEvent: flashEvent });
+                    await updateDoc(configRef, { currentFlashEvent: flashEvent, flashSaleEndTime: endTime });
                 } else {
-                    await setDoc(configRef, { currentFlashEvent: flashEvent });
+                    await setDoc(configRef, { currentFlashEvent: flashEvent, flashSaleEndTime: endTime });
                 }
 
                 window.currentFlashEvent = flashEvent;
