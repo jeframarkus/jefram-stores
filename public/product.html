@@ -145,13 +145,28 @@
             return Math.max(0, original - (original * (discountPercent / 100)));
         }
 
+        function getSaleEndTime(saleEntry, config) {
+            if (!saleEntry) return null;
+            const raw = saleEntry.endTime ?? saleEntry.endsAt ?? saleEntry.ends_at ?? config?.timerEndTime ?? null;
+            if (raw == null) return null;
+            const timestamp = typeof raw === 'number' ? raw : Date.parse(raw);
+            return Number.isFinite(timestamp) ? timestamp : null;
+        }
+
         function getFlashSaleEntry(productData) {
-            if (!config || !Array.isArray(config.flashSales)) return null;
-            return config.flashSales.find(entry => {
-                if (typeof entry === 'string') return entry === productData.id;
-                if (entry && entry.productId) return entry.productId === productData.id;
-                return false;
-            }) || null;
+            if (!config) return null;
+
+            if (config.currentFlashEvent && Array.isArray(config.currentFlashEvent.products)) {
+                const activeEvent = config.currentFlashEvent;
+                const eventEndTime = getSaleEndTime(activeEvent, config);
+                if (!eventEndTime || eventEndTime <= Date.now()) {
+                    return null;
+                }
+                const eventEntry = activeEvent.products.find(entry => entry.productId === productData.id);
+                return eventEntry ? { ...eventEntry, endTime: eventEndTime } : null;
+            }
+
+            return null;
         }
 
         function renderImageGallery(images) {
