@@ -120,6 +120,9 @@
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
                         <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
+                        <button class="add-to-cart-button" onclick="event.stopPropagation(); window.addToCart('${product.id}')" style="margin-top: 0.75rem; width:100%; padding: 0.65rem 0.8rem; background:#667eea; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+                            Add to cart
+                        </button>
                     </div>
                 </div>
             `;

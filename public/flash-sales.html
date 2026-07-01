@@ -144,7 +144,7 @@
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}" onclick="event.stopPropagation(); window.addToCart('${product.id}')">
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
                         <div style="display: flex; gap: 6px; margin-bottom: 0.3rem; align-items: center;">
@@ -152,6 +152,9 @@
                             ${discount > 0 ? `<div style="font-size: 9px; color: #999; text-decoration: line-through;">UGX ${originalPrice.toLocaleString()}</div>` : ''}
                         </div>
                         ${itemsLeftHtml}
+                        <button class="add-to-cart-button" onclick="event.stopPropagation(); window.addToCart('${product.id}')" style="margin-top: 0.75rem; width:100%; padding: 0.65rem 0.8rem; background:#667eea; color:#fff; border:none; border-radius:8px; cursor:pointer;">
+                            Add to cart
+                        </button>
                     </div>
                 </div>
             `;
@@ -222,8 +225,9 @@
 
             if (diff <= 0) {
                 timerDisplay.textContent = '00:00:00';
-                return;
-            }
+                if (window.currentFlashEvent) {
+                    loadFlashSales();
+                }
 
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
