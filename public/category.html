@@ -116,7 +116,7 @@
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}" onclick="event.stopPropagation(); window.addToCart('${product.id}')">
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
                         <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
