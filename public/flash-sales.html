@@ -140,11 +140,11 @@
             const itemsLeft = flashSaleProductData?.itemsLeft || 0;
             const discountBadge = discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : '';
             const itemsLeftHtml = itemsLeft > 0 ? `<div style="font-size: 9px; color: #ff4757; font-weight: bold; margin-top: 3px;">📦 ${itemsLeft} left</div>` : '<div style="font-size: 9px; color: #999; font-weight: bold; margin-top: 3px;">📦 Sold Out</div>';
-            
+
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}" onclick="event.stopPropagation(); window.addToCart('${product.id}')">
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
                         <div style="display: flex; gap: 6px; margin-bottom: 0.3rem; align-items: center;">
@@ -234,6 +234,27 @@
                 String(minutes).padStart(2, '0') + ':' + 
                 String(seconds).padStart(2, '0');
         }
+
+        window.addToCart = function(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            const existing = guestCart.find(item => item.id === productId);
+            if (existing) {
+                existing.quantity = (Number(existing.quantity) || 1) + 1;
+            } else {
+                guestCart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: Number(product.price || 0),
+                    image: product.image_url || 'https://via.placeholder.com/150',
+                    quantity: 1
+                });
+            }
+            localStorage.setItem('jefram-cart', JSON.stringify(guestCart));
+            alert('Added to cart!');
+        };
 
         if (db) {
             loadFlashSales();

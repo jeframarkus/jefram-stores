@@ -104,7 +104,7 @@
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}" onclick="event.stopPropagation(); window.addToCart('${product.id}')">
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
                         <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
@@ -132,6 +132,27 @@
                 document.getElementById('productsGrid').innerHTML = '<div class="no-products">Failed to load products. Please refresh the page.</div>';
             }
         }
+
+        window.addToCart = function(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            const existing = guestCart.find(item => item.id === productId);
+            if (existing) {
+                existing.quantity = (Number(existing.quantity) || 1) + 1;
+            } else {
+                guestCart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: Number(product.price || 0),
+                    image: product.image_url || 'https://via.placeholder.com/150',
+                    quantity: 1
+                });
+            }
+            localStorage.setItem('jefram-cart', JSON.stringify(guestCart));
+            alert('Added to cart!');
+        };
 
         if (db) {
             loadAllProducts();

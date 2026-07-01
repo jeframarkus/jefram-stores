@@ -903,11 +903,56 @@
 
         window.openCart = function() {
             if (!currentUser) {
-                window.openLoginModal();
+                // For guest users, render localStorage cart
+                window.renderGuestCart();
+                document.getElementById('cartModal').style.display = 'flex';
                 return;
             }
             window.renderCart();
             document.getElementById('cartModal').style.display = 'flex';
+        };
+
+        window.renderGuestCart = function() {
+            const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+
+            if (guestCart.length === 0) {
+                cartItems.innerHTML = '<p style="text-align:center; padding:2rem; color:#999;">Your cart is empty</p>';
+                cartTotal.textContent = 'Total: UGX 0';
+                return;
+            }
+
+            let total = 0;
+            cartItems.innerHTML = guestCart.map(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                return `
+                    <div class="cart-item">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <img src="${item.image}" width="50" height="50" style="object-fit:cover; border-radius:8px;">
+                            <div>
+                                <div style="font-weight:600;">${window.escapeHtml(item.name)}</div>
+                                <div style="color:#666; font-size:0.9rem;">UGX ${item.price.toLocaleString()} x ${item.quantity}</div>
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:700;">UGX ${itemTotal.toLocaleString()}</div>
+                            <button onclick="window.removeFromGuestCart('${item.id}')" style="color:#ff4757; border:none; background:none; cursor:pointer; font-size:0.85rem; margin-top:5px;">Remove</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            cartTotal.textContent = 'Total: UGX ' + total.toLocaleString();
+        };
+
+        window.removeFromGuestCart = function(productId) {
+            const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            const updatedCart = guestCart.filter(item => item.id !== productId);
+            localStorage.setItem('jefram-cart', JSON.stringify(updatedCart));
+            window.updateCartCount();
+            window.renderGuestCart();
         };
 
         window.closeCart = function() {
@@ -934,18 +979,36 @@
             window.updateCartCount();
         };
 
-        // UPDATED: addToCart with size support
+        // UPDATED: addToCart with size support and guest cart support
         window.addToCart = async function(productId) {
-            if (!currentUser) {
-                window.openLoginModal();
-                return;
-            }
             const product = products.find(p => p.id === productId);
             if (!product) {
                 window.showToast('Product not found', 'error');
                 return;
             }
 
+            // For guest users, use localStorage cart
+            if (!currentUser) {
+                const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+                const existing = guestCart.find(item => item.id === productId);
+                if (existing) {
+                    existing.quantity = (Number(existing.quantity) || 1) + 1;
+                } else {
+                    guestCart.push({
+                        id: product.id,
+                        name: product.name,
+                        price: Number(product.price || 0),
+                        image: product.image_url || 'https://via.placeholder.com/150',
+                        quantity: 1
+                    });
+                }
+                localStorage.setItem('jefram-cart', JSON.stringify(guestCart));
+                window.updateCartCount();
+                window.showToast('Added to cart!', 'success');
+                return;
+            }
+
+            // For logged-in users, use Firebase cart
             let selectedSize = null;
             let selectedPrice = product.price;
             let selectedStock = product.stock || 0;
@@ -1004,7 +1067,13 @@
         };
 
         window.updateCartCount = function() {
-            const total = cart.reduce((s, i) => s + i.quantity, 0);
+            let total = 0;
+            if (currentUser) {
+                total = cart.reduce((s, i) => s + i.quantity, 0);
+            } else {
+                const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+                total = guestCart.reduce((s, i) => s + (Number(i.quantity) || 1), 0);
+            }
             document.getElementById('cartCount').innerText = total;
         };
 
@@ -2220,7 +2289,7 @@
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${window.escapeHtml(product.name)}">
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${window.escapeHtml(product.name)}" onclick="event.stopPropagation(); window.addToCart('${product.id}')">
                     <div class="product-info">
                         <div class="product-name">${window.escapeHtml(product.name)}</div>
                         ${priceDisplay}
