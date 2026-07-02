@@ -2328,10 +2328,40 @@
         // ----- PRODUCT FUNCTIONS -----
         window.filterByCategory = function(category) {
             currentCategory = category;
-            window.renderProducts();
+            
+            // Update active state in nav menu
             document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
             if (window.event && window.event.target) {
                 window.event.target.classList.add('active');
+            }
+            
+            // Find the products roll element
+            const roll = document.getElementById('productsRoll');
+            if (!roll) {
+                console.error('productsRoll not found');
+                return;
+            }
+            
+            // Filter and render products
+            let filtered = products;
+            if (category !== 'all') {
+                filtered = products.filter(p => p.category === category);
+            }
+            
+            if (filtered.length === 0) {
+                roll.innerHTML = '<div style="text-align:center; padding:2rem; width:100%; color:#666;">No products found in this category</div>';
+                return;
+            }
+            
+            // Render the filtered products
+            roll.innerHTML = filtered.map(renderProductCard).join('');
+            
+            // Close mobile menu if open
+            document.getElementById('navMenu').classList.remove('active');
+            
+            // Scroll to products section on mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('productsContainer').scrollIntoView({ behavior: 'smooth' });
             }
         };
 
