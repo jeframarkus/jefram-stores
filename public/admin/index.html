@@ -699,7 +699,7 @@
                 </div>
                 
                 <div class="upload-area" onclick="document.getElementById('productImages').click()">
-                    <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos
+                    <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos (up to 5)
                 </div>
                 <div class="image-preview" id="productImagePreview"></div>
                 <input type="file" id="productImages" style="display:none" accept="image/*" multiple onchange="previewProductImage(this)">
@@ -976,7 +976,7 @@
             <textarea id="editProductDesc" placeholder="Description" style="width:100%; margin-bottom:10px; padding:10px;"></textarea>
             
             <div class="upload-area" onclick="document.getElementById('editProductImages').click()">
-                <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos (optional)
+                <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos (up to 5)
             </div>
             <div class="image-preview" id="editProductImagePreview"></div>
             <input type="file" id="editProductImages" style="display:none" accept="image/*" multiple onchange="previewEditProductImage(this)">
@@ -1339,8 +1339,11 @@
             const previewContainer = document.getElementById('editProductImagePreview');
             previewContainer.innerHTML = '';
             if (input.files && input.files.length) {
+                if (input.files.length > 5) {
+                    showToast('Maximum 5 images allowed. Only first 5 will be uploaded.', 'warning');
+                }
                 previewContainer.style.display = 'flex';
-                Array.from(input.files).forEach((file) => {
+                Array.from(input.files).slice(0, 5).forEach((file) => {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         editImageBase64List.push(e.target.result);
@@ -1351,6 +1354,7 @@
                     };
                     reader.readAsDataURL(file);
                 });
+                previewContainer.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${Math.min(input.files.length, 5)} of 5)</div>`;
             } else {
                 previewContainer.style.display = 'none';
             }
@@ -2766,8 +2770,12 @@
             const previewContainer = document.getElementById('productImagePreview');
             previewContainer.innerHTML = '';
             if (input.files && input.files.length) {
+                if (input.files.length > 5) {
+                    document.getElementById('productMessage').innerHTML = '<span style="color:orange;">⚠️ Maximum 5 images allowed. Only first 5 will be uploaded.</span>';
+                    setTimeout(() => { document.getElementById('productMessage').innerHTML = ''; }, 3000);
+                }
                 previewContainer.style.display = 'flex';
-                Array.from(input.files).forEach((file) => {
+                Array.from(input.files).slice(0, 5).forEach((file) => {
                     const reader = new FileReader();
                     reader.onload = function(e) {
                         currentImageBase64List.push(e.target.result);
@@ -2778,6 +2786,7 @@
                     };
                     reader.readAsDataURL(file);
                 });
+                previewContainer.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${Math.min(input.files.length, 5)} of 5)</div>`;
             } else {
                 previewContainer.style.display = 'none';
             }
