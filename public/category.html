@@ -75,7 +75,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, query, where } from "firebase/firestore";
+        import { getFirestore, collection, getDocs } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -90,115 +90,71 @@
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
+            console.log('Firebase initialized');
         } catch (error) {
-            console.error('Firebase initialization error:', error);
-            document.getElementById('brandSections').innerHTML = '<div class="no-products">Failed to load products. Please refresh the page.</div>';
+            console.error('Firebase init error:', error);
         }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-
-        function getCategoryIcon(cat) {
-            const icons = { 'Electronics': 'fa-mobile-alt', 'Clothing': 'fa-tshirt', 'Shoes': 'fa-shoe-prints', 'Food': 'fa-utensils', 'Home': 'fa-home', 'Beauty': 'fa-spa' };
-            return icons[cat] || 'fa-tag';
-        }
-
-        function renderProductCard(product) {
-            const discount = product.discount_percent ? product.discount_percent : 0;
-            const discountBadge = discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : '';
-            return `
-                <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
-                    ${discountBadge}
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
-                    <div class="product-info">
-                        <div class="product-name">${escapeHtml(product.name)}</div>
-                        <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
-                        <button class="add-to-cart-button" onclick="event.stopPropagation(); window.addToCart('${product.id}')" style="margin-top: 0.75rem; width:100%; padding: 0.65rem 0.8rem; background:#667eea; color:#fff; border:none; border-radius:8px; cursor:pointer;">
-                            Add to cart
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function loadCategoryProducts() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const category = urlParams.get('cat');
-
-            if (!category) {
-                document.getElementById('brandSections').innerHTML = '<div class="no-products">No category specified.</div>';
+        // Load products immediately
+        setTimeout(async () => {
+            if (!db) {
+                console.error('DB not available');
                 return;
             }
-
-            document.getElementById('pageTitle').innerHTML = `<i class="fas ${getCategoryIcon(category)}"></i> ${category}`;
-
+            
             try {
-                const q = query(collection(db, 'products'), where('category', '==', category));
-                const querySnapshot = await getDocs(q);
-                products = [];
-                querySnapshot.forEach((doc) => {
-                    products.push({ id: doc.id, ...doc.data() });
-                });
-
-                if (products.length === 0) {
-                    document.getElementById('brandSections').innerHTML = '<div class="no-products">No products found in this category.</div>';
+                console.log('Starting product load...');
+                const snapshot = await getDocs(collection(db, 'products'));
+                console.log('Got snapshot, size:', snapshot.size);
+                
+                if (!snapshot.size) {
+                    document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: #999;">No products available in database.</div>';
                     return;
                 }
-
-                // Group by brand
-                const brands = [...new Set(products.map(p => p.brand).filter(b => b))];
-                let html = '';
-
-                brands.forEach(brand => {
-                    const brandProducts = products.filter(p => p.brand === brand);
-                    html += `
-                        <div class="brand-section">
-                            <h3 class="brand-title">${brand}</h3>
-                            <div class="products-roll">
-                                ${brandProducts.map(renderProductCard).join('')}
-                            </div>
-                        </div>
-                    `;
+                
+                const category = new URLSearchParams(window.location.search).get('cat');
+                products = [];
+                
+                snapshot.forEach(doc => {
+                    products.push({ id: doc.id, ...doc.data() });
                 });
-
+                
+                // Filter by category
+                const filtered = products.filter(p => p.category === category);
+                
+                if (!filtered.length) {
+                    const allCats = [...new Set(products.map(p => p.category).filter(c => c))];
+                    document.getElementById('brandSections').innerHTML = `<div style="padding: 20px; color: #666;">
+                        <p>No products found for "${category}"</p>
+                        <p>Available categories: ${allCats.join(', ')}</p>
+                        <p>Total products in DB: ${products.length}</p>
+                    </div>`;
+                    return;
+                }
+                
+                const brands = [...new Set(filtered.map(p => p.brand).filter(b => b))];
+                let html = '';
+                brands.forEach(brand => {
+                    const brandProds = filtered.filter(p => p.brand === brand);
+                    html += `<div class="brand-section"><h3 class="brand-title">${brand}</h3><div class="products-roll">`;
+                    brandProds.forEach(p => {
+                        html += `<div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
+                            <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-image" alt="${p.name}">
+                            <div class="product-info">
+                                <div class="product-name">${p.name}</div>
+                                <div class="product-price">UGX ${parseInt(p.price || 0).toLocaleString()}</div>
+                            </div>
+                        </div>`;
+                    });
+                    html += '</div></div>';
+                });
+                
                 document.getElementById('brandSections').innerHTML = html;
             } catch (error) {
-                console.error('Error loading products:', error);
-                document.getElementById('brandSections').innerHTML = '<div class="no-products">Failed to load products. Please refresh the page.</div>';
+                console.error('Error:', error);
+                document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + error.message + '</div>';
             }
-        }
-
-        window.addToCart = function(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
-            const existing = guestCart.find(item => item.id === productId);
-            if (existing) {
-                existing.quantity = (Number(existing.quantity) || 1) + 1;
-            } else {
-                guestCart.push({
-                    id: product.id,
-                    name: product.name,
-                    price: Number(product.price || 0),
-                    image: product.image_url || 'https://via.placeholder.com/150',
-                    quantity: 1
-                });
-            }
-            localStorage.setItem('jefram-cart', JSON.stringify(guestCart));
-            alert('Added to cart!');
-        };
-
-        if (db) {
-            loadCategoryProducts();
-        }
+        }, 500);
     </script>
 </body>
 </html>

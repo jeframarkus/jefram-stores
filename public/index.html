@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* ... (keep all your existing styles) ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Poppins', sans-serif; background: #f8f9fa; }
 
@@ -2345,12 +2344,22 @@
             return icons[c] || 'fa-tag';
         };
 
+        // ===== FIXED: Category Dropdown to Filter Products on Same Page =====
         window.renderCategories = function() {
             const dropdownList = document.getElementById('categoryDropdownList');
             if (!dropdownList) return;
-            dropdownList.innerHTML = categories.map(cat =>
-                '<div class="category-dropdown-item" onclick="window.goToCategoryPage(\'' + cat + '\')"><i class="fas ' + window.getCategoryIcon(cat) + '"></i>' + cat + '</div>'
+            
+            // Add "All Products" option first
+            let dropdownHtml = '<div class="category-dropdown-item" onclick="window.filterByCategory(\'all\'); document.getElementById(\'categoryDropdown\').classList.remove(\'show\');"><i class="fas fa-th-list"></i> All Products</div>';
+            
+            // Add categories
+            dropdownHtml += categories.map(cat =>
+                '<div class="category-dropdown-item" onclick="window.filterByCategory(\'' + cat + '\'); document.getElementById(\'categoryDropdown\').classList.remove(\'show\');"><i class="fas ' + window.getCategoryIcon(cat) + '"></i>' + cat + '</div>'
             ).join('');
+            
+            dropdownList.innerHTML = dropdownHtml;
+            
+            // Update navigation menu (keep as is - already working)
             const navMenu = document.getElementById('navMenu');
             document.querySelectorAll('#navMenu a:not([onclick*="all"])').forEach(a => a.remove());
             categories.forEach(cat => {
@@ -2368,10 +2377,7 @@
             }
         };
 
-        window.goToCategoryPage = function(category) {
-            window.location.href = 'category.html?cat=' + encodeURIComponent(category);
-        };
-
+        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('categoryDropdown');
             const btn = document.querySelector('.category-dropdown-btn');
