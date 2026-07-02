@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        /* ... (keep all your existing styles) ... */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Poppins', sans-serif; background: #f8f9fa; }
 
@@ -50,7 +51,6 @@
         .search-bar input:focus { outline: none; border-color: #667eea; }
         .search-bar i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #999; }
 
-        /* Search Autocomplete */
         #searchAutocomplete {
             position: absolute; background: white; width: 100%; max-height: 250px; overflow-y: auto;
             border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; z-index: 100;
@@ -121,7 +121,6 @@
         .category-card i { font-size: 2.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
         .category-card h3 { font-size: 1rem; color: #333; }
 
-        /* Brands Grid */
         .brands-section { margin-bottom: 3rem; }
         .brands-grid { display: flex; flex-wrap: wrap; gap: 10px; }
         .brand-tag {
@@ -131,10 +130,8 @@
         .brand-tag:hover { border-color: #667eea; }
         .brand-tag.active { background: #667eea; color: white; border-color: #667eea; }
 
-        /* Recently Viewed */
         .recently-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
 
-        /* FAQ Section */
         .faq-section { margin: 3rem 0; }
         .faq-item { border-bottom: 1px solid #eee; padding: 15px 0; }
         .faq-question { font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; }
@@ -142,7 +139,6 @@
         .faq-answer { display: none; padding-top: 10px; color: #666; font-size: 14px; line-height: 1.6; }
         .faq-answer.open { display: block; }
 
-        /* Discount Timer */
         .discount-timer {
             background: #ff4757; color: white; padding: 10px 20px; border-radius: 10px;
             text-align: center; margin: 20px 0; display: none;
@@ -202,7 +198,6 @@
         .product-stock { font-size: 0.8rem; color: #28a745; margin-bottom: 1rem; }
         .product-brand { font-size: 0.75rem; color: #999; margin-bottom: 0.5rem; }
 
-        /* Size Selection Styles */
         .size-select {
             width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
             font-size: 14px; margin: 10px 0; background: white; color: #333;
@@ -265,7 +260,6 @@
         .status-pending_payment { background: #ffe0b2; color: #e65100; }
         .status-cancelled { background: #f8d7da; color: #721c24; }
 
-        /* Order Progress Bar */
         .order-progress { margin: 10px 0; display: flex; align-items: center; gap: 5px; }
         .progress-step { flex: 1; text-align: center; position: relative; }
         .progress-step .step-line { width: 100%; height: 4px; border-radius: 2px; margin-bottom: 5px; }
@@ -379,7 +373,7 @@
         </div>
 
         <!-- Flash Sales -->
-        <div class="section" id="flashSalesSection">
+        <div class="section" id="flashSalesSection" style="display: none;">
             <div class="section-title">
                 <span>⚡ Flash Sales</span>
                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -654,7 +648,7 @@
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, deleteDoc, getDoc, orderBy, limit, onSnapshot } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, deleteDoc, getDoc, orderBy, limit, onSnapshot, setDoc } from "firebase/firestore";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -702,6 +696,10 @@
         // Discount Timer
         let discountTimerInterval = null;
         let timerEndTime = null;
+
+        // Flash Sale Timer
+        let flashSaleTimerInterval = null;
+        let flashSaleEndTime = null;
 
         const translations = {
             en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" },
@@ -903,7 +901,6 @@
 
         window.openCart = function() {
             if (!currentUser) {
-                // For guest users, render localStorage cart
                 window.renderGuestCart();
                 document.getElementById('cartModal').style.display = 'flex';
                 return;
@@ -1188,10 +1185,8 @@
                     if (!mobileNumber) { window.showToast('Enter your phone number', 'error'); return; }
                     if (!screenshotInput.files || screenshotInput.files.length === 0) { window.showToast('Please upload payment screenshot', 'error'); return; }
                     
-                    // Upload screenshot to Firebase Storage (simulated - in production use actual Firebase Storage)
                     window.showToast('Uploading payment screenshot...', 'info');
                     const file = screenshotInput.files[0];
-                    // For now, we'll store as base64 (not ideal for production but works for demo)
                     paymentScreenshotUrl = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result);
@@ -1200,16 +1195,13 @@
                     });
                 }
                 
-                // Show size in order items
                 const itemsList = cart.map(i => 
                     '• ' + i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + 
                     ' x' + i.quantity + ' - UGX ' + (i.price * i.quantity).toLocaleString()
                 ).join('\n');
                 
-                // Generate unique tracking number
                 const trackingNumber = 'JF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
                 
-                // Calculate estimated delivery time (2-3 business days)
                 const estimatedDelivery = new Date();
                 estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
                 const estimatedDeliveryStr = estimatedDelivery.toLocaleDateString();
@@ -1231,7 +1223,7 @@
                 
                 const orderData = {
                     customer: currentUser,
-                    items: cart.map(i => ({ ...i })), // Preserve size info
+                    items: cart.map(i => ({ ...i })),
                     subtotal: subtotal,
                     discount: discount,
                     total: total,
@@ -1258,7 +1250,6 @@
                     if (productSnap.exists()) {
                         const productData = productSnap.data();
                         if (item.selectedSize && productData.sizes) {
-                            // Update specific size stock
                             const updatedSizes = productData.sizes.map(s => {
                                 if (s.size === item.selectedSize) {
                                     return { ...s, stock: Math.max(0, s.stock - item.quantity) };
@@ -1268,13 +1259,11 @@
                             const newTotalStock = updatedSizes.reduce((sum, s) => sum + s.stock, 0);
                             await updateDoc(productRef, { sizes: updatedSizes, stock: newTotalStock });
                         } else {
-                            // Update overall stock
                             await updateDoc(productRef, { stock: Math.max(0, (productData.stock || 0) - item.quantity) });
                         }
                     }
                 }
                 
-                // Show order confirmation modal
                 const orderId = orderRef.id;
                 const confirmationDetails = `
                     <strong>Order #:</strong> ${orderId.slice(-6)}<br>
@@ -1288,7 +1277,6 @@
                 document.getElementById('confirmationOrderDetails').innerHTML = confirmationDetails;
                 document.getElementById('orderConfirmationModal').style.display = 'flex';
                 
-                // Open WhatsApp in background
                 window.open('https://wa.me/' + whatsappNumber + '?text=' + encodeURIComponent(message), '_blank');
                 
                 cart = [];
@@ -1312,7 +1300,6 @@
             document.getElementById('reviewProductInfo').innerHTML = '<p>Reviewing: <strong>' + productName + '</strong></p>';
             document.getElementById('reviewModal').style.display = 'flex';
             
-            // Add click handlers to stars
             document.querySelectorAll('#reviewRating i').forEach(star => {
                 star.onclick = function() {
                     const value = parseInt(this.dataset.value);
@@ -1375,9 +1362,8 @@
             }
         };
 
-        // Rating modal functions (for delivery/product rating after order)
+        // Rating modal functions
         window.setupRatingStars = function() {
-            // Product rating stars
             document.querySelectorAll('#productRating i').forEach(star => {
                 star.addEventListener('click', function() {
                     const value = parseInt(this.dataset.value);
@@ -1388,7 +1374,6 @@
                 });
             });
 
-            // Delivery rating stars
             document.querySelectorAll('#deliveryRating i').forEach(star => {
                 star.addEventListener('click', function() {
                     const value = parseInt(this.dataset.value);
@@ -1425,7 +1410,6 @@
             currentProductRating = 0;
             currentDeliveryRating = 0;
             
-            // Reset star visuals
             document.querySelectorAll('#productRating i').forEach(s => s.className = 'far fa-star');
             document.querySelectorAll('#deliveryRating i').forEach(s => s.className = 'far fa-star');
             
@@ -1556,11 +1540,9 @@
                     return; 
                 }
                 
-                // Generate 6-digit code
                 const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-                const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes
+                const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
                 
-                // Store reset code in Firebase
                 await addDoc(collection(db, 'password_resets'), {
                     phone: phone,
                     code: resetCode,
@@ -1568,7 +1550,6 @@
                     createdAt: new Date().toISOString()
                 });
                 
-                // Send via WhatsApp
                 const message = 'Your Jefram Stores password reset code is: ' + resetCode + '. This code expires in 15 minutes.';
                 window.open('https://wa.me/256' + phone.substring(1) + '?text=' + encodeURIComponent(message), '_blank');
                 
@@ -1591,7 +1572,6 @@
             if (!newPassword || newPassword.length < 4) { document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Password must be at least 4 characters</span>'; return; }
             
             try {
-                // Find valid reset code
                 const resetsRef = collection(db, 'password_resets');
                 const q = query(resetsRef, where("phone", "==", phone), where("code", "==", code));
                 const snapshot = await getDocs(q);
@@ -1614,7 +1594,6 @@
                     return;
                 }
                 
-                // Update customer password (hash it)
                 const encoder = new TextEncoder();
                 const data = encoder.encode(newPassword);
                 const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -1631,7 +1610,6 @@
                     });
                 }
                 
-                // Delete used reset code
                 await deleteDoc(doc(db, 'password_resets', resetDoc.id));
                 
                 document.getElementById('resetMessage').innerHTML = '<span style="color:green;">Password reset successful! You can now login.</span>';
@@ -1752,26 +1730,22 @@
                     const o = doc.data();
                     const itemsWithSizes = o.items.map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '') + ' x' + i.quantity).join(', ');
                     
-                    // Check if order can be cancelled
                     const canCancel = o.status === 'pending' || o.status === 'pending_payment';
                     const cancelButton = canCancel ? 
                         '<button onclick="window.cancelOrder(\'' + doc.id + '\')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; margin-top:5px; font-size:12px;">Cancel Order</button>' : '';
                     
-                    // Tracking number - more prominent
                     const trackingDisplay = o.tracking_number ? 
                         '<div style="margin-top:8px; padding:8px; background:#e8f0fe; border-radius:6px; border-left:3px solid #667eea;">' +
                         '<div style="font-size:11px; color:#666; margin-bottom:2px;">📦 TRACKING NUMBER</div>' +
                         '<div style="font-size:14px; color:#667eea; font-weight:bold;">' + o.tracking_number + '</div>' +
                         '</div>' : '';
                     
-                    // Delivery estimate - more prominent
                     const deliveryDisplay = o.estimated_delivery ? 
                         '<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:6px; border-left:3px solid #28a745;">' +
                         '<div style="font-size:11px; color:#666; margin-bottom:2px;">🚚 ESTIMATED DELIVERY</div>' +
                         '<div style="font-size:14px; color:#28a745; font-weight:bold;">' + o.estimated_delivery + '</div>' +
                         '</div>' : '';
                     
-                    // Delivery agent info
                     const agentDisplay = o.delivery_agent ? 
                         '<div style="margin-top:8px; padding:10px; background:#e8f0fe; border-radius:6px; font-size:12px;">' +
                         '<strong>🚚 Delivery Agent:</strong><br>' +
@@ -1779,14 +1753,12 @@
                         '<a href="https://wa.me/256' + o.delivery_agent.phone.replace(/^0+/, '') + '" target="_blank" style="color:#25D366; text-decoration:none; font-weight:500;">📱 Contact on WhatsApp</a>' +
                         '</div>' : '';
                     
-                    // Admin response
                     const adminResponseDisplay = o.admin_response ? 
                         '<div style="margin-top:8px; padding:10px; background:#fff3cd; border-radius:6px; font-size:12px;">' +
                         '<strong>📝 Admin Response:</strong><br>' +
                         '<span style="color:#333;">' + window.escapeHtml(o.admin_response) + '</span>' +
                         '</div>' : '';
                     
-                    // Order status progress bar
                     const statusSteps = ['pending_payment', 'pending', 'confirmed', 'on_way', 'delivered'];
                     const statusLabels = {
                         'pending_payment': 'Payment Pending', 
@@ -1812,7 +1784,6 @@
                     });
                     progressBar += '</div>';
                     
-                    // Rating button for delivered orders
                     const ratingButton = o.status === 'delivered' && !o.product_rating ? 
                         '<button onclick="window.openRatingModal(\'' + doc.id + '\')" style="margin-top:10px; background:#667eea; color:white; padding:8px; border:none; border-radius:8px; width:100%;">⭐ Rate This Order</button>' : '';
                     
@@ -1875,7 +1846,6 @@
                     return; 
                 }
                 
-                // Get the most recent active order
                 const orders = [];
                 snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
                 orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1948,7 +1918,6 @@
                 });
                 trackingHtml += '</div>';
                 
-                // Order items
                 trackingHtml += `
                     <h4 style="margin-bottom:10px;">Order Items</h4>
                     <div style="background:#f8f9fa; padding:15px; border-radius:8px;">
@@ -2099,13 +2068,11 @@
             const timerElement = document.getElementById('discountTimer');
             const displayElement = document.getElementById('timerDisplay');
             
-            // Make sure db exists before using onSnapshot
             if (!db) {
                 console.warn('Database not initialized, timer disabled');
                 return;
             }
             
-            // Listen for timer config from Firebase
             try {
                 onSnapshot(doc(db, 'config', 'store'), (docSnap) => {
                     if (docSnap.exists()) {
@@ -2155,6 +2122,108 @@
             }
         }
 
+        // ----- FLASH SALES -----
+        function startFlashSaleTimer() {
+            const flashSection = document.getElementById('flashSalesSection');
+            const timerDisplay = document.getElementById('flashTimerDisplay');
+            
+            if (!flashSection || !timerDisplay) return;
+            
+            if (flashSaleTimerInterval) clearInterval(flashSaleTimerInterval);
+            
+            const updateFlashTimer = () => {
+                if (!flashSaleEndTime || flashSaleEndTime < Date.now()) {
+                    flashSection.style.display = 'none';
+                    if (flashSaleTimerInterval) clearInterval(flashSaleTimerInterval);
+                    return;
+                }
+                
+                const diff = flashSaleEndTime - Date.now();
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                timerDisplay.textContent = 
+                    String(hours).padStart(2, '0') + ':' + 
+                    String(minutes).padStart(2, '0') + ':' + 
+                    String(seconds).padStart(2, '0');
+                
+                flashSection.style.display = 'block';
+            };
+            
+            updateFlashTimer();
+            flashSaleTimerInterval = setInterval(updateFlashTimer, 1000);
+        }
+
+        window.renderFlashSales = async function() {
+            const roll = document.getElementById('flashSalesRoll');
+            const section = document.getElementById('flashSalesSection');
+            if (!roll || !section) return;
+            
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                if (configDoc.exists() && configDoc.data().flashSales && Array.isArray(configDoc.data().flashSales)) {
+                    const flashSaleEnd = configDoc.data().flashSaleEndTime;
+                    flashSaleEndTime = flashSaleEnd || null;
+                    
+                    // Check if flash sale has expired
+                    if (flashSaleEndTime && Date.now() > flashSaleEndTime) {
+                        section.style.display = 'none';
+                        if (flashSaleTimerInterval) clearInterval(flashSaleTimerInterval);
+                        return;
+                    }
+                    
+                    const flashSaleIds = configDoc.data().flashSales.map(fs => fs.productId);
+                    const flashSaleProducts = products.filter(p => flashSaleIds.includes(p.id));
+                    
+                    if (flashSaleProducts.length === 0) {
+                        section.style.display = 'none';
+                        return;
+                    }
+                    
+                    roll.innerHTML = flashSaleProducts.map(renderProductCard).join('');
+                    
+                    // Start the timer
+                    if (flashSaleEndTime) {
+                        startFlashSaleTimer();
+                    } else {
+                        section.style.display = 'block';
+                    }
+                } else {
+                    section.style.display = 'none';
+                    if (flashSaleTimerInterval) clearInterval(flashSaleTimerInterval);
+                }
+            } catch (error) {
+                console.error('Error loading flash sales:', error);
+                section.style.display = 'none';
+            }
+        };
+
+        window.renderTopSelling = async function() {
+            const roll = document.getElementById('topSellingRoll');
+            if (!roll) return;
+            
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                if (configDoc.exists() && configDoc.data().topSelling && Array.isArray(configDoc.data().topSelling)) {
+                    const topSellingIds = configDoc.data().topSelling.map(ts => ts.productId);
+                    const topSellingProducts = products.filter(p => topSellingIds.includes(p.id));
+                    
+                    if (topSellingProducts.length === 0) {
+                        roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No top selling items yet</div>';
+                        return;
+                    }
+                    
+                    roll.innerHTML = topSellingProducts.map(renderProductCard).join('');
+                } else {
+                    roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No top selling items yet</div>';
+                }
+            } catch (error) {
+                console.error('Error loading top selling:', error);
+                roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">Failed to load top selling items</div>';
+            }
+        };
+
         // ----- FAQ -----
         window.toggleFaq = function(element) {
             const answer = element.nextElementSibling;
@@ -2167,6 +2236,28 @@
                 icon.className = 'fas fa-chevron-up';
             }
         };
+
+        function renderFaqs(faqs) {
+            const container = document.getElementById('faqContainer');
+            const section = document.getElementById('faqSection');
+            if (!container || !section) return;
+            
+            if (!faqs || faqs.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            container.innerHTML = faqs.map(faq => `
+                <div class="faq-item">
+                    <div class="faq-question" onclick="window.toggleFaq(this)">
+                        <span>${window.escapeHtml(faq.question)}</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">${window.escapeHtml(faq.answer)}</div>
+                </div>
+            `).join('');
+        }
 
         window.openContact = function(type) {
             const phone = document.getElementById('footerPhone').textContent;
@@ -2235,7 +2326,7 @@
             }
         };
 
-        // ----- PRODUCT FUNCTIONS WITH SIZE SUPPORT -----
+        // ----- PRODUCT FUNCTIONS -----
         window.filterByCategory = function(category) {
             currentCategory = category;
             window.renderProducts();
@@ -2281,7 +2372,6 @@
             window.location.href = 'category.html?cat=' + encodeURIComponent(category);
         };
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('categoryDropdown');
             const btn = document.querySelector('.category-dropdown-btn');
@@ -2310,7 +2400,6 @@
             `;
         }
 
-        // UPDATED: renderProducts with size selection dropdown, brand, and related products
         window.renderProducts = async function() {
             const roll = document.getElementById('productsRoll');
             if (!roll) return;
@@ -2320,7 +2409,6 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search) || (p.description && p.description.toLowerCase().includes(search)));
             
-            // Limit to latest 20 items for main page
             const latestProducts = filtered.slice(0, 20);
             
             if (latestProducts.length === 0) {
@@ -2331,101 +2419,6 @@
             roll.innerHTML = latestProducts.map(renderProductCard).join('');
         };
 
-        window.renderFlashSales = async function() {
-            const roll = document.getElementById('flashSalesRoll');
-            const section = document.getElementById('flashSalesSection');
-            if (!roll || !section) return;
-            
-            try {
-                const configDoc = await getDoc(doc(db, 'config', 'store'));
-                if (configDoc.exists() && configDoc.data().flashSales && Array.isArray(configDoc.data().flashSales)) {
-                    // Check if flash sale has expired
-                    const flashSaleEndTime = configDoc.data().flashSaleEndTime;
-                    const now = Date.now();
-                    
-                    if (flashSaleEndTime && now > flashSaleEndTime) {
-                        section.style.display = 'none';
-                        return;
-                    }
-                    
-                    const flashSaleIds = configDoc.data().flashSales.map(fs => fs.productId);
-                    const flashSaleProducts = products.filter(p => flashSaleIds.includes(p.id));
-                    
-                    if (flashSaleProducts.length === 0) {
-                        roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No flash sale items yet</div>';
-                        return;
-                    }
-                    
-                    section.style.display = 'block';
-                    roll.innerHTML = flashSaleProducts.map(renderProductCard).join('');
-                    
-                    // Start flash sale timer if end time is set
-                    if (flashSaleEndTime) {
-                        window.startFlashSaleTimer(flashSaleEndTime);
-                    }
-                } else {
-                    section.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Error loading flash sales:', error);
-                section.style.display = 'none';
-            }
-        };
-
-        window.startFlashSaleTimer = function(endTime) {
-            const timerDisplay = document.getElementById('flashTimerDisplay');
-            if (!timerDisplay) return;
-
-            const updateTimer = function() {
-                const now = Date.now();
-                const diff = endTime - now;
-
-                if (diff <= 0) {
-                    timerDisplay.textContent = '00:00:00';
-                    document.getElementById('flashSalesSection').style.display = 'none';
-                    return;
-                }
-
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-                timerDisplay.textContent = 
-                    String(hours).padStart(2, '0') + ':' + 
-                    String(minutes).padStart(2, '0') + ':' + 
-                    String(seconds).padStart(2, '0');
-            };
-
-            updateTimer();
-            setInterval(updateTimer, 1000);
-        };
-
-        window.renderTopSelling = async function() {
-            const roll = document.getElementById('topSellingRoll');
-            if (!roll) return;
-            
-            try {
-                const configDoc = await getDoc(doc(db, 'config', 'store'));
-                if (configDoc.exists() && configDoc.data().topSelling && Array.isArray(configDoc.data().topSelling)) {
-                    const topSellingIds = configDoc.data().topSelling.map(ts => ts.productId);
-                    const topSellingProducts = products.filter(p => topSellingIds.includes(p.id));
-                    
-                    if (topSellingProducts.length === 0) {
-                        roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No top selling items yet</div>';
-                        return;
-                    }
-                    
-                    roll.innerHTML = topSellingProducts.map(renderProductCard).join('');
-                } else {
-                    roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">No top selling items yet</div>';
-                }
-            } catch (error) {
-                console.error('Error loading top selling:', error);
-                roll.innerHTML = '<div style="text-align:center; padding:2rem; color:#999; width:100%;">Failed to load top selling items</div>';
-            }
-        };
-
-        // UPDATED: renderProducts with size selection dropdown, brand, and related products (for gallery modal)
         window.renderProductGallery = async function(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) return;
@@ -2639,7 +2632,6 @@
             }
         });
 
-        // Make functions globally accessible
         window.products = products;
         window.cart = cart;
         window.wishlist = wishlist;
