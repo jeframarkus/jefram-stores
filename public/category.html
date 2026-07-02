@@ -86,75 +86,117 @@
             appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
         };
 
-        let app, db, products = [];
+        let app, db;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            console.log('Firebase initialized');
+            console.log('Firebase initialized successfully');
         } catch (error) {
             console.error('Firebase init error:', error);
+            document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: red;">Failed to connect to database. Please refresh.</div>';
         }
 
-        // Load products immediately
-        setTimeout(async () => {
+        (async function loadCategory() {
             if (!db) {
                 console.error('DB not available');
                 return;
             }
             
             try {
-                console.log('Starting product load...');
-                const snapshot = await getDocs(collection(db, 'products'));
-                console.log('Got snapshot, size:', snapshot.size);
+                // Get category from URL parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const category = urlParams.get('cat');
                 
-                if (!snapshot.size) {
-                    document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: #999;">No products available in database.</div>';
+                console.log('Category from URL:', category);
+                
+                if (!category) {
+                    document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: #999;">No category selected. <a href="index.html">Go back to store</a></div>';
+                    document.getElementById('pageTitle').textContent = 'All Categories';
                     return;
                 }
                 
-                const category = new URLSearchParams(window.location.search).get('cat');
-                products = [];
+                document.getElementById('pageTitle').textContent = category;
                 
+                // Fetch all products
+                const snapshot = await getDocs(collection(db, 'products'));
+                const products = [];
                 snapshot.forEach(doc => {
                     products.push({ id: doc.id, ...doc.data() });
                 });
                 
+                console.log('Total products loaded:', products.length);
+                
                 // Filter by category
                 const filtered = products.filter(p => p.category === category);
+                console.log('Products in category "' + category + '":', filtered.length);
                 
-                if (!filtered.length) {
+                const container = document.getElementById('brandSections');
+                
+                if (filtered.length === 0) {
                     const allCats = [...new Set(products.map(p => p.category).filter(c => c))];
-                    document.getElementById('brandSections').innerHTML = `<div style="padding: 20px; color: #666;">
-                        <p>No products found for "${category}"</p>
-                        <p>Available categories: ${allCats.join(', ')}</p>
-                        <p>Total products in DB: ${products.length}</p>
-                    </div>`;
+                    container.innerHTML = `
+                        <div style="padding: 20px; color: #666; text-align: center;">
+                            <p style="font-size: 1.2rem; margin-bottom: 10px;">No products found for "${category}"</p>
+                            <p style="color: #999;">Available categories: ${allCats.join(', ')}</p>
+                            <p style="margin-top: 20px;"><a href="index.html" style="color: #667eea;">Browse all products</a></p>
+                        </div>
+                    `;
                     return;
                 }
                 
+                // Group by brand
                 const brands = [...new Set(filtered.map(p => p.brand).filter(b => b))];
-                let html = '';
-                brands.forEach(brand => {
-                    const brandProds = filtered.filter(p => p.brand === brand);
-                    html += `<div class="brand-section"><h3 class="brand-title">${brand}</h3><div class="products-roll">`;
-                    brandProds.forEach(p => {
-                        html += `<div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
-                            <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-image" alt="${p.name}">
-                            <div class="product-info">
-                                <div class="product-name">${p.name}</div>
-                                <div class="product-price">UGX ${parseInt(p.price || 0).toLocaleString()}</div>
-                            </div>
-                        </div>`;
-                    });
-                    html += '</div></div>';
-                });
+                console.log('Brands in this category:', brands);
                 
-                document.getElementById('brandSections').innerHTML = html;
+                let html = '';
+                
+                if (brands.length > 0) {
+                    brands.forEach(brand => {
+                        const brandProds = filtered.filter(p => p.brand === brand);
+                        html += `
+                            <div class="brand-section">
+                                <h3 class="brand-title">${brand}</h3>
+                                <div class="products-roll">
+                                    ${brandProds.map(p => `
+                                        <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
+                                            <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-image" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150'">
+                                            <div class="product-info">
+                                                <div class="product-name">${p.name}</div>
+                                                <div class="product-price">UGX ${parseInt(p.price || 0).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    // If no brands, show products without brand grouping
+                    html = `
+                        <div class="brand-section">
+                            <h3 class="brand-title">All ${category}</h3>
+                            <div class="products-roll">
+                                ${filtered.map(p => `
+                                    <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
+                                        <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-image" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150'">
+                                        <div class="product-info">
+                                            <div class="product-name">${p.name}</div>
+                                            <div class="product-price">UGX ${parseInt(p.price || 0).toLocaleString()}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML = html;
+                
             } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: red;">Error: ' + error.message + '</div>';
+                console.error('Error loading category:', error);
+                document.getElementById('brandSections').innerHTML = '<div style="padding: 20px; color: red;">Error loading products: ' + error.message + '</div>';
             }
-        }, 500);
+        })();
     </script>
 </body>
 </html>
