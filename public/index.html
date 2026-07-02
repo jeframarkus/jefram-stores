@@ -2099,48 +2099,60 @@
             const timerElement = document.getElementById('discountTimer');
             const displayElement = document.getElementById('timerDisplay');
             
+            // Make sure db exists before using onSnapshot
+            if (!db) {
+                console.warn('Database not initialized, timer disabled');
+                return;
+            }
+            
             // Listen for timer config from Firebase
-            onSnapshot(doc(db, 'config', 'store'), (doc) => {
-                if (doc.exists()) {
-                    const config = doc.data();
-                    if (config.timerEndTime) {
-                        timerEndTime = config.timerEndTime;
-                        
-                        if (timerEndTime < Date.now()) {
-                            timerElement.style.display = 'none';
-                            return;
-                        }
-                        
-                        timerElement.style.display = 'block';
-                        
-                        if (discountTimerInterval) clearInterval(discountTimerInterval);
-                        
-                        discountTimerInterval = setInterval(() => {
-                            const now = Date.now();
-                            const diff = timerEndTime - now;
+            try {
+                onSnapshot(doc(db, 'config', 'store'), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const config = docSnap.data();
+                        if (config.timerEndTime) {
+                            timerEndTime = config.timerEndTime;
                             
-                            if (diff <= 0) {
-                                clearInterval(discountTimerInterval);
+                            if (timerEndTime < Date.now()) {
                                 timerElement.style.display = 'none';
                                 return;
                             }
                             
-                            const hours = Math.floor(diff / (1000 * 60 * 60));
-                            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                            timerElement.style.display = 'block';
                             
-                            displayElement.textContent = 
-                                String(hours).padStart(2, '0') + ':' + 
-                                String(minutes).padStart(2, '0') + ':' + 
-                                String(seconds).padStart(2, '0');
-                        }, 1000);
+                            if (discountTimerInterval) clearInterval(discountTimerInterval);
+                            
+                            discountTimerInterval = setInterval(() => {
+                                const now = Date.now();
+                                const diff = timerEndTime - now;
+                                
+                                if (diff <= 0) {
+                                    clearInterval(discountTimerInterval);
+                                    timerElement.style.display = 'none';
+                                    return;
+                                }
+                                
+                                const hours = Math.floor(diff / (1000 * 60 * 60));
+                                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                                
+                                displayElement.textContent = 
+                                    String(hours).padStart(2, '0') + ':' + 
+                                    String(minutes).padStart(2, '0') + ':' + 
+                                    String(seconds).padStart(2, '0');
+                            }, 1000);
+                        } else {
+                            timerElement.style.display = 'none';
+                        }
                     } else {
                         timerElement.style.display = 'none';
                     }
-                } else {
-                    timerElement.style.display = 'none';
-                }
-            });
+                }, (error) => {
+                    console.error('Timer listener error:', error);
+                });
+            } catch (error) {
+                console.error('Error setting up timer listener:', error);
+            }
         }
 
         // ----- FAQ -----
@@ -2520,11 +2532,14 @@
         };
 
         window.loadConfig = async function() {
-            if (!db) return;
+            if (!db) {
+                console.warn('Database not initialized for config');
+                return;
+            }
             try {
-                onSnapshot(doc(db, 'config', 'store'), (doc) => {
-                    if (doc.exists()) {
-                        const config = doc.data();
+                onSnapshot(doc(db, 'config', 'store'), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const config = docSnap.data();
                         if (config.whatsappNumber) {
                             whatsappNumber = config.whatsappNumber;
                         }
@@ -2541,21 +2556,27 @@
                             document.getElementById('airtelName').textContent = config.airtelName;
                         }
                         if (config.instagramUrl) {
-                            document.getElementById('footerInstagram').href = config.instagramUrl;
+                            const insta = document.getElementById('footerInstagram');
+                            if (insta) insta.href = config.instagramUrl;
                         }
                         if (config.facebookUrl) {
-                            document.getElementById('footerFacebook').href = config.facebookUrl;
+                            const fb = document.getElementById('footerFacebook');
+                            if (fb) fb.href = config.facebookUrl;
                         }
                         if (config.contactPhone) {
-                            document.getElementById('footerPhone').textContent = config.contactPhone;
+                            const phone = document.getElementById('footerPhone');
+                            if (phone) phone.textContent = config.contactPhone;
                         }
                         if (config.contactEmail) {
-                            document.getElementById('footerEmail').textContent = config.contactEmail;
+                            const email = document.getElementById('footerEmail');
+                            if (email) email.textContent = config.contactEmail;
                         }
                         if (config.faqs && Array.isArray(config.faqs)) {
                             renderFaqs(config.faqs);
                         }
                     }
+                }, (error) => {
+                    console.error('Config listener error:', error);
                 });
             } catch (error) {
                 console.error('Error loading config:', error);
@@ -2656,7 +2677,7 @@
             </div>
         </div>
         <div style="max-width: 1400px; margin: 2rem auto 0; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); text-align: center; color: rgba(255,255,255,0.5); font-size: 0.9rem;">
-            &copy; 2024 Jefram Stores. All rights reserved.
+            &copy; 2026 Jefram Stores. All rights reserved.
         </div>
     </footer>
 </body>
