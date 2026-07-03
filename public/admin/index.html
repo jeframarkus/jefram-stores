@@ -1619,10 +1619,13 @@
                 const configDoc = await getDoc(configRef);
                 const currentEvent = configDoc.exists() ? configDoc.data().currentFlashEvent : null;
 
-                if (!currentEvent) {
-                    showToast('Flash sale event not found', 'error');
+                const eventEndTime = currentEvent && currentEvent.endTime ? new Date(currentEvent.endTime).getTime() : null;
+                if (!currentEvent || !eventEndTime || eventEndTime <= Date.now()) {
+                    showToast('Create a flash sale event with a valid future end time first', 'error');
                     return;
                 }
+
+                currentEvent.products = Array.isArray(currentEvent.products) ? currentEvent.products : [];
 
                 // Check if product already in event
                 const existingIndex = currentEvent.products.findIndex(p => p.productId === productId);
