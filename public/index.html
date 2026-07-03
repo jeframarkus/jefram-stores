@@ -145,7 +145,7 @@
         .products-roll::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
         .product-card { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 8px rgba(0,0,0,0.08); position: relative; cursor: pointer; flex-shrink: 0; width: 150px; }
         .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
-        .wishlist-btn { position: absolute; top: 8px; right: 8px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10; }
+        .wishlist-btn { position: absolute; top: 8px; left: 8px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10; }
         .wishlist-btn i { font-size: 0.9rem; }
         .product-image { width: 100%; height: 90px; object-fit: contain; background: #f5f5f5; }
         .product-info { padding: 6px; }
@@ -787,7 +787,12 @@
             window.showToast('Removed from wishlist', 'success');
         };
 
-        window.toggleWishlist = async function(product) {
+        window.toggleWishlist = async function(productId) {
+            const product = products.find(p => p.id == productId);
+            if (!product) {
+                window.showToast('Product not found', 'error');
+                return;
+            }
             if (!currentUser) {
                 window.openLoginModal();
                 return;
@@ -939,12 +944,12 @@
             document.getElementById('cartModal').style.display = 'none';
         };
 
-        window.updateQuantity = async function(productId, change) {
-            const item = cart.find(i => i.id === productId);
+        window.updateQuantity = async function(productId, change, selectedSize = '') {
+            const item = cart.find(i => i.id === productId && (i.selectedSize || '') === selectedSize);
             if (item) {
                 item.quantity += change;
                 if (item.quantity <= 0) {
-                    cart = cart.filter(i => i.id !== productId);
+                    cart = cart.filter(i => !(i.id === productId && (i.selectedSize || '') === selectedSize));
                 }
                 await window.saveCartToFirebase();
                 window.renderCart();
@@ -952,8 +957,8 @@
             }
         };
 
-        window.removeFromCart = async function(productId) {
-            cart = cart.filter(i => i.id !== productId);
+        window.removeFromCart = async function(productId, selectedSize = '') {
+            cart = cart.filter(i => !(i.id === productId && (i.selectedSize || '') === selectedSize));
             await window.saveCartToFirebase();
             window.renderCart();
             window.updateCartCount();
@@ -1077,10 +1082,10 @@
                         <br>UGX ${i.price.toLocaleString()} x ${i.quantity}
                     </div>
                     <div>
-                        <button onclick="window.updateQuantity('${i.id}', -1)">-</button>
+                        <button onclick="window.updateQuantity('${i.id}', -1, '${i.selectedSize || ''}')">-</button>
                         <span> ${i.quantity} </span>
-                        <button onclick="window.updateQuantity('${i.id}', 1)">+</button>
-                        <button onclick="window.removeFromCart('${i.id}')" style="color:red;">×</button>
+                        <button onclick="window.updateQuantity('${i.id}', 1, '${i.selectedSize || ''}')">+</button>
+                        <button onclick="window.removeFromCart('${i.id}', '${i.selectedSize || ''}')" style="color:red;">×</button>
                     </div>
                 </div>`
             ).join('');
@@ -2411,6 +2416,9 @@
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
                     ${discountBadge}
+                    <div class="wishlist-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist('${product.id}');" title="Wishlist">
+                        <i class="far fa-heart"></i>
+                    </div>
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${window.escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${window.escapeHtml(product.name)}</div>
@@ -2437,6 +2445,7 @@
             }
             
             roll.innerHTML = latestProducts.map(renderProductCard).join('');
+            window.updateWishlistButtons();
         };
 
         window.renderProductGallery = async function(productId) {

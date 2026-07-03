@@ -790,8 +790,12 @@
             <!-- Top Selling Management -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">🔥 Top Selling</h4>
-                <div style="margin-bottom: 10px; font-size: 0.95rem; color: #666;">
-                    Top selling products are managed from the product list. Use the 🔥 button on the product row to mark or remove top selling items.
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <select id="topSellingProductSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 220px;">
+                        <option value="">Select Product...</option>
+                    </select>
+                    <input type="number" id="topSellingDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
+                    <button class="btn-primary" onclick="addTopSelling()">Add</button>
                 </div>
                 <div id="topSellingList"></div>
             </div>
@@ -2334,10 +2338,6 @@
             for (const docSnap of productsSnap.docs) {
                 const product = docSnap.data();
                 const avgRating = productRatings[docSnap.id] ? (productRatings[docSnap.id].sum / productRatings[docSnap.id].count).toFixed(1) : 'N/A';
-                const isTopSelling = topSellingIds.includes(docSnap.id);
-                const topSellingDiscount = topSellingProducts.find(ts => ts.productId === docSnap.id)?.discountPercent || 0;
-                const isFlashSale = flashSaleIds.includes(docSnap.id);
-                const flashSaleDiscount = flashSaleProducts.find(fs => fs.productId === docSnap.id)?.discountPercent || 0;
 
                 let totalStock = product.stock || 0;
                 let sizeDisplay = 'No sizes';
@@ -2358,16 +2358,9 @@
                         <td><small>${sizeDisplay}</small></td>
                         <td><span class="stock-badge ${stockClass}">${totalStock > 0 ? (totalStock <= 5 ? 'Low Stock' : 'In Stock') : 'Out of Stock'}</span></td>
                         <td>${avgRating !== 'N/A' ? '⭐ ' + avgRating : '-'}</td>
-                        <td>
-                            ${isTopSelling ? '<span style="color:#ff4757; font-weight:bold; font-size:0.85rem;">🔥 Top Selling</span>' : ''}
-                            ${isFlashSale ? '<span style="color:#ff6b81; font-weight:bold; font-size:0.85rem; margin-left:8px;">⚡ Flash Sale</span>' : ''}
-                        </td>
+                        <td></td>
                         <td>
                             <button class="btn-primary btn-sm" onclick="editProduct('${docSnap.id}')"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="${isTopSelling ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleTopSelling('${docSnap.id}', ${isTopSelling})">
-                                <i class="fas ${isTopSelling ? 'fa-minus' : 'fa-fire'}"></i> ${isTopSelling ? 'Remove' : 'Top Sell'}
-                            </button>
-                            <button class="btn-danger btn-sm" onclick="deleteProduct('${docSnap.id}')"><i class="fas fa-trash"></i> Delete</button>
                         </td>
                     </tr>
                 `;
