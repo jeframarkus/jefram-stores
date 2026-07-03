@@ -701,6 +701,7 @@
                 <div class="upload-area" onclick="document.getElementById('productImages').click()">
                     <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos (up to 5)
                 </div>
+                <div style="margin-top:8px; font-size:0.9rem; color:#666;">You can select up to 5 photos. The first selected image becomes the thumbnail.</div>
                 <div class="image-preview" id="productImagePreview"></div>
                 <input type="file" id="productImages" style="display:none" accept="image/*" multiple onchange="previewProductImage(this)">
                 
@@ -1388,7 +1389,7 @@
                 };
                 
                     if (editImageBase64List && editImageBase64List.length) {
-                    updateData.image_urls = editImageBase64List.slice();
+                    updateData.image_urls = editImageBase64List.slice(0, 5);
                     updateData.image_url = editImageBase64List[0];
                 }
                 
@@ -2795,7 +2796,7 @@
                 brand: brand || '',
                 discount_percent: Math.max(0, Math.min(100, discountPercent)),
                 image_url: (currentImageBase64List && currentImageBase64List.length) ? currentImageBase64List[0] : 'https://via.placeholder.com/300',
-                image_urls: (currentImageBase64List && currentImageBase64List.length) ? currentImageBase64List.slice() : [],
+                image_urls: (currentImageBase64List && currentImageBase64List.length) ? currentImageBase64List.slice(0, 5) : [],
                 description: description || '',
                 hasSizes: hasSizes,
                 createdAt: new Date().toISOString()
