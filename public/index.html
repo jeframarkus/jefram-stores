@@ -885,7 +885,8 @@
         };
 
         window.openCart = function() {
-            if (!currentUser) {
+            const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
+            if (!currentUser || (guestCart.length > 0 && (!cart || cart.length === 0))) {
                 window.renderGuestCart();
                 document.getElementById('cartModal').style.display = 'flex';
                 return;
@@ -2641,6 +2642,7 @@
                 await window.loadCartFromFirebase();
                 await window.loadRecentlyViewedFromFirebase();
             }
+            window.updateCartCount();
             setupSearchAutocomplete();
             window.setupRatingStars();
         })();
