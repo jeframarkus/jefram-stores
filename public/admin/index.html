@@ -248,6 +248,12 @@
             font-size: 12px;
         }
 
+        .btn-success {
+            background: #28a745;
+            color: white;
+            border: none;
+        }
+
         .product-form {
             max-width: 600px;
         }
@@ -279,6 +285,9 @@
             justify-content: center;
             background: #f5f5f5;
             border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
         }
 
         .image-preview img {
@@ -382,7 +391,6 @@
             border-radius: 20px;
         }
 
-        /* Size Management Styles */
         .size-section {
             background: #f8f9fa;
             border-radius: 8px;
@@ -459,7 +467,6 @@
             cursor: pointer;
         }
 
-        /* Brand input */
         .brand-input {
             width: 100%;
             padding: 10px;
@@ -469,7 +476,6 @@
             font-family: 'Poppins', sans-serif;
         }
 
-        /* Timer Management */
         .timer-management {
             background: #f8f9fa;
             padding: 15px;
@@ -481,6 +487,24 @@
             font-weight: bold;
             color: #ff4757;
             font-family: monospace;
+        }
+
+        .order-confirm-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        .order-confirm-box input {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .order-confirm-box label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
         }
 
         @media (max-width: 768px) {
@@ -615,7 +639,7 @@
             <div class="table-container">
                 <table id="ordersTable">
                     <thead>
-                        <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Discount</th><th>Delivery Fee</th><th>Total</th><th>Tracking</th><th>Status</th><th>Agent</th><th>Ratings</th><th>Action</th>
+                        <tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Subtotal</th><th>Discount</th><th>Delivery Fee</th><th>Total</th><th>Est. Delivery</th><th>Status</th><th>Agent</th><th>Ratings</th><th>Action</th>
                         </thead>
                     <tbody id="ordersList"></tbody>
                 </table>
@@ -675,7 +699,6 @@
                 <input type="text" id="productBrand" placeholder="Brand (e.g., Nike, Adidas, Samsung)" class="brand-input">
                 <input type="number" id="productDiscountPercent" placeholder="Discount % (optional)" min="0" max="100">
                 
-                <!-- Size Management -->
                 <div class="size-section">
                     <label class="toggle-size-label">
                         <input type="checkbox" id="hasSizes" checked onchange="toggleSizeSection()">
@@ -716,7 +739,6 @@
         <div id="settings" class="section">
             <div class="section-title"><span>Store Settings</span></div>
             
-            <!-- Discount Timer Settings -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">🔥 Discount Timer</h4>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
@@ -728,16 +750,10 @@
                     <span style="font-weight: 500;">Current Timer:</span>
                     <span id="currentTimerDisplay" style="font-family: monospace; font-size: 1.2rem; color: #ff4757;"></span>
                 </div>
-                <div style="margin-top: 8px; font-size: 12px; color: #666;">
-                    <strong>Note:</strong> Timer will show on the customer store. Set it to a future date/time to display a countdown.
-                </div>
             </div>
-            
-            <!-- Flash Sales Management - New Event Based System -->
+
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">⚡ Flash Sales Event</h4>
-                
-                <!-- Step 1: Create or Update Flash Sale Event -->
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <h5 style="margin-bottom: 10px; color: #333;">Step 1: Set Flash Sale Time Frame</h5>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
@@ -751,7 +767,6 @@
                     </div>
                 </div>
                 
-                <!-- Step 2: Add Products to Flash Sale Event -->
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <h5 style="margin-bottom: 10px; color: #333;">Step 2: Add Products to Sale</h5>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
@@ -764,13 +779,11 @@
                     </div>
                 </div>
                 
-                <!-- Step 3: Active Products in Flash Sale -->
                 <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
                     <h5 style="margin-bottom: 10px; color: #333;">Step 3: Products in Sale (Real-time Inventory)</h5>
                     <div id="flashSaleProductsList" style="max-height: 400px; overflow-y: auto;"></div>
                 </div>
 
-                <!-- Step 4: Manual Inventory Adjustment -->
                 <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px;">
                     <h5 style="margin-bottom: 10px; color: #333;">Step 4: Adjust Inventory (When Items Sell)</h5>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
@@ -781,13 +794,9 @@
                         <input type="number" id="inventorySoldCount" placeholder="0" min="0" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 80px;">
                         <button class="btn-primary" onclick="updateInventoryAfterSale()">Update Items Sold</button>
                     </div>
-                    <div style="font-size: 0.9rem; color: #666; background: #fff; padding: 8px; border-radius: 4px; border-left: 3px solid #667eea;">
-                        <strong>📝 Note:</strong> If 5 items sold, enter 5 here. System will reduce "Items Left" by 5. Or set this to auto-decrease on order completion.
-                    </div>
                 </div>
             </div>
 
-            <!-- Top Selling Management -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">🔥 Top Selling</h4>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
@@ -800,7 +809,6 @@
                 <div id="topSellingList"></div>
             </div>
 
-            <!-- WhatsApp Settings -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">📱 WhatsApp Number</h4>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
@@ -813,7 +821,6 @@
                 </div>
             </div>
             
-            <!-- Mobile Money Numbers -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">💰 Mobile Money Numbers</h4>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
@@ -835,7 +842,6 @@
                 </div>
             </div>
             
-            <!-- Social Media Links -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">🔗 Social Media Links</h4>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
@@ -855,7 +861,6 @@
                 </div>
             </div>
             
-            <!-- Contact Information -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">📞 Contact Information</h4>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
@@ -875,7 +880,6 @@
                 </div>
             </div>
             
-            <!-- FAQ Management -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">❓ FAQ Management</h4>
                 <div id="faqList" style="margin-bottom: 15px;"></div>
@@ -990,7 +994,7 @@
     </div>
 
     <!-- Modals -->
-    <div id="userModal" class="modal"><div class="modal-content"><h3>Customer Details</h3><div id="userDetails"></div><button onclick="window.closeUserModal()">Close</button></div></div>
+    <div id="userModal" class="modal"><div class="modal-content"><h3>Customer Details</h3><div id="userDetails"></div><button onclick="closeUserModal()">Close</button></div></div>
     <div id="addAdminModal" class="modal">
         <div class="modal-content">
             <h3>Add New Admin</h3>
@@ -1000,12 +1004,12 @@
                 <option value="subadmin" selected>Sub Admin</option>
                 <option value="master">Master Admin</option>
             </select>
-            <button class="btn-primary" onclick="window.addNewAdmin()">Create</button>
-            <button onclick="window.closeAddAdminModal()">Cancel</button>
+            <button class="btn-primary" onclick="addNewAdmin()">Create</button>
+            <button onclick="closeAddAdminModal()">Cancel</button>
         </div>
     </div>
-    <div id="addAgentModal" class="modal"><div class="modal-content"><h3>Add Delivery Agent</h3><input type="text" id="agentName" placeholder="Agent Name" style="width:100%; margin-bottom:10px; padding:10px;"><input type="tel" id="agentPhone" placeholder="Phone Number" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="window.addDeliveryAgent()">Add</button><button onclick="window.closeAddAgentModal()">Cancel</button></div></div>
-    <div id="addCouponModal" class="modal"><div class="modal-content"><h3>Create Coupon</h3><input type="text" id="couponCode" placeholder="Coupon Code" style="width:100%; margin-bottom:10px; padding:10px;"><select id="couponType" style="width:100%; margin-bottom:10px; padding:10px;"><option value="percentage">Percentage (%)</option><option value="fixed">Fixed Amount (UGX)</option></select><input type="number" id="couponValue" placeholder="Discount Value" style="width:100%; margin-bottom:10px; padding:10px;"><input type="number" id="couponUsageLimit" placeholder="Usage Limit (optional)" style="width:100%; margin-bottom:10px; padding:10px;"><input type="date" id="couponExpiry" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="window.createCoupon()">Create Coupon</button><button onclick="window.closeAddCouponModal()">Cancel</button></div></div>
+    <div id="addAgentModal" class="modal"><div class="modal-content"><h3>Add Delivery Agent</h3><input type="text" id="agentName" placeholder="Agent Name" style="width:100%; margin-bottom:10px; padding:10px;"><input type="tel" id="agentPhone" placeholder="Phone Number" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="addDeliveryAgent()">Add</button><button onclick="closeAddAgentModal()">Cancel</button></div></div>
+    <div id="addCouponModal" class="modal"><div class="modal-content"><h3>Create Coupon</h3><input type="text" id="couponCode" placeholder="Coupon Code" style="width:100%; margin-bottom:10px; padding:10px;"><select id="couponType" style="width:100%; margin-bottom:10px; padding:10px;"><option value="percentage">Percentage (%)</option><option value="fixed">Fixed Amount (UGX)</option></select><input type="number" id="couponValue" placeholder="Discount Value" style="width:100%; margin-bottom:10px; padding:10px;"><input type="number" id="couponUsageLimit" placeholder="Usage Limit (optional)" style="width:100%; margin-bottom:10px; padding:10px;"><input type="date" id="couponExpiry" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="createCoupon()">Create Coupon</button><button onclick="closeAddCouponModal()">Cancel</button></div></div>
     <div id="orderResponseModal" class="modal">
         <div class="modal-content">
             <h3>💬 Send Response to Customer</h3>
@@ -1017,8 +1021,41 @@
                     <span>Also send via WhatsApp</span>
                 </label>
             </div>
-            <button class="btn-primary" onclick="window.submitOrderResponse()">Send Response</button>
-            <button onclick="window.closeOrderResponseModal()">Cancel</button>
+            <button class="btn-primary" onclick="submitOrderResponse()">Send Response</button>
+            <button onclick="closeOrderResponseModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Order Confirm Modal - NEW: For setting delivery fee and date before confirming -->
+    <div id="orderConfirmModal" class="modal">
+        <div class="modal-content">
+            <h3>✅ Confirm Order</h3>
+            <p style="color:#666; margin-bottom:15px;">Set delivery details before confirming this order:</p>
+            <input type="hidden" id="confirmOrderId">
+            
+            <div class="order-confirm-box">
+                <label>🚚 Delivery Fee (UGX)</label>
+                <input type="number" id="confirmDeliveryFee" placeholder="Enter delivery fee" value="0">
+            </div>
+            
+            <div class="order-confirm-box">
+                <label>📅 Estimated Delivery Date</label>
+                <input type="date" id="confirmDeliveryDate">
+                <small style="color:#666;">Customer will see this estimated delivery date</small>
+            </div>
+            
+            <div class="order-confirm-box">
+                <label>📦 Tracking Number</label>
+                <input type="text" id="confirmTrackingNumber" placeholder="Enter tracking number">
+                <small style="color:#666;">Optional tracking number for the customer</small>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-success" onclick="confirmOrderWithDetails()" style="flex:1; padding:12px;">
+                    <i class="fas fa-check"></i> Confirm Order
+                </button>
+                <button onclick="closeOrderConfirmModal()" style="flex:1; padding:12px;">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -1115,10 +1152,6 @@
         const isSubAdmin = currentAdmin.role === 'subadmin';
 
         if (isSubAdmin) {
-            ['navOverview', 'navOrders', 'navDeliveryAgents', 'navUsers', 'navCoupons', 'navReviews', 'navSales', 'navExports', 'navAdmins', 'navSettings'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.style.display = 'none';
-            });
             document.getElementById('permissionBadge').innerHTML = '🔒 Products Only';
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
             document.getElementById('products').classList.add('active');
@@ -1274,7 +1307,6 @@
                 }
                 const product = productDoc.data();
                 
-                // Fill the edit form
                 document.getElementById('editProductId').value = productId;
                 document.getElementById('editProductName').value = product.name || '';
                 document.getElementById('editProductPrice').value = product.price || '';
@@ -1284,7 +1316,6 @@
                 document.getElementById('editProductDiscountPercent').value = product.discount_percent || 0;
                 document.getElementById('editProductDesc').value = product.description || '';
                 
-                // Handle sizes
                 editProductSizes = [];
                 if (product.hasSizes && product.sizes && product.sizes.length > 0) {
                     editProductSizes = product.sizes.map(s => ({ ...s }));
@@ -1299,7 +1330,6 @@
                 }
                 renderEditSizeTags();
                 
-                // Show current images
                 const editPreview = document.getElementById('editProductImagePreview');
                 editPreview.innerHTML = '';
                 if (product.image_urls && product.image_urls.length) {
@@ -1392,7 +1422,7 @@
                     hasSizes: hasSizes
                 };
                 
-                    if (editImageBase64List && editImageBase64List.length) {
+                if (editImageBase64List && editImageBase64List.length) {
                     updateData.image_urls = editImageBase64List.slice(0, 5);
                     updateData.image_url = editImageBase64List[0];
                 }
@@ -1421,7 +1451,6 @@
             }
         };
 
-        // ----- DELETE PRODUCT -----
         window.deleteProduct = async function(productId) {
             if (!confirm('Delete this product permanently? This cannot be undone.')) return;
             try {
@@ -1447,9 +1476,11 @@
                 const flashSelect = document.getElementById('flashSaleProductSelect');
                 const flashSaleAddButton = document.getElementById('flashSaleAddButton');
                 const inventorySelect = document.getElementById('inventoryAdjustProduct');
+                const topSellingSelect = document.getElementById('topSellingProductSelect');
                 
                 const optionMarkup = '<option value="">Select a product</option>' + promoProducts.map(product => `<option value="${product.id}">${escapeHtml(product.name || product.id)}</option>`).join('');
                 const hasActiveFlashEvent = config.currentFlashEvent && config.currentFlashEvent.endTime && new Date(config.currentFlashEvent.endTime).getTime() > Date.now();
+                
                 if (flashSelect) {
                     if (hasActiveFlashEvent) {
                         flashSelect.innerHTML = optionMarkup;
@@ -1461,9 +1492,7 @@
                 }
                 if (flashSaleAddButton) flashSaleAddButton.disabled = !hasActiveFlashEvent;
                 if (inventorySelect) {
-                    // Only show products currently in flash sale
                     if (window.currentFlashEvent && window.currentFlashEvent.products) {
-                        const flashProductIds = window.currentFlashEvent.products.map(p => p.productId);
                         const inventoryOptions = '<option value="">Select a product</option>' + window.currentFlashEvent.products.map(item => {
                             const product = promoProducts.find(p => p.id === item.productId);
                             return `<option value="${item.productId}">${escapeHtml(product?.name || item.productId)}</option>`;
@@ -1473,11 +1502,13 @@
                         inventorySelect.innerHTML = '<option value="">No active event</option>';
                     }
                 }
+                if (topSellingSelect) {
+                    topSellingSelect.innerHTML = optionMarkup;
+                }
 
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
                 const config = configDoc.exists() ? configDoc.data() : {};
                 
-                // Load new flash sale event system
                 if (config.currentFlashEvent) {
                     window.currentFlashEvent = config.currentFlashEvent;
                     renderFlashSalesList(config.currentFlashEvent);
@@ -1641,7 +1672,6 @@
 
                 currentEvent.products = Array.isArray(currentEvent.products) ? currentEvent.products : [];
 
-                // Check if product already in event
                 const existingIndex = currentEvent.products.findIndex(p => p.productId === productId);
                 if (existingIndex >= 0) {
                     currentEvent.products[existingIndex] = {
@@ -1661,7 +1691,6 @@
 
                 await updateDoc(configRef, { currentFlashEvent: currentEvent });
                 
-                // Update product's discount in products collection
                 await updateDoc(doc(db, 'products', productId), { 
                     discount_percent: Math.max(0, Math.min(100, discountPercent)),
                     in_flash_sale: true
@@ -1695,7 +1724,6 @@
 
                 await updateDoc(configRef, { currentFlashEvent: currentEvent });
                 
-                // Remove discount from product
                 await updateDoc(doc(db, 'products', productId), { 
                     discount_percent: 0,
                     in_flash_sale: false
@@ -1827,45 +1855,6 @@
             }
         };
 
-        window.toggleTopSelling = async function(productId, isCurrentlyTopSelling) {
-            try {
-                const configRef = doc(db, 'config', 'store');
-                const configDoc = await getDoc(configRef);
-                const currentTopSelling = configDoc.exists() && Array.isArray(configDoc.data().topSelling) ? configDoc.data().topSelling : [];
-
-                if (isCurrentlyTopSelling) {
-                    // Remove from top selling
-                    const updatedTopSelling = currentTopSelling.filter(item => item.productId !== productId);
-                    if (configDoc.exists()) {
-                        await updateDoc(configRef, { topSelling: updatedTopSelling });
-                    } else {
-                        await setDoc(configRef, { topSelling: updatedTopSelling });
-                    }
-                    showToast('Removed from top selling', 'success');
-                } else {
-                    // Add to top selling with default 0% discount
-                    const updatedTopSelling = currentTopSelling.filter(item => item.productId !== productId);
-                    updatedTopSelling.push({ productId, discountPercent: 0 });
-                    if (configDoc.exists()) {
-                        await updateDoc(configRef, { topSelling: updatedTopSelling });
-                    } else {
-                        await setDoc(configRef, { topSelling: updatedTopSelling });
-                    }
-                    showToast('Added to top selling', 'success');
-                }
-                loadProducts();
-                loadPromoProducts();
-            } catch (error) {
-                console.error('Error toggling top selling:', error);
-                showToast('Failed to update top selling', 'error');
-            }
-        };
-
-        window.toggleFlashSale = async function(productId, isCurrentlyFlashSale) {
-            showToast('Flash sales are managed only through the Flash Sales Event panel.', 'error');
-            return;
-        };
-
         async function loadSettings() {
             try {
                 await loadPromoProducts();
@@ -1936,7 +1925,6 @@
             `).join('');
         }
 
-        // ----- ESCAPE HTML FUNCTION (KEPT ONLY ONCE) -----
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
@@ -2179,11 +2167,17 @@
             }
         }
 
+        // ===== FIXED: LOAD ORDERS WITH CONFIRM BUTTON =====
         async function loadOrders() {
             if (!isMaster) return;
             const ordersSnap = await getDocs(collection(db, 'orders'));
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '';
+            
+            // Load delivery agents first
+            const agentsSnap = await getDocs(collection(db, 'delivery_agents'));
+            deliveryAgents = [];
+            agentsSnap.forEach(doc => deliveryAgents.push({ id: doc.id, ...doc.data() }));
             
             const orders = [];
             ordersSnap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
@@ -2210,22 +2204,19 @@
                     paymentInfo += `</div>`;
                 }
                 
-                // Show order notes if present
                 let orderNotes = '';
                 if (order.order_notes) {
                     orderNotes = `<div style="margin-top:5px; font-size:12px; color:#666; background:#f8f9fa; padding:5px 8px; border-radius:4px;"><strong>📝 Notes:</strong> ${escapeHtml(order.order_notes)}</div>`;
                 }
                 
-                // Show admin response if present
                 let adminResponseDisplay = '';
                 if (order.admin_response) {
                     adminResponseDisplay = `<div style="margin-top:5px; font-size:12px; color:#856404; background:#fff3cd; padding:5px 8px; border-radius:4px;"><strong>💬 Your Response:</strong> ${escapeHtml(order.admin_response)}</div>`;
                 }
                 
-                // Add response button
                 const responseButton = `<button onclick="sendOrderResponse('${orderId}')" style="background:#667eea; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px; font-size:11px;">💬 Respond</button>`;
                 
-                // Show tracking number with edit option - more prominent
+                // Tracking display
                 let trackingDisplay = `
                     <div style="margin-top:5px; padding:6px; background:#e8f0fe; border-radius:4px; border-left:3px solid #667eea;">
                         <div style="font-size:10px; color:#666; margin-bottom:2px;">📦 TRACKING</div>
@@ -2234,7 +2225,7 @@
                         onchange="updateTrackingNumber('${orderId}', this.value)" placeholder="Enter tracking #">
                     </div>`;
                 
-                // Show estimated delivery with edit option - more prominent
+                // Estimated delivery display with date input
                 let deliveryDisplay = `
                     <div style="margin-top:5px; padding:6px; background:#e8f5e9; border-radius:4px; border-left:3px solid #28a745;">
                         <div style="font-size:10px; color:#666; margin-bottom:2px;">🚚 EST. DELIVERY</div>
@@ -2243,29 +2234,149 @@
                         onchange="updateEstimatedDelivery('${orderId}', this.value)">
                     </div>`;
                 
-                const statusOptions = order.status === 'pending_payment' 
-                    ? `<option value="pending_payment" selected>Pending Payment</option>`
-                    : `<option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option><option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option><option value="on_way" ${order.status === 'on_way' ? 'selected' : ''}>On Way</option><option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>`;
+                // Status dropdown - with "Confirm" option for pending orders
+                let statusOptions = '';
+                if (order.status === 'pending_payment') {
+                    statusOptions = `<option value="pending_payment" selected>Pending Payment</option>`;
+                } else if (order.status === 'pending') {
+                    statusOptions = `
+                        <option value="pending" selected>Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="on_way">On Way</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    `;
+                } else {
+                    statusOptions = `
+                        <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                        <option value="on_way" ${order.status === 'on_way' ? 'selected' : ''}>On Way</option>
+                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Delivered</option>
+                        <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                    `;
+                }
+                
+                // CONFIRM BUTTON - Only show for pending orders
+                const confirmButton = (order.status === 'pending') ? 
+                    `<button onclick="openOrderConfirmModal('${orderId}')" style="background:#28a745; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px; margin-top:3px; width:100%;">
+                        <i class="fas fa-check-circle"></i> Confirm with Details
+                    </button>` : '';
                 
                 ordersList.innerHTML += `
                     <tr>
-                        <td>${orderId.slice(-6)}<br>${trackingDisplay}${deliveryDisplay}</td>
-                        <td>${escapeHtml(order.customer.name)}<br><small>${order.customer.phone}</small>${orderNotes}${adminResponseDisplay}${paymentInfo}${responseButton}</td>
+                        <td>
+                            ${orderId.slice(-6)}<br>
+                            ${trackingDisplay}
+                            ${deliveryDisplay}
+                        </td>
+                        <td>
+                            ${escapeHtml(order.customer.name)}<br>
+                            <small>${order.customer.phone}</small>
+                            ${orderNotes}
+                            ${adminResponseDisplay}
+                            ${paymentInfo}
+                            ${responseButton}
+                        </td>
                         <td><small>${itemsWithSizes}</small></td>
                         <td>UGX ${(subtotal || 0).toLocaleString()}</td>
                         <td>${discount > 0 ? `-UGX ${discount.toLocaleString()}` : '-'}</td>
-                        <td><input type="number" id="deliveryFee_${orderId}" value="${deliveryFee}" style="width:70px;" onchange="updateDeliveryFee('${orderId}', this.value)"></td>
+                        <td>
+                            <input type="number" id="deliveryFee_${orderId}" value="${deliveryFee}" 
+                                   style="width:70px;" onchange="updateDeliveryFee('${orderId}', this.value)">
+                        </td>
                         <td><strong>UGX ${totalWithDelivery.toLocaleString()}</strong></td>
-                        <td>${order.tracking_number || '-'}</td>
-                        <td><select onchange="updateOrderStatus('${orderId}', this.value, document.getElementById('deliveryFee_${orderId}').value)" ${order.status === 'pending_payment' ? 'disabled' : ''}>${statusOptions}</select></td>
-                        <td><select id="agentSelect_${orderId}" onchange="assignDeliveryAgent('${orderId}', this.value)" class="agent-select"><option value="">Select</option>${deliveryAgents.map(a => `<option value="${a.id}" ${order.delivery_agent?.id === a.id ? 'selected' : ''}>${a.name}</option>`).join('')}</select></td>
-                        <td>${order.product_rating ? `<span title="Product">📦 ${order.product_rating}/5</span><br>` : ''}${order.delivery_rating ? `<span title="Delivery">🚚 ${order.delivery_rating}/5</span>` : '-'}</td>
-                        <td><button class="whatsapp-btn" onclick="contactCustomer('${order.customer.phone}', '${order.customer.name}')"><i class="fab fa-whatsapp"></i> Chat</button></td>
+                        <td>${order.estimated_delivery_date ? new Date(order.estimated_delivery_date).toLocaleDateString() : '-'}</td>
+                        <td>
+                            <select onchange="updateOrderStatus('${orderId}', this.value, document.getElementById('deliveryFee_${orderId}').value)" 
+                                    ${order.status === 'pending_payment' ? 'disabled' : ''}>
+                                ${statusOptions}
+                            </select>
+                            ${confirmButton}
+                        </td>
+                        <td>
+                            <select id="agentSelect_${orderId}" onchange="assignDeliveryAgent('${orderId}', this.value)" class="agent-select">
+                                <option value="">Select</option>
+                                ${deliveryAgents.map(a => `<option value="${a.id}" ${order.delivery_agent?.id === a.id ? 'selected' : ''}>${a.name}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td>
+                            ${order.product_rating ? `<span title="Product">📦 ${order.product_rating}/5</span><br>` : ''}
+                            ${order.delivery_rating ? `<span title="Delivery">🚚 ${order.delivery_rating}/5</span>` : '-'}
+                        </td>
+                        <td>
+                            <button class="whatsapp-btn" onclick="contactCustomer('${order.customer.phone}', '${order.customer.name}')">
+                                <i class="fab fa-whatsapp"></i> Chat
+                            </button>
+                        </td>
                     </tr>
                 `;
             }
         }
 
+        // ===== NEW: ORDER CONFIRM MODAL FUNCTIONS =====
+        window.openOrderConfirmModal = function(orderId) {
+            document.getElementById('confirmOrderId').value = orderId;
+            document.getElementById('confirmDeliveryFee').value = 0;
+            document.getElementById('confirmDeliveryDate').value = '';
+            document.getElementById('confirmTrackingNumber').value = '';
+            document.getElementById('orderConfirmModal').style.display = 'flex';
+        };
+
+        window.closeOrderConfirmModal = function() {
+            document.getElementById('orderConfirmModal').style.display = 'none';
+        };
+
+        window.confirmOrderWithDetails = async function() {
+            const orderId = document.getElementById('confirmOrderId').value;
+            const deliveryFee = parseInt(document.getElementById('confirmDeliveryFee').value) || 0;
+            const deliveryDate = document.getElementById('confirmDeliveryDate').value;
+            const trackingNumber = document.getElementById('confirmTrackingNumber').value.trim();
+            
+            if (!deliveryDate) {
+                showToast('Please select an estimated delivery date', 'error');
+                return;
+            }
+            
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                const orderDoc = await getDoc(orderRef);
+                const order = orderDoc.data();
+                
+                const estimatedDeliveryStr = new Date(deliveryDate).toLocaleDateString();
+                
+                // Update order with confirmation details
+                await updateDoc(orderRef, {
+                    status: 'confirmed',
+                    delivery_fee: deliveryFee,
+                    estimated_delivery_date: deliveryDate,
+                    estimated_delivery: estimatedDeliveryStr,
+                    tracking_number: trackingNumber || order.tracking_number || '',
+                    confirmed_at: new Date().toISOString()
+                });
+                
+                // Send WhatsApp message to customer
+                if (order.customer) {
+                    const customerPhone = order.customer.phone.replace(/^0+/, '');
+                    const totalWithDelivery = (order.total || order.subtotal || 0) + deliveryFee;
+                    const agent = order.delivery_agent;
+                    const agentMsg = agent ? `\n\nDelivery Agent: ${agent.name}\nContact: ${agent.phone}` : '';
+                    
+                    const message = `✅ ORDER CONFIRMED! - Jefram Stores\n\nDear ${order.customer.name},\n\nYour order has been confirmed! 🎉\n\n📦 Order #: ${orderId.slice(-6)}\n🚚 Delivery Fee: UGX ${deliveryFee.toLocaleString()}\n📅 Estimated Delivery: ${estimatedDeliveryStr}${trackingNumber ? `\n📮 Tracking: ${trackingNumber}` : ''}${agentMsg}\n\n💰 Total: UGX ${totalWithDelivery.toLocaleString()}\n\nThank you for shopping with Jefram Stores! ❤️`;
+                    
+                    window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
+                }
+                
+                showToast('✅ Order confirmed with delivery details!', 'success');
+                closeOrderConfirmModal();
+                loadOrders();
+                loadStats();
+            } catch (error) {
+                console.error('Error confirming order:', error);
+                showToast('Failed to confirm order', 'error');
+            }
+        };
+
+        // ----- DELIVERY AGENTS -----
         async function loadDeliveryAgents() {
             const agentsSnap = await getDocs(collection(db, 'delivery_agents'));
             deliveryAgents = [];
@@ -2290,10 +2401,50 @@
             for (const agent of deliveryAgents) {
                 const stats = agentStats[agent.id] || { deliveries: 0, totalRating: 0, ratedCount: 0 };
                 const avgRating = stats.ratedCount > 0 ? (stats.totalRating / stats.ratedCount).toFixed(1) : 'N/A';
-                agentsList.innerHTML += `<tr><td>${escapeHtml(agent.name)}</td><td>${agent.phone}</td><td><span class="status-badge status-confirmed">Active</span></td><td>${stats.deliveries}</td><td>${avgRating !== 'N/A' ? '⭐ ' + avgRating : '-'}</td><td><button class="btn-danger btn-sm" onclick="deleteAgent('${agent.id}')">Delete</button></td></tr>`;
+                agentsList.innerHTML += `
+                    <tr>
+                        <td>
+                            <input type="text" id="agentName_${agent.id}" value="${escapeHtml(agent.name)}" style="width:100%; padding:4px 8px;">
+                        </td>
+                        <td>
+                            <input type="text" id="agentPhone_${agent.id}" value="${agent.phone}" style="width:100%; padding:4px 8px;">
+                        </td>
+                        <td><span class="status-badge status-confirmed">Active</span></td>
+                        <td>${stats.deliveries}</td>
+                        <td>${avgRating !== 'N/A' ? '⭐ ' + avgRating : '-'}</td>
+                        <td>
+                            <button class="btn-primary btn-sm" onclick="updateAgent('${agent.id}')"><i class="fas fa-save"></i> Save</button>
+                            <button class="btn-danger btn-sm" onclick="deleteAgent('${agent.id}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
             }
         }
 
+        // ===== NEW: UPDATE AGENT FUNCTION =====
+        window.updateAgent = async function(agentId) {
+            const name = document.getElementById(`agentName_${agentId}`).value.trim();
+            const phone = document.getElementById(`agentPhone_${agentId}`).value.trim();
+            
+            if (!name || !phone) {
+                showToast('Name and phone are required', 'error');
+                return;
+            }
+            
+            try {
+                await updateDoc(doc(db, 'delivery_agents', agentId), {
+                    name: name,
+                    phone: phone
+                });
+                showToast('Agent updated successfully!', 'success');
+                loadDeliveryAgents();
+            } catch (error) {
+                console.error('Error updating agent:', error);
+                showToast('Failed to update agent', 'error');
+            }
+        };
+
+        // ----- OTHER ADMIN FUNCTIONS -----
         async function loadUsers() {
             if (!isMaster) return;
             const usersSnap = await getDocs(collection(db, 'customers'));
@@ -2326,13 +2477,6 @@
                 productRatings[review.productId].count++;
             });
 
-            // Load top selling and flash sale products
-            const configDoc = await getDoc(doc(db, 'config', 'store'));
-            const topSellingProducts = configDoc.exists() && configDoc.data().topSelling ? configDoc.data().topSelling : [];
-            const topSellingIds = topSellingProducts.map(ts => ts.productId);
-            const flashSaleProducts = configDoc.exists() && configDoc.data().flashSales ? configDoc.data().flashSales : [];
-            const flashSaleIds = flashSaleProducts.map(fs => fs.productId);
-
             const productsList = document.getElementById('productsList');
             productsList.innerHTML = '';
             for (const docSnap of productsSnap.docs) {
@@ -2358,9 +2502,9 @@
                         <td><small>${sizeDisplay}</small></td>
                         <td><span class="stock-badge ${stockClass}">${totalStock > 0 ? (totalStock <= 5 ? 'Low Stock' : 'In Stock') : 'Out of Stock'}</span></td>
                         <td>${avgRating !== 'N/A' ? '⭐ ' + avgRating : '-'}</td>
-                        <td></td>
                         <td>
                             <button class="btn-primary btn-sm" onclick="editProduct('${docSnap.id}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn-danger btn-sm" onclick="deleteProduct('${docSnap.id}')"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -2600,7 +2744,7 @@
                 const orderDoc = await getDoc(orderRef);
                 const order = orderDoc.data();
                 await updateDoc(orderRef, { status: newStatus, delivery_fee: parseInt(deliveryFee) || 0 });
-                if (newStatus === 'confirmed' || newStatus === 'on_way') {
+                if (newStatus === 'confirmed' || newStatus === 'on_way' || newStatus === 'delivered') {
                     await sendCustomerWhatsApp(order, deliveryFee, newStatus);
                 }
                 showToast('Status updated!', 'success');
@@ -2614,10 +2758,18 @@
         async function sendCustomerWhatsApp(order, deliveryFee, status) {
             const customerPhone = order.customer.phone.replace(/^0+/, '');
             const totalWithDelivery = (order.total || order.subtotal || 0) + (parseInt(deliveryFee) || 0);
-            let statusMsg = status === 'confirmed' ? '✅ CONFIRMED!' : '🚚 OUT FOR DELIVERY!';
+            let statusMsg = '';
+            let emoji = '';
+            if (status === 'confirmed') { statusMsg = 'CONFIRMED'; emoji = '✅'; }
+            else if (status === 'on_way') { statusMsg = 'OUT FOR DELIVERY'; emoji = '🚚'; }
+            else if (status === 'delivered') { statusMsg = 'DELIVERED'; emoji = '📦'; }
+            
             const agent = order.delivery_agent;
             const agentMsg = agent ? `\n\nDelivery Agent: ${agent.name}\nContact: ${agent.phone}` : '';
-            const message = `JEFRAM STORES - Order ${statusMsg}\n\nDear ${order.customer.name},\n\nYour order has been ${statusMsg}${agentMsg}\n\nTotal: UGX ${totalWithDelivery.toLocaleString()}\n\nThank you for shopping with us!`;
+            const trackingMsg = order.tracking_number ? `\nTracking: ${order.tracking_number}` : '';
+            const estDeliveryMsg = order.estimated_delivery ? `\nEst. Delivery: ${order.estimated_delivery}` : '';
+            
+            const message = `JEFRAM STORES - Order ${emoji} ${statusMsg}!\n\nDear ${order.customer.name},\n\nYour order has been ${statusMsg}${estDeliveryMsg}${trackingMsg}${agentMsg}\n\nTotal: UGX ${totalWithDelivery.toLocaleString()}\n\nThank you for shopping with us! ❤️`;
             window.open(`https://wa.me/${customerPhone}?text=${encodeURIComponent(message)}`, '_blank');
         }
 
@@ -2647,7 +2799,6 @@
         window.showAddAdminModal = () => document.getElementById('addAdminModal').style.display = 'flex';
         window.closeAddAdminModal = () => document.getElementById('addAdminModal').style.display = 'none';
         
-        // ----- ORDER RESPONSE FUNCTIONS -----
         window.sendOrderResponse = function(orderId) {
             document.getElementById('responseOrderId').value = orderId;
             document.getElementById('adminResponseText').value = '';
@@ -2672,10 +2823,8 @@
                 const orderDoc = await getDoc(orderRef);
                 const order = orderDoc.data();
                 
-                // Save response to order
                 await updateDoc(orderRef, { admin_response: responseText });
                 
-                // Send via WhatsApp if checked
                 if (sendWhatsApp && order.customer) {
                     const customerPhone = order.customer.phone.replace(/^0+/, '');
                     const message = `JEFRAM STORES - Admin Response\n\nDear ${order.customer.name},\n\n${responseText}\n\nThank you for shopping with us!`;
@@ -2738,7 +2887,6 @@
             }
         };
 
-        // ----- ADD PRODUCT -----
         window.previewProductImage = function(input) {
             currentImageBase64List = [];
             const previewContainer = document.getElementById('productImagePreview');
@@ -2812,7 +2960,6 @@
                 await addDoc(collection(db, 'products'), productData);
                 document.getElementById('productMessage').innerHTML = '<span style="color:green;">✅ Product added successfully!</span>';
                 
-                // Reset form
                 document.getElementById('productName').value = '';
                 document.getElementById('productPrice').value = '';
                 document.getElementById('productCategory').value = '';
@@ -2827,7 +2974,6 @@
                 currentImageBase64 = null;
                 currentImageBase64List = [];
                 
-                // Reset sizes
                 productSizes = [];
                 renderSizeTags();
                 document.getElementById('sizeName').value = '';
@@ -2843,7 +2989,6 @@
             }
         };
 
-        // ----- ADMIN MANAGEMENT -----
         async function hashPassword(password) {
             const encoder = new TextEncoder();
             const data = encoder.encode(password);
@@ -2864,7 +3009,7 @@
             if (!username || !password) return alert('Fill all fields');
             const hashedPassword = await hashPassword(password);
             await addDoc(collection(db, 'admins'), { username, password: hashedPassword, role, createdAt: new Date().toISOString() });
-            window.closeAddAdminModal();
+            closeAddAdminModal();
             loadAdmins();
             showToast('Admin created!', 'success');
         };
@@ -2877,7 +3022,6 @@
             }
         };
 
-        // ----- SHOW TOAST (KEPT ONCE) -----
         function showToast(message, type) {
             const toast = document.createElement('div');
             toast.style.cssText = `position:fixed; bottom:20px; right:20px; background:${type === 'success' ? '#28a745' : '#dc3545'}; color:white; padding:12px 20px; border-radius:8px; z-index:9999;`;
@@ -2904,7 +3048,6 @@
         loadReviews();
         loadSettings();
         
-        // Initialize size section
         toggleSizeSection();
         
         window.getDoc = async (ref) => { const { getDoc } = await import("firebase/firestore"); return getDoc(ref); };

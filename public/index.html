@@ -751,24 +751,156 @@
             }
         }, 3000);
 
-        // ----- WISHLIST -----
+        // ===== FIXED WISHLIST FUNCTIONS =====
         window.renderWishlist = function() {
             const wishlistDiv = document.getElementById('wishlistItems');
             if (!wishlistDiv) return;
+            
+            // Ensure wishlist is an array
+            if (!Array.isArray(wishlist)) {
+                wishlist = [];
+            }
+            
             if (wishlist.length === 0) {
-                wishlistDiv.innerHTML = '<div style="text-align: center; padding: 2rem;">Your wishlist is empty</div>';
+                wishlistDiv.innerHTML = '<div style="text-align: center; padding: 2rem; color: #999;">Your wishlist is empty</div>';
+                document.getElementById('wishlistCount').innerText = '0';
                 return;
             }
-            wishlistDiv.innerHTML = wishlist.map(item => 
-                `<div class="cart-item">
-                    <div><strong>${window.escapeHtml(item.name)}</strong><br>UGX ${item.price.toLocaleString()}</div>
-                    <div>
-                        <button onclick="window.addToCartFromWishlist('${item.id}')" style="background:#28a745; color:white; padding:5px 10px; border:none; border-radius:5px;">Add to Cart</button>
-                        <button onclick="window.removeFromWishlist('${item.id}')" style="color:red; padding:5px 10px; border:none; border-radius:5px;">Remove</button>
+            
+            wishlistDiv.innerHTML = wishlist.map(item => {
+                // Safely handle item properties
+                const id = item.id || '';
+                const name = item.name || 'Unknown Product';
+                const price = typeof item.price === 'number' ? item.price : Number(item.price) || 0;
+                const imageUrl = item.image_url || 'https://via.placeholder.com/50';
+                
+                return `<div class="cart-item">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <img src="${imageUrl}" width="50" height="50" style="object-fit:cover; border-radius:8px;" alt="${window.escapeHtml(name)}">
+                        <div>
+                            <div><strong>${window.escapeHtml(name)}</strong></div>
+                            <div style="color:#667eea;">UGX ${price.toLocaleString()}</div>
+                        </div>
                     </div>
-                </div>`
-            ).join('');
+                    <div>
+                        <button onclick="window.addToCart('${id}')" style="background:#28a745; color:white; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; margin-right:5px; font-size:12px;">
+                            <i class="fas fa-cart-plus"></i> Add
+                        </button>
+                        <button onclick="window.removeFromWishlist('${id}')" style="color:#ff4757; padding:5px 10px; border:none; border-radius:5px; cursor:pointer; background:#ffe0e0; font-size:12px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+            
             document.getElementById('wishlistCount').innerText = wishlist.length;
+        };
+
+        window.toggleWishlist = async function(productId) {
+            if (!productId) {
+                window.showToast('Invalid product', 'error');
+                return;
+            }
+            
+            const product = products.find(p => String(p.id) === String(productId));
+            if (!product) {
+                window.showToast('Product not found', 'error');
+                return;
+            }
+            
+            if (!currentUser) {
+                window.openLoginModal();
+                return;
+            }
+            
+            // Ensure wishlist is an array
+            if (!Array.isArray(wishlist)) {
+                wishlist = [];
+            }
+            
+            const exists = wishlist.find(i => String(i.id) === String(product.id));
+            
+            if (exists) {
+                wishlist = wishlist.filter(i => String(i.id) !== String(product.id));
+                window.showToast(product.name + ' removed from wishlist', 'info');
+            } else {
+                const imageUrl = product.image_url || (product.image_urls && product.image_urls[0]) || 'https://via.placeholder.com/300';
+                wishlist.push({
+                    id: String(product.id),
+                    name: product.name || '',
+                    price: typeof product.price === 'number' ? product.price : Number(product.price) || 0,
+                    image_url: imageUrl
+                });
+                window.showToast(product.name + ' added to wishlist ❤️', 'success');
+            }
+            
+            // Save to both localStorage and Firebase
+            window.saveWishlistToLocalStorage();
+            await window.saveWishlistToFirebase();
+            window.renderWishlist();
+            window.updateWishlistButtons();
+        };
+
+        window.saveWishlistToFirebase = async function() {
+            if (!db || !currentUserDocId) return;
+            try {
+                // Clean and validate wishlist items
+                const cleanWishlist = (wishlist || []).filter(item => item && item.id).map(item => ({
+                    id: String(item.id || ''),
+                    name: String(item.name || 'Unknown'),
+                    price: typeof item.price === 'number' ? item.price : Number(item.price) || 0,
+                    image_url: String(item.image_url || 'https://via.placeholder.com/300')
+                }));
+                
+                wishlist = cleanWishlist;
+                window.saveWishlistToLocalStorage();
+                
+                await updateDoc(doc(db, 'customers', currentUserDocId), { wishlist: cleanWishlist });
+            } catch(e) { 
+                console.error('Error saving wishlist:', e);
+            }
+        };
+
+        window.loadWishlistFromFirebase = async function() {
+            if (!db || !currentUserDocId) return;
+            try {
+                const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.wishlist && Array.isArray(data.wishlist)) {
+                        wishlist = data.wishlist.filter(item => item && item.id);
+                        window.saveWishlistToLocalStorage();
+                        window.renderWishlist();
+                        window.updateWishlistButtons();
+                    }
+                }
+            } catch(e) { 
+                console.error('Error loading wishlist:', e);
+            }
+        };
+
+        window.removeFromWishlist = async function(productId) {
+            if (!productId) return;
+            wishlist = (wishlist || []).filter(i => String(i.id) !== String(productId));
+            window.saveWishlistToLocalStorage();
+            await window.saveWishlistToFirebase();
+            window.renderWishlist();
+            window.updateWishlistButtons();
+            window.showToast('Removed from wishlist', 'info');
+        };
+
+        window.updateWishlistButtons = function() {
+            document.querySelectorAll('.wishlist-btn').forEach(btn => {
+                const productId = btn.dataset.id;
+                if (!productId) return;
+                const inWishlist = (wishlist || []).find(i => String(i.id) === String(productId));
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = inWishlist ? 'fas fa-heart' : 'far fa-heart';
+                    icon.style.color = inWishlist ? '#ff4757' : '';
+                }
+            });
+            document.getElementById('wishlistCount').innerText = (wishlist || []).length;
         };
 
         window.loadWishlistFromLocalStorage = function() {
@@ -776,7 +908,7 @@
                 const stored = JSON.parse(localStorage.getItem('jefram-wishlist') || '[]');
                 if (Array.isArray(stored) && stored.length > 0) {
                     stored.forEach(item => {
-                        if (!wishlist.find(i => i.id == item.id)) {
+                        if (item && item.id && !wishlist.find(i => String(i.id) === String(item.id))) {
                             wishlist.push(item);
                         }
                     });
@@ -788,23 +920,10 @@
 
         window.saveWishlistToLocalStorage = function() {
             try {
-                localStorage.setItem('jefram-wishlist', JSON.stringify(wishlist));
+                localStorage.setItem('jefram-wishlist', JSON.stringify(wishlist || []));
             } catch (e) {
                 console.error('Failed to save wishlist to local storage', e);
             }
-        };
-
-        window.mergeWishlistIntoFirebase = async function() {
-            if (!db || !currentUserDocId) return;
-            const localWishlist = JSON.parse(localStorage.getItem('jefram-wishlist') || '[]');
-            if (!Array.isArray(localWishlist) || localWishlist.length === 0) return;
-            localWishlist.forEach(item => {
-                if (!wishlist.find(i => i.id == item.id)) {
-                    wishlist.push(item);
-                }
-            });
-            await window.saveWishlistToFirebase();
-            localStorage.removeItem('jefram-wishlist');
         };
 
         window.addToCartFromWishlist = function(productId) {
@@ -812,83 +931,17 @@
             window.removeFromWishlist(productId);
         };
 
-        window.removeFromWishlist = async function(productId) {
-            wishlist = wishlist.filter(i => i.id != productId);
-            await window.saveWishlistToFirebase();
-            window.renderWishlist();
-            window.updateWishlistButtons();
-            window.showToast('Removed from wishlist', 'success');
-        };
-
-        window.toggleWishlist = async function(productId) {
-            const product = products.find(p => p.id == productId);
-            if (!product) {
-                window.showToast('Product not found', 'error');
-                return;
-            }
-            if (!currentUser) {
-                window.openLoginModal();
-                return;
-            }
-            const exists = wishlist.find(i => i.id == product.id);
-            if (exists) {
-                wishlist = wishlist.filter(i => i.id != product.id);
-                window.showToast(product.name + ' removed from wishlist', 'info');
-            } else {
-                const imageUrl = product.image_url || (product.image_urls && product.image_urls[0]) || 'https://via.placeholder.com/300';
-                wishlist.push({
-                    id: product.id || '',
-                    name: product.name || '',
-                    price: typeof product.price === 'number' ? product.price : Number(product.price) || 0,
-                    image_url: imageUrl
-                });
-                window.showToast(product.name + ' added to wishlist', 'success');
-            }
-            window.saveWishlistToLocalStorage();
-            await window.saveWishlistToFirebase();
-            window.renderWishlist();
-            window.updateWishlistButtons();
-        };
-
-        window.updateWishlistButtons = function() {
-            document.querySelectorAll('.wishlist-btn').forEach(btn => {
-                const productId = btn.dataset.id;
-                const inWishlist = wishlist.find(i => i.id == productId);
-                const icon = btn.querySelector('i');
-                if (icon) {
-                    icon.className = inWishlist ? 'fas fa-heart' : 'far fa-heart';
+        window.mergeWishlistIntoFirebase = async function() {
+            if (!db || !currentUserDocId) return;
+            const localWishlist = JSON.parse(localStorage.getItem('jefram-wishlist') || '[]');
+            if (!Array.isArray(localWishlist) || localWishlist.length === 0) return;
+            localWishlist.forEach(item => {
+                if (item && item.id && !wishlist.find(i => String(i.id) === String(item.id))) {
+                    wishlist.push(item);
                 }
             });
-            document.getElementById('wishlistCount').innerText = wishlist.length;
-        };
-
-        window.saveWishlistToFirebase = async function() {
-            if (!db || !currentUserDocId) return;
-            try {
-                const cleanWishlist = wishlist.filter(Boolean).map(item => ({
-                    id: item?.id || '',
-                    name: item?.name || '',
-                    price: typeof item?.price === 'number' ? item.price : Number(item?.price) || 0,
-                    image_url: item?.image_url || (item?.image_urls && item.image_urls[0]) || 'https://via.placeholder.com/300'
-                }));
-                wishlist = cleanWishlist;
-                window.saveWishlistToLocalStorage();
-                await updateDoc(doc(db, 'customers', currentUserDocId), { wishlist: cleanWishlist });
-            } catch(e) { console.error('Error saving wishlist:', e); }
-        };
-
-        window.loadWishlistFromFirebase = async function() {
-            if (!db || !currentUserDocId) return;
-            try {
-                const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
-                if (docSnap.exists() && docSnap.data().wishlist) {
-                    wishlist = docSnap.data().wishlist;
-                    window.loadWishlistFromLocalStorage();
-                    window.saveWishlistToLocalStorage();
-                    window.renderWishlist();
-                    window.updateWishlistButtons();
-                }
-            } catch(e) { console.error('Error loading wishlist:', e); }
+            await window.saveWishlistToFirebase();
+            localStorage.removeItem('jefram-wishlist');
         };
 
         window.openWishlist = function() {
@@ -1035,7 +1088,6 @@
             window.updateCartCount();
         };
 
-        // UPDATED: addToCart with size support and guest cart support
         window.addToCart = async function(productId) {
             const product = products.find(p => p.id === productId);
             if (!product) {
@@ -1138,7 +1190,6 @@
             document.getElementById('cartCount').innerText = total;
         };
 
-        // UPDATED: renderCart with size display
         window.renderCart = function() {
             const cartDiv = document.getElementById('cartItems');
             if (cart.length === 0) {
@@ -1224,7 +1275,6 @@
             });
         };
 
-        // UPDATED: proceedToCheckout with screenshot upload and tracking number
         window.proceedToCheckout = async function() {
             if (!db) { window.showToast('Database not connected', 'error'); return; }
             if (cart.length === 0) { window.showToast('Cart empty', 'error'); return; }
@@ -1816,8 +1866,13 @@
                         '<div style="margin-top:8px; padding:10px; background:#e8f0fe; border-radius:6px; font-size:12px;">' +
                         '<strong>🚚 Delivery Agent:</strong><br>' +
                         '<span style="color:#333;">' + window.escapeHtml(o.delivery_agent.name) + '</span><br>' +
-                        '<a href="https://wa.me/256' + o.delivery_agent.phone.replace(/^0+/, '') + '" target="_blank" style="color:#25D366; text-decoration:none; font-weight:500;">📱 Contact on WhatsApp</a>' +
-                        '</div>' : '';
+                        '<span style="color:#666; font-size:11px;">📱 ' + window.escapeHtml(o.delivery_agent.phone) + '</span><br>' +
+                        '<a href="https://wa.me/256' + o.delivery_agent.phone.replace(/^0+/, '') + '" target="_blank" style="color:#25D366; text-decoration:none; font-weight:500; font-size:12px;">📱 Contact on WhatsApp</a>' +
+                        '</div>' : 
+                        '<div style="margin-top:8px; padding:10px; background:#fff3cd; border-radius:6px; font-size:12px;">' +
+                        '<strong>🚚 No delivery agent assigned yet</strong><br>' +
+                        '<span style="color:#666; font-size:11px;">The admin will assign a delivery agent soon.</span>' +
+                        '</div>';
                     
                     const adminResponseDisplay = o.admin_response ? 
                         '<div style="margin-top:8px; padding:10px; background:#fff3cd; border-radius:6px; font-size:12px;">' +
@@ -2483,7 +2538,11 @@
             }
         });
 
+        // ===== FIXED: renderProductCard with proper wishlist handling =====
         function renderProductCard(product) {
+            // Ensure product has all needed properties
+            if (!product || !product.id) return '';
+            
             const discount = Number(product.discount_percent || 0);
             const originalPrice = Number(product.price || 0);
             const discountedPrice = discount > 0 ? Math.max(0, originalPrice - (originalPrice * discount / 100)) : originalPrice;
@@ -2491,11 +2550,17 @@
             const priceDisplay = discount > 0
                 ? `<div class="product-price">UGX ${Math.round(discountedPrice).toLocaleString()}</div><div class="product-old-price">UGX ${Math.round(originalPrice).toLocaleString()}</div>`
                 : `<div class="product-price">UGX ${Math.round(originalPrice).toLocaleString()}</div>`;
+            
+            // Check if in wishlist
+            const inWishlist = (wishlist || []).find(i => String(i.id) === String(product.id));
+            const heartClass = inWishlist ? 'fas fa-heart' : 'far fa-heart';
+            const heartColor = inWishlist ? 'color:#ff4757;' : '';
+            
             return `
-                <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
+                <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'" data-product-id="${product.id}">
                     ${discountBadge}
                     <div class="wishlist-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist('${product.id}');" title="Wishlist">
-                        <i class="far fa-heart"></i>
+                        <i class="${heartClass}" style="${heartColor}"></i>
                     </div>
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${window.escapeHtml(product.name)}">
                     <div class="product-info">
