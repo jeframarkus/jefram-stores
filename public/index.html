@@ -11,13 +11,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Poppins', sans-serif; background: #f8f9fa; }
 
-        .language-switcher {
-            position: fixed; bottom: 20px; left: 20px; z-index: 999;
-            background: white; border-radius: 30px; padding: 8px 16px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; gap: 10px;
-        }
-        .lang-option { padding: 4px 8px; border-radius: 20px; cursor: pointer; }
-        .lang-option.active { background: #667eea; color: white; }
 
         .toast {
             position: fixed; bottom: 20px; right: 20px; background: #333;
@@ -295,17 +288,11 @@
             .search-bar { width: 100%; max-width: none; }
             .hero h2 { font-size: 1.5rem; }
             .hero { padding: 2rem; }
-            .language-switcher { bottom: 70px; left: 10px; padding: 4px 8px; }
             .recently-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
         }
     </style>
 </head>
 <body>
-    <div class="language-switcher">
-        <span class="lang-option active" data-lang="en">EN</span>
-        <span class="lang-option" data-lang="lg">LU</span>
-    </div>
-
     <div class="notification-prompt" id="notificationPrompt">
         <p>🔔 Receive order updates instantly!</p>
         <button class="enable-notif" onclick="window.enableNotifications()">Enable</button>
@@ -701,8 +688,7 @@
         let flashSaleEndTime = null;
 
         const translations = {
-            en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" },
-            lg: { welcome: "Kaabwo ku Jefram Stores", heroText: "Ebintu ebirungi ebituusibwa ku luggi lwo mu Uganda yonna", shopByCategory: "Gula ku Bikula", ourProducts: "Ebintu Byaffe", addToCart: "Yongera mu Katiiji", outOfStock: "Tekiri mu Matuuka", inStock: "Kiri mu Matuuka", noProducts: "Tewali bintu bibadde" }
+            en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" }
         };
 
         // ----- UTILITY FUNCTIONS -----
