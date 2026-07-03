@@ -759,7 +759,7 @@
                         </select>
                         <input type="number" id="flashSaleDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
                         <input type="number" id="flashSaleInitialItems" placeholder="Total Items" min="1" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
-                        <button class="btn-primary" onclick="addProductToFlashSale()">Add Product</button>
+                        <button id="flashSaleAddButton" class="btn-primary" onclick="addProductToFlashSale()">Add Product</button>
                     </div>
                 </div>
                 
@@ -789,10 +789,8 @@
             <!-- Top Selling Management -->
             <div class="timer-management">
                 <h4 style="margin-bottom: 10px;">🔥 Top Selling</h4>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
-                    <select id="topSellingProductSelect" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; min-width: 220px;"></select>
-                    <input type="number" id="topSellingDiscount" placeholder="Discount %" min="0" max="100" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 120px;">
-                    <button class="btn-primary" onclick="addTopSelling()">Add</button>
+                <div style="margin-bottom: 10px; font-size: 0.95rem; color: #666;">
+                    Top selling products are managed from the product list. Use the 🔥 button on the product row to mark or remove top selling items.
                 </div>
                 <div id="topSellingList"></div>
             </div>
@@ -1442,12 +1440,21 @@
                 });
 
                 const flashSelect = document.getElementById('flashSaleProductSelect');
-                const topSelect = document.getElementById('topSellingProductSelect');
+                const flashSaleAddButton = document.getElementById('flashSaleAddButton');
                 const inventorySelect = document.getElementById('inventoryAdjustProduct');
                 
                 const optionMarkup = '<option value="">Select a product</option>' + promoProducts.map(product => `<option value="${product.id}">${escapeHtml(product.name || product.id)}</option>`).join('');
-                if (flashSelect) flashSelect.innerHTML = optionMarkup;
-                if (topSelect) topSelect.innerHTML = optionMarkup;
+                const hasActiveFlashEvent = config.currentFlashEvent && config.currentFlashEvent.endTime && new Date(config.currentFlashEvent.endTime).getTime() > Date.now();
+                if (flashSelect) {
+                    if (hasActiveFlashEvent) {
+                        flashSelect.innerHTML = optionMarkup;
+                        flashSelect.disabled = false;
+                    } else {
+                        flashSelect.innerHTML = '<option value="">Create flash sale event first</option>';
+                        flashSelect.disabled = true;
+                    }
+                }
+                if (flashSaleAddButton) flashSaleAddButton.disabled = !hasActiveFlashEvent;
                 if (inventorySelect) {
                     // Only show products currently in flash sale
                     if (window.currentFlashEvent && window.currentFlashEvent.products) {
@@ -1571,6 +1578,7 @@
                 window.currentFlashEvent = flashEvent;
                 updateCurrentFlashEventDisplay();
                 renderFlashSalesList(flashEvent);
+                loadPromoProducts();
                 
                 document.getElementById('flashSaleEventEndTime').value = '';
                 showToast('Flash sale event created!', 'success');
@@ -1592,6 +1600,7 @@
                 window.currentFlashEvent = null;
                 updateCurrentFlashEventDisplay();
                 renderFlashSalesList(null);
+                loadPromoProducts();
                 showToast('Flash sale event ended', 'success');
             } catch (error) {
                 console.error('Error ending flash sale event:', error);
@@ -1848,37 +1857,8 @@
         };
 
         window.toggleFlashSale = async function(productId, isCurrentlyFlashSale) {
-            try {
-                const configRef = doc(db, 'config', 'store');
-                const configDoc = await getDoc(configRef);
-                const currentFlashSales = configDoc.exists() && Array.isArray(configDoc.data().flashSales) ? configDoc.data().flashSales : [];
-
-                if (isCurrentlyFlashSale) {
-                    // Remove from flash sales
-                    const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
-                    if (configDoc.exists()) {
-                        await updateDoc(configRef, { flashSales: updatedFlashSales });
-                    } else {
-                        await setDoc(configRef, { flashSales: updatedFlashSales });
-                    }
-                    showToast('Removed from flash sales', 'success');
-                } else {
-                    // Add to flash sales with default 0% discount
-                    const updatedFlashSales = currentFlashSales.filter(item => item.productId !== productId);
-                    updatedFlashSales.push({ productId, discountPercent: 0 });
-                    if (configDoc.exists()) {
-                        await updateDoc(configRef, { flashSales: updatedFlashSales });
-                    } else {
-                        await setDoc(configRef, { flashSales: updatedFlashSales });
-                    }
-                    showToast('Added to flash sales', 'success');
-                }
-                loadProducts();
-                loadPromoProducts();
-            } catch (error) {
-                console.error('Error toggling flash sale:', error);
-                showToast('Failed to update flash sale', 'error');
-            }
+            showToast('Flash sales are managed only through the Flash Sales Event panel.', 'error');
+            return;
         };
 
         async function loadSettings() {
@@ -2385,9 +2365,6 @@
                             <button class="btn-primary btn-sm" onclick="editProduct('${docSnap.id}')"><i class="fas fa-edit"></i> Edit</button>
                             <button class="${isTopSelling ? 'btn-warning' : 'btn-success'} btn-sm" onclick="toggleTopSelling('${docSnap.id}', ${isTopSelling})">
                                 <i class="fas ${isTopSelling ? 'fa-minus' : 'fa-fire'}"></i> ${isTopSelling ? 'Remove' : 'Top Sell'}
-                            </button>
-                            <button class="${isFlashSale ? 'btn-warning' : 'btn-info'} btn-sm" onclick="toggleFlashSale('${docSnap.id}', ${isFlashSale})">
-                                <i class="fas ${isFlashSale ? 'fa-minus' : 'fa-bolt'}"></i> ${isFlashSale ? 'Remove' : 'Flash'}
                             </button>
                             <button class="btn-danger btn-sm" onclick="deleteProduct('${docSnap.id}')"><i class="fas fa-trash"></i> Delete</button>
                         </td>
