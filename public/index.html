@@ -667,8 +667,6 @@
         let currentBrand = 'all';
         let currentUserDocId = null;
         let appliedCoupon = null;
-        let currentLanguage = 'en';
-        let currentRatingOrderId = null;
         let currentProductRating = 0;
         let currentDeliveryRating = 0;
         let currentReviewProduct = null;
@@ -692,7 +690,7 @@
         };
 
         // ----- UTILITY FUNCTIONS -----
-        window.t = function(key) { return translations[currentLanguage][key] || translations.en[key] || key; };
+        window.t = function(key) { return translations.en[key] || key; };
         
         window.showToast = function(message, type = 'success') {
             const toast = document.createElement('div');
