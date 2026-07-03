@@ -771,6 +771,42 @@
             document.getElementById('wishlistCount').innerText = wishlist.length;
         };
 
+        window.loadWishlistFromLocalStorage = function() {
+            try {
+                const stored = JSON.parse(localStorage.getItem('jefram-wishlist') || '[]');
+                if (Array.isArray(stored) && stored.length > 0) {
+                    stored.forEach(item => {
+                        if (!wishlist.find(i => i.id == item.id)) {
+                            wishlist.push(item);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load wishlist from local storage', e);
+            }
+        };
+
+        window.saveWishlistToLocalStorage = function() {
+            try {
+                localStorage.setItem('jefram-wishlist', JSON.stringify(wishlist));
+            } catch (e) {
+                console.error('Failed to save wishlist to local storage', e);
+            }
+        };
+
+        window.mergeWishlistIntoFirebase = async function() {
+            if (!db || !currentUserDocId) return;
+            const localWishlist = JSON.parse(localStorage.getItem('jefram-wishlist') || '[]');
+            if (!Array.isArray(localWishlist) || localWishlist.length === 0) return;
+            localWishlist.forEach(item => {
+                if (!wishlist.find(i => i.id == item.id)) {
+                    wishlist.push(item);
+                }
+            });
+            await window.saveWishlistToFirebase();
+            localStorage.removeItem('jefram-wishlist');
+        };
+
         window.addToCartFromWishlist = function(productId) {
             window.addToCart(productId);
             window.removeFromWishlist(productId);
@@ -808,6 +844,7 @@
                 });
                 window.showToast(product.name + ' added to wishlist', 'success');
             }
+            window.saveWishlistToLocalStorage();
             await window.saveWishlistToFirebase();
             window.renderWishlist();
             window.updateWishlistButtons();
@@ -835,6 +872,7 @@
                     image_url: item?.image_url || (item?.image_urls && item.image_urls[0]) || 'https://via.placeholder.com/300'
                 }));
                 wishlist = cleanWishlist;
+                window.saveWishlistToLocalStorage();
                 await updateDoc(doc(db, 'customers', currentUserDocId), { wishlist: cleanWishlist });
             } catch(e) { console.error('Error saving wishlist:', e); }
         };
@@ -845,6 +883,8 @@
                 const docSnap = await getDoc(doc(db, 'customers', currentUserDocId));
                 if (docSnap.exists() && docSnap.data().wishlist) {
                     wishlist = docSnap.data().wishlist;
+                    window.loadWishlistFromLocalStorage();
+                    window.saveWishlistToLocalStorage();
                     window.renderWishlist();
                     window.updateWishlistButtons();
                 }
@@ -2676,10 +2716,11 @@
         (async function init() {
             await window.loadConfig();
             await window.fetchProducts();
+            window.loadWishlistFromLocalStorage();
             const isValid = await window.validateCustomerSession();
             if (isValid) {
                 await window.loadWishlistFromFirebase();
-                await window.mergeGuestCartIntoFirebase();
+                await window.mergeWishlistIntoFirebase();
                 await window.loadCartFromFirebase();
                 await window.loadRecentlyViewedFromFirebase();
             }
