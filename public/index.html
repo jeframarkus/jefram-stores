@@ -105,6 +105,89 @@
         .hero h2 { font-size: 2.5rem; margin-bottom: 1rem; }
         .hero-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 50px; margin-top: 1rem; }
 
+        /* ===== ADVERT STYLES ===== */
+        .advert-container {
+            margin: 25px 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .advert-container:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 35px rgba(0,0,0,0.12);
+        }
+
+        .advert-container a {
+            display: block;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .advert-container img {
+            width: 100%;
+            max-height: 280px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .advert-banner-top {
+            margin-bottom: 30px;
+        }
+
+        .advert-banner-middle {
+            margin: 30px 0;
+        }
+
+        .advert-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0,0,0,0.65);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .advert-container .advert-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,71,87,0.85);
+            color: white;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .advert-placeholder {
+            background: linear-gradient(135deg, #f5f5f5, #e8e8e8);
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 12px;
+            color: #999;
+            border: 2px dashed #ddd;
+        }
+
+        .advert-placeholder i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+
+        .advert-section {
+            position: relative;
+        }
+        /* ===== END ADVERT STYLES ===== */
+
         .categories-section { margin-bottom: 3rem; }
         .section-title { font-size: 1.8rem; margin-bottom: 1.5rem; color: #333; display: flex; justify-content: space-between; align-items: center; }
         .categories-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.5rem; }
@@ -289,6 +372,7 @@
             .hero h2 { font-size: 1.5rem; }
             .hero { padding: 2rem; }
             .recently-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+            .advert-container img { max-height: 180px; }
         }
     </style>
 </head>
@@ -349,6 +433,14 @@
             </div>
         </div>
 
+        <!-- ===== ADVERT SPACE 1: Top Banner ===== -->
+        <div id="advert1Container" class="advert-container advert-banner-top" style="display: none; position: relative;">
+            <div class="advert-label">📢 SPONSORED</div>
+            <a id="advert1Link" href="#" target="_blank" onclick="trackAdvertClick(1)">
+                <img id="advert1Image" src="" alt="Advertisement">
+            </a>
+        </div>
+
         <!-- Discount Timer -->
         <div class="discount-timer" id="discountTimer">
             <div class="timer-label">🔥 Limited Time Offer - Ends In:</div>
@@ -391,6 +483,14 @@
                 <a href="all-products.html" class="view-all-btn">View All</a>
             </div>
             <div class="products-roll" id="productsRoll"></div>
+        </div>
+
+        <!-- ===== ADVERT SPACE 2: Between Products ===== -->
+        <div id="advert2Container" class="advert-container advert-banner-middle" style="display: none; position: relative;">
+            <div class="advert-label">📢 ADVERTISEMENT</div>
+            <a id="advert2Link" href="#" target="_blank" onclick="trackAdvertClick(2)">
+                <img id="advert2Image" src="" alt="Advertisement">
+            </a>
         </div>
 
         <!-- Recently Viewed -->
@@ -751,12 +851,49 @@
             }
         }, 3000);
 
+        // ===== ADVERT FUNCTIONS FOR CLIENT =====
+        window.trackAdvertClick = function(advertId) {
+            console.log(`Advert ${advertId} clicked at ${new Date().toISOString()}`);
+            // You can add analytics tracking here if needed
+            return true;
+        };
+
+        async function loadAdverts() {
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                if (configDoc.exists()) {
+                    const config = configDoc.data();
+                    
+                    // Load Advert 1 (Top Banner)
+                    if (config.advert1 && config.advert1.enabled && config.advert1.image && config.advert1.link) {
+                        document.getElementById('advert1Image').src = config.advert1.image;
+                        document.getElementById('advert1Image').alt = config.advert1.alt || 'Advertisement';
+                        document.getElementById('advert1Link').href = config.advert1.link;
+                        document.getElementById('advert1Container').style.display = 'block';
+                    } else {
+                        document.getElementById('advert1Container').style.display = 'none';
+                    }
+                    
+                    // Load Advert 2 (Between Products)
+                    if (config.advert2 && config.advert2.enabled && config.advert2.image && config.advert2.link) {
+                        document.getElementById('advert2Image').src = config.advert2.image;
+                        document.getElementById('advert2Image').alt = config.advert2.alt || 'Advertisement';
+                        document.getElementById('advert2Link').href = config.advert2.link;
+                        document.getElementById('advert2Container').style.display = 'block';
+                    } else {
+                        document.getElementById('advert2Container').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading adverts:', error);
+            }
+        }
+
         // ===== FIXED WISHLIST FUNCTIONS =====
         window.renderWishlist = function() {
             const wishlistDiv = document.getElementById('wishlistItems');
             if (!wishlistDiv) return;
             
-            // Ensure wishlist is an array
             if (!Array.isArray(wishlist)) {
                 wishlist = [];
             }
@@ -768,7 +905,6 @@
             }
             
             wishlistDiv.innerHTML = wishlist.map(item => {
-                // Safely handle item properties
                 const id = item.id || '';
                 const name = item.name || 'Unknown Product';
                 const price = typeof item.price === 'number' ? item.price : Number(item.price) || 0;
@@ -813,7 +949,6 @@
                 return;
             }
             
-            // Ensure wishlist is an array
             if (!Array.isArray(wishlist)) {
                 wishlist = [];
             }
@@ -834,7 +969,6 @@
                 window.showToast(product.name + ' added to wishlist ❤️', 'success');
             }
             
-            // Save to both localStorage and Firebase
             window.saveWishlistToLocalStorage();
             await window.saveWishlistToFirebase();
             window.renderWishlist();
@@ -844,7 +978,6 @@
         window.saveWishlistToFirebase = async function() {
             if (!db || !currentUserDocId) return;
             try {
-                // Clean and validate wishlist items
                 const cleanWishlist = (wishlist || []).filter(item => item && item.id).map(item => ({
                     id: String(item.id || ''),
                     name: String(item.name || 'Unknown'),
@@ -1095,7 +1228,6 @@
                 return;
             }
 
-            // For guest users, use localStorage cart
             if (!currentUser) {
                 const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
                 const existing = guestCart.find(item => item.id === productId);
@@ -1116,12 +1248,10 @@
                 return;
             }
 
-            // For logged-in users, use Firebase cart
             let selectedSize = null;
             let selectedPrice = product.price;
             let selectedStock = product.stock || 0;
 
-            // Check if product has sizes
             if (product.hasSizes && product.sizes && product.sizes.length > 0) {
                 const sizeSelect = document.getElementById('sizeSelect_' + productId);
                 if (!sizeSelect) {
@@ -1147,7 +1277,6 @@
                 }
             }
 
-            // Check if same item with same size already in cart
             const existing = cart.find(i => i.id === productId && i.selectedSize === selectedSize);
             if (existing) {
                 if (existing.quantity >= selectedStock) {
@@ -1170,7 +1299,6 @@
             window.updateCartCount();
             window.showToast(product.name + (selectedSize ? ' (' + selectedSize + ')' : '') + ' added to cart!');
             
-            // Add to recently viewed
             window.addToRecentlyViewed(product);
         };
 
@@ -1357,7 +1485,6 @@
                     await updateDoc(doc(db, 'coupons', appliedCoupon.id), { usedCount: (appliedCoupon.usedCount || 0) + 1 });
                 }
                 
-                // Update product stock
                 for (const item of cart) {
                     const productRef = doc(db, 'products', item.id);
                     const productSnap = await getDoc(productRef);
@@ -2287,7 +2414,6 @@
                     const flashSaleEnd = configDoc.data().flashSaleEndTime;
                     flashSaleEndTime = flashSaleEnd || null;
                     
-                    // Check if flash sale has expired
                     if (flashSaleEndTime && Date.now() > flashSaleEndTime) {
                         section.style.display = 'none';
                         if (flashSaleTimerInterval) clearInterval(flashSaleTimerInterval);
@@ -2304,7 +2430,6 @@
                     
                     roll.innerHTML = flashSaleProducts.map(renderProductCard).join('');
                     
-                    // Start the timer
                     if (flashSaleEndTime) {
                         startFlashSaleTimer();
                     } else {
@@ -2451,20 +2576,17 @@
         window.filterByCategory = function(category) {
             currentCategory = category;
             
-            // Update active state in nav menu
             document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
             if (window.event && window.event.target) {
                 window.event.target.classList.add('active');
             }
             
-            // Find the products roll element
             const roll = document.getElementById('productsRoll');
             if (!roll) {
                 console.error('productsRoll not found');
                 return;
             }
             
-            // Filter and render products
             let filtered = products;
             if (category !== 'all') {
                 filtered = products.filter(p => p.category === category);
@@ -2475,13 +2597,10 @@
                 return;
             }
             
-            // Render the filtered products
             roll.innerHTML = filtered.map(renderProductCard).join('');
             
-            // Close mobile menu if open
             document.getElementById('navMenu').classList.remove('active');
             
-            // Scroll to products section on mobile
             if (window.innerWidth <= 768) {
                 document.getElementById('productsContainer').scrollIntoView({ behavior: 'smooth' });
             }
@@ -2496,22 +2615,18 @@
             return icons[c] || 'fa-tag';
         };
 
-        // ===== FIXED: Category Dropdown to Filter Products on Same Page =====
         window.renderCategories = function() {
             const dropdownList = document.getElementById('categoryDropdownList');
             if (!dropdownList) return;
             
-            // Add "All Products" option first
             let dropdownHtml = '<div class="category-dropdown-item" onclick="window.filterByCategory(\'all\'); document.getElementById(\'categoryDropdown\').classList.remove(\'show\');"><i class="fas fa-th-list"></i> All Products</div>';
             
-            // Add categories
             dropdownHtml += categories.map(cat =>
                 '<div class="category-dropdown-item" onclick="window.filterByCategory(\'' + cat + '\'); document.getElementById(\'categoryDropdown\').classList.remove(\'show\');"><i class="fas ' + window.getCategoryIcon(cat) + '"></i>' + cat + '</div>'
             ).join('');
             
             dropdownList.innerHTML = dropdownHtml;
             
-            // Update navigation menu (keep as is - already working)
             const navMenu = document.getElementById('navMenu');
             document.querySelectorAll('#navMenu a:not([onclick*="all"])').forEach(a => a.remove());
             categories.forEach(cat => {
@@ -2529,7 +2644,6 @@
             }
         };
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(e) {
             const dropdown = document.getElementById('categoryDropdown');
             const btn = document.querySelector('.category-dropdown-btn');
@@ -2538,9 +2652,7 @@
             }
         });
 
-        // ===== FIXED: renderProductCard with proper wishlist handling =====
         function renderProductCard(product) {
-            // Ensure product has all needed properties
             if (!product || !product.id) return '';
             
             const discount = Number(product.discount_percent || 0);
@@ -2551,7 +2663,6 @@
                 ? `<div class="product-price">UGX ${Math.round(discountedPrice).toLocaleString()}</div><div class="product-old-price">UGX ${Math.round(originalPrice).toLocaleString()}</div>`
                 : `<div class="product-price">UGX ${Math.round(originalPrice).toLocaleString()}</div>`;
             
-            // Check if in wishlist
             const inWishlist = (wishlist || []).find(i => String(i.id) === String(product.id));
             const heartClass = inWishlist ? 'fas fa-heart' : 'far fa-heart';
             const heartColor = inWishlist ? 'color:#ff4757;' : '';
@@ -2739,6 +2850,9 @@
                         if (config.faqs && Array.isArray(config.faqs)) {
                             renderFaqs(config.faqs);
                         }
+                        
+                        // Load adverts
+                        loadAdverts();
                     }
                 }, (error) => {
                     console.error('Config listener error:', error);
