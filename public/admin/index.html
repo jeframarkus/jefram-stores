@@ -849,6 +849,12 @@
                 </div>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
                     <input type="text" id="facebookUrl" placeholder="Facebook URL (e.g., https://facebook.com/jeframstores)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 300px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="whatsappChannelUrl" placeholder="WhatsApp Channel URL (e.g., https://whatsapp.com/channel/jeframstores)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 300px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="telegramChannelUrl" placeholder="Telegram Channel URL (e.g., https://t.me/jeframstores)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 300px;">
                     <button class="btn-primary" onclick="updateSocialLinks()">Update</button>
                 </div>
                 <div style="margin-top: 5px;">
@@ -858,6 +864,14 @@
                 <div style="margin-top: 5px;">
                     <span style="font-weight: 500;">Current Facebook:</span>
                     <span id="currentFacebookDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current WhatsApp Channel:</span>
+                    <span id="currentWhatsappChannelDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Telegram Channel:</span>
+                    <span id="currentTelegramChannelDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
                 </div>
             </div>
             
@@ -1894,6 +1908,14 @@
                         document.getElementById('currentFacebookDisplay').innerHTML = config.facebookUrl;
                         document.getElementById('facebookUrl').value = config.facebookUrl;
                     }
+                    if (config.whatsappChannelUrl) {
+                        document.getElementById('currentWhatsappChannelDisplay').innerHTML = config.whatsappChannelUrl;
+                        document.getElementById('whatsappChannelUrl').value = config.whatsappChannelUrl;
+                    }
+                    if (config.telegramChannelUrl) {
+                        document.getElementById('currentTelegramChannelDisplay').innerHTML = config.telegramChannelUrl;
+                        document.getElementById('telegramChannelUrl').value = config.telegramChannelUrl;
+                    }
                     if (config.contactPhone) {
                         document.getElementById('currentPhoneDisplay').innerHTML = config.contactPhone;
                         document.getElementById('contactPhone').value = config.contactPhone;
@@ -2026,7 +2048,9 @@
         window.updateSocialLinks = async function() {
             const instagram = document.getElementById('instagramUrl').value.trim();
             const facebook = document.getElementById('facebookUrl').value.trim();
-            if (!instagram && !facebook) {
+            const whatsappChannel = document.getElementById('whatsappChannelUrl').value.trim();
+            const telegramChannel = document.getElementById('telegramChannelUrl').value.trim();
+            if (!instagram && !facebook && !whatsappChannel && !telegramChannel) {
                 showToast('Enter at least one social link', 'error');
                 return;
             }
@@ -2036,7 +2060,9 @@
                 const updateData = {};
                 if (instagram) updateData.instagramUrl = instagram;
                 if (facebook) updateData.facebookUrl = facebook;
-                
+                if (whatsappChannel) updateData.whatsappChannelUrl = whatsappChannel;
+                if (telegramChannel) updateData.telegramChannelUrl = telegramChannel;
+
                 if (configDoc.exists()) {
                     await updateDoc(configRef, updateData);
                 } else {

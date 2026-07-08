@@ -2843,6 +2843,14 @@
                             const fb = document.getElementById('footerFacebook');
                             if (fb) fb.href = config.facebookUrl;
                         }
+                        if (config.whatsappChannelUrl) {
+                            const whatsapp = document.getElementById('footerWhatsappChannel');
+                            if (whatsapp) whatsapp.href = config.whatsappChannelUrl;
+                        }
+                        if (config.telegramChannelUrl) {
+                            const telegram = document.getElementById('footerTelegramChannel');
+                            if (telegram) telegram.href = config.telegramChannelUrl;
+                        }
                         if (config.contactPhone) {
                             const phone = document.getElementById('footerPhone');
                             if (phone) phone.textContent = config.contactPhone;
