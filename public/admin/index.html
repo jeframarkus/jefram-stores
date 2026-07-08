@@ -632,7 +632,7 @@
                 <div class="stat-card" style="background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);">
                     <div class="stat-info">
                         <h3>Instagram</h3>
-                        <div class="stat-number" id="instagramFollowers">0</div>
+                        <div class="stat-number" id="statInstagramFollowers">0</div>
                         <div style="font-size: 0.8rem; opacity: 0.8;">Followers</div>
                     </div>
                     <i class="fab fa-instagram stat-icon"></i>
@@ -640,7 +640,7 @@
                 <div class="stat-card" style="background: linear-gradient(135deg, #1877f2, #4267B2);">
                     <div class="stat-info">
                         <h3>Facebook</h3>
-                        <div class="stat-number" id="facebookFollowers">0</div>
+                        <div class="stat-number" id="statFacebookFollowers">0</div>
                         <div style="font-size: 0.8rem; opacity: 0.8;">Followers</div>
                     </div>
                     <i class="fab fa-facebook-f stat-icon"></i>
@@ -648,7 +648,7 @@
                 <div class="stat-card" style="background: linear-gradient(135deg, #25D366, #128C7E);">
                     <div class="stat-info">
                         <h3>WhatsApp</h3>
-                        <div class="stat-number" id="whatsappFollowers">0</div>
+                        <div class="stat-number" id="statWhatsappFollowers">0</div>
                         <div style="font-size: 0.8rem; opacity: 0.8;">Channel Members</div>
                     </div>
                     <i class="fab fa-whatsapp stat-icon"></i>
@@ -656,7 +656,7 @@
                 <div class="stat-card" style="background: linear-gradient(135deg, #0088cc, #005f8c);">
                     <div class="stat-info">
                         <h3>Telegram</h3>
-                        <div class="stat-number" id="telegramFollowers">0</div>
+                        <div class="stat-number" id="statTelegramFollowers">0</div>
                         <div style="font-size: 0.8rem; opacity: 0.8;">Channel Members</div>
                     </div>
                     <i class="fab fa-telegram stat-icon"></i>
@@ -2311,10 +2311,10 @@
 
             if (configDoc.exists()) {
                 const config = configDoc.data();
-                if (config.instagramFollowers) document.getElementById('instagramFollowers').innerText = config.instagramFollowers.toLocaleString();
-                if (config.facebookFollowers) document.getElementById('facebookFollowers').innerText = config.facebookFollowers.toLocaleString();
-                if (config.whatsappFollowers) document.getElementById('whatsappFollowers').innerText = config.whatsappFollowers.toLocaleString();
-                if (config.telegramFollowers) document.getElementById('telegramFollowers').innerText = config.telegramFollowers.toLocaleString();
+                if (config.instagramFollowers) document.getElementById('statInstagramFollowers').innerText = config.instagramFollowers.toLocaleString();
+                if (config.facebookFollowers) document.getElementById('statFacebookFollowers').innerText = config.facebookFollowers.toLocaleString();
+                if (config.whatsappFollowers) document.getElementById('statWhatsappFollowers').innerText = config.whatsappFollowers.toLocaleString();
+                if (config.telegramFollowers) document.getElementById('statTelegramFollowers').innerText = config.telegramFollowers.toLocaleString();
             }
 
             if (lowStockCount > 0) {
