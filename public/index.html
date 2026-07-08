@@ -2508,14 +2508,16 @@
         window.openContact = function(type) {
             const phone = document.getElementById('footerPhone').textContent;
             const email = document.getElementById('footerEmail').textContent;
+            const whatsapp = document.getElementById('footerWhatsapp')?.textContent || phone;
+            const telegram = document.getElementById('footerTelegram')?.textContent || 'jeframstores';
             if (type === 'phone') {
                 window.open('tel:' + phone.replace(/\s/g, ''), '_blank');
             } else if (type === 'email') {
                 window.open('mailto:' + email, '_blank');
             } else if (type === 'whatsapp') {
-                window.open('https://wa.me/' + phone.replace(/\s/g, '').replace('+', ''), '_blank');
+                window.open('https://wa.me/' + whatsapp.replace(/\s/g, '').replace('+', ''), '_blank');
             } else if (type === 'telegram') {
-                window.open('https://t.me/jeframstores', '_blank');
+                window.open('https://t.me/' + telegram.replace('@', ''), '_blank');
             }
         };
 
@@ -2859,6 +2861,14 @@
                             const email = document.getElementById('footerEmail');
                             if (email) email.textContent = config.contactEmail;
                         }
+                        if (config.contactWhatsapp) {
+                            const whatsapp = document.getElementById('footerWhatsapp');
+                            if (whatsapp) whatsapp.textContent = config.contactWhatsapp;
+                        }
+                        if (config.contactTelegram) {
+                            const telegram = document.getElementById('footerTelegram');
+                            if (telegram) telegram.textContent = config.contactTelegram;
+                        }
                         if (config.faqs && Array.isArray(config.faqs)) {
                             renderFaqs(config.faqs);
                         }
@@ -2967,8 +2977,8 @@
                 <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Contact</h4>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; cursor: pointer;" onclick="window.openContact('phone')"><i class="fas fa-phone" style="margin-right: 8px;"></i> <span id="footerPhone">+256 742 533 656</span></p>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; cursor: pointer;" onclick="window.openContact('email')"><i class="fas fa-envelope" style="margin-right: 8px;"></i> <span id="footerEmail">info@jeframstores.com</span></p>
-                <p style="color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; cursor: pointer;" onclick="window.openContact('whatsapp')"><i class="fab fa-whatsapp" style="margin-right: 8px;"></i> WhatsApp</p>
-                <p style="color: rgba(255,255,255,0.7); cursor: pointer;" onclick="window.openContact('telegram')"><i class="fab fa-telegram" style="margin-right: 8px;"></i> Telegram</p>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; cursor: pointer;" onclick="window.openContact('whatsapp')"><i class="fab fa-whatsapp" style="margin-right: 8px;"></i> <span id="footerWhatsapp">+256 742 533 656</span></p>
+                <p style="color: rgba(255,255,255,0.7); cursor: pointer;" onclick="window.openContact('telegram')"><i class="fab fa-telegram" style="margin-right: 8px;"></i> <span id="footerTelegram">@jeframstores</span></p>
             </div>
             <div>
                 <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Help</h4>

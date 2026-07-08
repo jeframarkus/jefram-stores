@@ -882,6 +882,12 @@
                 </div>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
                     <input type="text" id="contactEmail" placeholder="Email (e.g., info@jeframstores.com)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 250px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="contactWhatsapp" placeholder="WhatsApp Number (e.g., +256 742 533 656)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 250px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="text" id="contactTelegram" placeholder="Telegram Username (e.g., jeframstores)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 250px;">
                     <button class="btn-primary" onclick="updateContactInfo()">Update</button>
                 </div>
                 <div style="margin-top: 5px;">
@@ -891,6 +897,14 @@
                 <div style="margin-top: 5px;">
                     <span style="font-weight: 500;">Current Email:</span>
                     <span id="currentEmailDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current WhatsApp:</span>
+                    <span id="currentWhatsappDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+                <div style="margin-top: 5px;">
+                    <span style="font-weight: 500;">Current Telegram:</span>
+                    <span id="currentTelegramDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
                 </div>
             </div>
             
@@ -1924,6 +1938,14 @@
                         document.getElementById('currentEmailDisplay').innerHTML = config.contactEmail;
                         document.getElementById('contactEmail').value = config.contactEmail;
                     }
+                    if (config.contactWhatsapp) {
+                        document.getElementById('currentWhatsappDisplay').innerHTML = config.contactWhatsapp;
+                        document.getElementById('contactWhatsapp').value = config.contactWhatsapp;
+                    }
+                    if (config.contactTelegram) {
+                        document.getElementById('currentTelegramDisplay').innerHTML = config.contactTelegram;
+                        document.getElementById('contactTelegram').value = config.contactTelegram;
+                    }
                     if (config.faqs && Array.isArray(config.faqs)) {
                         renderFaqs(config.faqs);
                     }
@@ -2079,7 +2101,9 @@
         window.updateContactInfo = async function() {
             const phone = document.getElementById('contactPhone').value.trim();
             const email = document.getElementById('contactEmail').value.trim();
-            if (!phone && !email) {
+            const whatsapp = document.getElementById('contactWhatsapp').value.trim();
+            const telegram = document.getElementById('contactTelegram').value.trim();
+            if (!phone && !email && !whatsapp && !telegram) {
                 showToast('Enter at least one contact detail', 'error');
                 return;
             }
@@ -2089,7 +2113,9 @@
                 const updateData = {};
                 if (phone) updateData.contactPhone = phone;
                 if (email) updateData.contactEmail = email;
-                
+                if (whatsapp) updateData.contactWhatsapp = whatsapp;
+                if (telegram) updateData.contactTelegram = telegram;
+
                 if (configDoc.exists()) {
                     await updateDoc(configRef, updateData);
                 } else {
