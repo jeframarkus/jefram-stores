@@ -628,6 +628,40 @@
                     <i class="fas fa-truck stat-icon"></i>
                 </div>
             </div>
+            <div class="stats-grid">
+                <div class="stat-card" style="background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);">
+                    <div class="stat-info">
+                        <h3>Instagram</h3>
+                        <div class="stat-number" id="instagramFollowers">0</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Followers</div>
+                    </div>
+                    <i class="fab fa-instagram stat-icon"></i>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #1877f2, #4267B2);">
+                    <div class="stat-info">
+                        <h3>Facebook</h3>
+                        <div class="stat-number" id="facebookFollowers">0</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Followers</div>
+                    </div>
+                    <i class="fab fa-facebook-f stat-icon"></i>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                    <div class="stat-info">
+                        <h3>WhatsApp</h3>
+                        <div class="stat-number" id="whatsappFollowers">0</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Channel Members</div>
+                    </div>
+                    <i class="fab fa-whatsapp stat-icon"></i>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #0088cc, #005f8c);">
+                    <div class="stat-info">
+                        <h3>Telegram</h3>
+                        <div class="stat-number" id="telegramFollowers">0</div>
+                        <div style="font-size: 0.8rem; opacity: 0.8;">Channel Members</div>
+                    </div>
+                    <i class="fab fa-telegram stat-icon"></i>
+                </div>
+            </div>
         </div>
 
         <!-- Orders Section -->
@@ -872,6 +906,23 @@
                 <div style="margin-top: 5px;">
                     <span style="font-weight: 500;">Current Telegram Channel:</span>
                     <span id="currentTelegramChannelDisplay" style="font-family: monospace; font-size: 0.9rem; color: #667eea;"></span>
+                </div>
+            </div>
+
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">📊 Social Media Followers</h4>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="number" id="instagramFollowers" placeholder="Instagram Followers" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="number" id="facebookFollowers" placeholder="Facebook Followers" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="number" id="whatsappFollowers" placeholder="WhatsApp Channel Members" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                </div>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center; margin-bottom: 10px;">
+                    <input type="number" id="telegramFollowers" placeholder="Telegram Channel Members" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 200px;">
+                    <button class="btn-primary" onclick="updateSocialFollowers()">Update</button>
                 </div>
             </div>
             
@@ -1930,6 +1981,18 @@
                         document.getElementById('currentTelegramChannelDisplay').innerHTML = config.telegramChannelUrl;
                         document.getElementById('telegramChannelUrl').value = config.telegramChannelUrl;
                     }
+                    if (config.instagramFollowers) {
+                        document.getElementById('instagramFollowers').value = config.instagramFollowers;
+                    }
+                    if (config.facebookFollowers) {
+                        document.getElementById('facebookFollowers').value = config.facebookFollowers;
+                    }
+                    if (config.whatsappFollowers) {
+                        document.getElementById('whatsappFollowers').value = config.whatsappFollowers;
+                    }
+                    if (config.telegramFollowers) {
+                        document.getElementById('telegramFollowers').value = config.telegramFollowers;
+                    }
                     if (config.contactPhone) {
                         document.getElementById('currentPhoneDisplay').innerHTML = config.contactPhone;
                         document.getElementById('contactPhone').value = config.contactPhone;
@@ -2098,6 +2161,37 @@
             }
         };
 
+        window.updateSocialFollowers = async function() {
+            const instagramFollowers = document.getElementById('instagramFollowers').value;
+            const facebookFollowers = document.getElementById('facebookFollowers').value;
+            const whatsappFollowers = document.getElementById('whatsappFollowers').value;
+            const telegramFollowers = document.getElementById('telegramFollowers').value;
+            if (!instagramFollowers && !facebookFollowers && !whatsappFollowers && !telegramFollowers) {
+                showToast('Enter at least one follower count', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const updateData = {};
+                if (instagramFollowers) updateData.instagramFollowers = parseInt(instagramFollowers);
+                if (facebookFollowers) updateData.facebookFollowers = parseInt(facebookFollowers);
+                if (whatsappFollowers) updateData.whatsappFollowers = parseInt(whatsappFollowers);
+                if (telegramFollowers) updateData.telegramFollowers = parseInt(telegramFollowers);
+
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, updateData);
+                } else {
+                    await setDoc(configRef, updateData);
+                }
+                showToast('Social followers updated!', 'success');
+                loadSettings();
+            } catch (error) {
+                console.error('Error updating social followers:', error);
+                showToast('Failed to update social followers', 'error');
+            }
+        };
+
         window.updateContactInfo = async function() {
             const phone = document.getElementById('contactPhone').value.trim();
             const email = document.getElementById('contactEmail').value.trim();
@@ -2186,7 +2280,8 @@
             const couponsSnap = await getDocs(query(collection(db, 'coupons'), where("active", "==", true)));
             const reviewsSnap = await getDocs(collection(db, 'reviews'));
             const agentsSnap = await getDocs(collection(db, 'delivery_agents'));
-            
+            const configDoc = await getDoc(doc(db, 'config', 'store'));
+
             let totalRevenue = 0;
             ordersSnap.forEach(doc => {
                 const order = doc.data();
@@ -2194,7 +2289,7 @@
                     totalRevenue += (order.total || order.subtotal || 0) + (order.delivery_fee || 0);
                 }
             });
-            
+
             let lowStockCount = 0;
             productsSnap.forEach(doc => {
                 const p = doc.data();
@@ -2205,7 +2300,7 @@
                     lowStockCount++;
                 }
             });
-            
+
             document.getElementById('totalOrders').innerText = ordersSnap.size;
             document.getElementById('totalRevenue').innerText = `UGX ${totalRevenue.toLocaleString()}`;
             document.getElementById('totalUsers').innerText = usersSnap.size;
@@ -2213,7 +2308,15 @@
             document.getElementById('totalCoupons').innerText = couponsSnap.size;
             document.getElementById('totalReviews').innerText = reviewsSnap.size;
             document.getElementById('totalAgents').innerText = agentsSnap.size;
-            
+
+            if (configDoc.exists()) {
+                const config = configDoc.data();
+                if (config.instagramFollowers) document.getElementById('instagramFollowers').innerText = config.instagramFollowers.toLocaleString();
+                if (config.facebookFollowers) document.getElementById('facebookFollowers').innerText = config.facebookFollowers.toLocaleString();
+                if (config.whatsappFollowers) document.getElementById('whatsappFollowers').innerText = config.whatsappFollowers.toLocaleString();
+                if (config.telegramFollowers) document.getElementById('telegramFollowers').innerText = config.telegramFollowers.toLocaleString();
+            }
+
             if (lowStockCount > 0) {
                 document.getElementById('lowStockBadge').innerHTML = `<span class="low-stock-alert">⚠️ ${lowStockCount} low stock</span>`;
             }
