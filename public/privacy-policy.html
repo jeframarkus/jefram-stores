@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Jefram Stores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: #2c3e50;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .navbar-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .navbar-links a:hover {
+            color: #667eea;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 3rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+        }
+
+        .content {
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .content h2 {
+            color: #2c3e50;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+
+        .content p {
+            margin-bottom: 1rem;
+        }
+
+        .content ul {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-btn:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">Jefram Stores</a>
+        <div class="navbar-links">
+            <a href="index.html">Home</a>
+            <a href="faqs.html">FAQs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Home</a>
+        <h1>Privacy Policy</h1>
+        <div id="privacyContent" class="content">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
+            authDomain: "jefram-stores.firebaseapp.com",
+            projectId: "jefram-stores",
+            storageBucket: "jefram-stores.firebasestorage.app",
+            messagingSenderId: "669495715459",
+            appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadPrivacyPolicy() {
+            try {
+                const configDoc = await getDoc(doc(db, 'config', 'store'));
+                const contentDiv = document.getElementById('privacyContent');
+                
+                if (configDoc.exists() && configDoc.data().privacyPolicy) {
+                    contentDiv.innerHTML = configDoc.data().privacyPolicy;
+                } else {
+                    contentDiv.innerHTML = `
+                        <h2>Privacy Policy</h2>
+                        <p>Last updated: ${new Date().toLocaleDateString()}</p>
+                        
+                        <h2>1. Information We Collect</h2>
+                        <p>We collect information you provide directly to us, including:</p>
+                        <ul>
+                            <li>Name and contact information</li>
+                            <li>Shipping and billing address</li>
+                            <li>Payment information</li>
+                            <li>Order history</li>
+                        </ul>
+                        
+                        <h2>2. How We Use Your Information</h2>
+                        <p>We use the information we collect to:</p>
+                        <ul>
+                            <li>Process and fulfill your orders</li>
+                            <li>Send you order confirmations and shipping updates</li>
+                            <li>Provide customer support</li>
+                            <li>Improve our products and services</li>
+                        </ul>
+                        
+                        <h2>3. Information Security</h2>
+                        <p>We implement appropriate security measures to protect your personal information from unauthorized access, alteration, disclosure, or destruction.</p>
+                        
+                        <h2>4. Contact Us</h2>
+                        <p>If you have any questions about this Privacy Policy, please contact us at info@jeframstores.com</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading privacy policy:', error);
+                document.getElementById('privacyContent').innerHTML = '<p>Error loading privacy policy. Please try again later.</p>';
+            }
+        }
+
+        loadPrivacyPolicy();
+    </script>
+</body>
+</html>

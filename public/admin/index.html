@@ -968,6 +968,18 @@
                     <button class="btn-primary" onclick="addFaq()">Add FAQ</button>
                 </div>
             </div>
+
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">📄 Privacy Policy</h4>
+                <textarea id="privacyPolicyContent" placeholder="Privacy Policy Content (HTML supported)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-bottom: 10px; min-height: 200px; font-family: 'Poppins', sans-serif;"></textarea>
+                <button class="btn-primary" onclick="updatePrivacyPolicy()">Update Privacy Policy</button>
+            </div>
+
+            <div class="timer-management">
+                <h4 style="margin-bottom: 10px;">📋 Terms of Service</h4>
+                <textarea id="termsOfServiceContent" placeholder="Terms of Service Content (HTML supported)" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-bottom: 10px; min-height: 200px; font-family: 'Poppins', sans-serif;"></textarea>
+                <button class="btn-primary" onclick="updateTermsOfService()">Update Terms of Service</button>
+            </div>
         </div>
 
         <!-- Coupons Section -->
@@ -2009,6 +2021,12 @@
                         document.getElementById('currentTelegramDisplay').innerHTML = config.contactTelegram;
                         document.getElementById('contactTelegram').value = config.contactTelegram;
                     }
+                    if (config.privacyPolicy) {
+                        document.getElementById('privacyPolicyContent').value = config.privacyPolicy;
+                    }
+                    if (config.termsOfService) {
+                        document.getElementById('termsOfServiceContent').value = config.termsOfService;
+                    }
                     if (config.faqs && Array.isArray(config.faqs)) {
                         renderFaqs(config.faqs);
                     }
@@ -2189,6 +2207,52 @@
             } catch (error) {
                 console.error('Error updating social followers:', error);
                 showToast('Failed to update social followers', 'error');
+            }
+        };
+
+        window.updatePrivacyPolicy = async function() {
+            const content = document.getElementById('privacyPolicyContent').value.trim();
+            if (!content) {
+                showToast('Privacy Policy content cannot be empty', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const updateData = { privacyPolicy: content };
+
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, updateData);
+                } else {
+                    await setDoc(configRef, updateData);
+                }
+                showToast('Privacy Policy updated!', 'success');
+            } catch (error) {
+                console.error('Error updating privacy policy:', error);
+                showToast('Failed to update privacy policy', 'error');
+            }
+        };
+
+        window.updateTermsOfService = async function() {
+            const content = document.getElementById('termsOfServiceContent').value.trim();
+            if (!content) {
+                showToast('Terms of Service content cannot be empty', 'error');
+                return;
+            }
+            try {
+                const configRef = doc(db, 'config', 'store');
+                const configDoc = await getDoc(configRef);
+                const updateData = { termsOfService: content };
+
+                if (configDoc.exists()) {
+                    await updateDoc(configRef, updateData);
+                } else {
+                    await setDoc(configRef, updateData);
+                }
+                showToast('Terms of Service updated!', 'success');
+            } catch (error) {
+                console.error('Error updating terms of service:', error);
+                showToast('Failed to update terms of service', 'error');
             }
         };
 
