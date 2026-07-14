@@ -377,6 +377,17 @@
     </style>
 </head>
 <body>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                }, function(err) {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+        }
+    </script>
     <div class="notification-prompt" id="notificationPrompt">
         <p>🔔 Receive order updates instantly!</p>
         <button class="enable-notif" onclick="window.enableNotifications()">Enable</button>
@@ -2440,7 +2451,7 @@
             recentlyViewed.forEach(p => {
                 html += `
                     <div class="product-card" style="cursor:pointer;" onclick="window.scrollToProduct('${p.id}')">
-                        <img src="${p.image_url || 'https://via.placeholder.com/150'}" loading="lazy" style="width:100%; height:120px; object-fit:cover;">
+                        <img src="${p.image_url || 'https://via.placeholder.com/150'}" loading="lazy" decoding="async" style="width:100%; height:120px; object-fit:cover;">
                         <div style="padding:10px;">
                             <div style="font-size:13px; font-weight:600;">${window.escapeHtml(p.name)}</div>
                             <div style="font-size:13px; color:#667eea;">UGX ${parseInt(p.price).toLocaleString()}</div>
@@ -2479,7 +2490,7 @@
             displayRelated.forEach(p => {
                 html += `
                     <div class="product-card" onclick="window.scrollToProduct('${p.id}')">
-                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" loading="lazy" style="width:100%; height:160px; object-fit:cover;">
+                        <img src="${p.image_url || 'https://via.placeholder.com/300'}" loading="lazy" decoding="async" style="width:100%; height:160px; object-fit:cover;">
                         <div class="product-info">
                             <div class="product-name">${window.escapeHtml(p.name)}</div>
                             <div class="product-price">UGX ${parseInt(p.price).toLocaleString()}</div>
@@ -2756,7 +2767,7 @@
                 
                 container.innerHTML = results.map(p => `
                     <div class="autocomplete-item" onclick="window.selectSearchResult('${p.id}')">
-                        <img src="${p.image_url || 'https://via.placeholder.com/40'}" loading="lazy" alt="">
+                        <img src="${p.image_url || 'https://via.placeholder.com/40'}" loading="lazy" decoding="async" alt="">
                         <div>
                             <div class="item-name">${window.escapeHtml(p.name)}</div>
                             <div class="item-price">UGX ${parseInt(p.price).toLocaleString()}</div>
@@ -2884,7 +2895,7 @@
                     <div class="wishlist-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist('${product.id}');" title="Wishlist">
                         <i class="${heartClass}" style="${heartColor}"></i>
                     </div>
-                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${window.escapeHtml(product.name)}">
+                    <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" decoding="async" class="product-image" alt="${window.escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${window.escapeHtml(product.name)}</div>
                         ${priceDisplay}
@@ -2935,7 +2946,7 @@
             const totalStock = product.hasSizes && product.sizes ? product.sizes.reduce((sum, s) => sum + s.stock, 0) : (product.stock || 0);
             galleryStock.textContent = totalStock > 0 ? 'In stock (' + totalStock + ')' : 'Out of stock';
             thumbs.innerHTML = imageUrls.map((url, index) =>
-                '<div class="gallery-thumb' + (index === 0 ? ' active' : '') + '" onclick="window.showGalleryImage(' + index + ')"><img src="' + url + '" loading="lazy"></div>'
+                '<div class="gallery-thumb' + (index === 0 ? ' active' : '') + '" onclick="window.showGalleryImage(' + index + ')"><img src="' + url + '" loading="lazy" decoding="async"></div>'
             ).join('');
             galleryActions.innerHTML = '<button class="add-to-cart" onclick="event.stopPropagation(); window.addToCart(\'' + productId + '\')">Add to Cart</button>' +
                                        '<button class="btn-warning" onclick="event.stopPropagation(); window.closeProductGallery()">Close</button>';
@@ -2988,6 +2999,63 @@
             image.classList.toggle('zoomed');
         };
 
+        // IndexedDB for caching
+        let dbCache;
+        const CACHE_NAME = 'jefram-stores-cache-v1';
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+        async function initCache() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(CACHE_NAME, 1);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    dbCache = request.result;
+                    resolve(dbCache);
+                };
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('products')) {
+                        db.createObjectStore('products', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('config')) {
+                        db.createObjectStore('config', { keyPath: 'key' });
+                    }
+                    if (!db.objectStoreNames.contains('categories')) {
+                        db.createObjectStore('categories', { keyPath: 'name' });
+                    }
+                };
+            });
+        }
+
+        async function getCachedData(storeName, key) {
+            if (!dbCache) return null;
+            return new Promise((resolve) => {
+                const transaction = dbCache.transaction(storeName, 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.get(key);
+                request.onsuccess = () => {
+                    const data = request.result;
+                    if (data && Date.now() - data.timestamp < CACHE_DURATION) {
+                        resolve(data.value);
+                    } else {
+                        resolve(null);
+                    }
+                };
+                request.onerror = () => resolve(null);
+            });
+        }
+
+        async function setCachedData(storeName, key, value) {
+            if (!dbCache) return;
+            return new Promise((resolve) => {
+                const transaction = dbCache.transaction(storeName, 'readwrite');
+                const store = transaction.objectStore(storeName);
+                store.put({ key, value, timestamp: Date.now() });
+                transaction.oncomplete = () => resolve();
+                transaction.onerror = () => resolve();
+            });
+        }
+
         window.fetchProducts = async function() {
             if (!db) {
                 console.error('Database not initialized');
@@ -2996,13 +3064,45 @@
             const grid = document.getElementById('productsGrid');
             if (grid) grid.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
             try {
-                const snapshot = await getDocs(collection(db, 'products'));
+                // Try to get from cache first
+                const cachedProducts = await getCachedData('products', 'all');
+                if (cachedProducts) {
+                    products = cachedProducts;
+                    categories = [...new Set(products.map(p => p.category).filter(c => c))];
+                    renderBrands();
+                    window.renderCategories();
+                    await window.renderProducts();
+                    await window.renderFlashSales();
+                    await window.renderTopSelling();
+                    renderRecentlyViewed();
+                    startDiscountTimer();
+                    // Fetch fresh data in background
+                    fetchFreshProducts();
+                    return;
+                }
+
+                // Fetch from Firebase
+                await fetchFreshProducts();
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                if (grid) grid.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load products. Please refresh the page.</div>';
+                window.showToast('Failed to load products', 'error');
+            }
+        };
+
+        async function fetchFreshProducts() {
+            if (!db) return;
+            try {
+                const snapshot = await getDocs(query(collection(db, 'products'), limit(50)));
                 products = [];
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.hasSizes && !data.sizes) data.sizes = [];
                     products.push({ id: doc.id, ...data });
                 });
+                // Cache the products
+                await setCachedData('products', 'all', products);
+                
                 categories = [...new Set(products.map(p => p.category).filter(c => c))];
                 renderBrands();
                 window.renderCategories();
@@ -3012,11 +3112,9 @@
                 renderRecentlyViewed();
                 startDiscountTimer();
             } catch (error) {
-                console.error('Error fetching products:', error);
-                if (grid) grid.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load products. Please refresh the page.</div>';
-                window.showToast('Failed to load products', 'error');
+                console.error('Error fetching fresh products:', error);
             }
-        };
+        }
 
         window.loadConfig = async function() {
             if (!db) {
@@ -3024,70 +3122,79 @@
                 return;
             }
             try {
-                onSnapshot(doc(db, 'config', 'store'), (docSnap) => {
-                    if (docSnap.exists()) {
-                        const config = docSnap.data();
-                        if (config.whatsappNumber) {
-                            whatsappNumber = config.whatsappNumber;
-                        }
-                        if (config.mtnNumber) {
-                            document.getElementById('mtnNumber').textContent = config.mtnNumber;
-                        }
-                        if (config.mtnName) {
-                            document.getElementById('mtnName').textContent = config.mtnName;
-                        }
-                        if (config.airtelNumber) {
-                            document.getElementById('airtelNumber').textContent = config.airtelNumber;
-                        }
-                        if (config.airtelName) {
-                            document.getElementById('airtelName').textContent = config.airtelName;
-                        }
-                        if (config.instagramUrl) {
-                            const insta = document.getElementById('footerInstagram');
-                            if (insta) insta.href = config.instagramUrl;
-                        }
-                        if (config.facebookUrl) {
-                            const fb = document.getElementById('footerFacebook');
-                            if (fb) fb.href = config.facebookUrl;
-                        }
-                        if (config.whatsappChannelUrl) {
-                            const whatsapp = document.getElementById('footerWhatsappChannel');
-                            if (whatsapp) whatsapp.href = config.whatsappChannelUrl;
-                        }
-                        if (config.telegramChannelUrl) {
-                            const telegram = document.getElementById('footerTelegramChannel');
-                            if (telegram) telegram.href = config.telegramChannelUrl;
-                        }
-                        if (config.contactPhone) {
-                            const phone = document.getElementById('footerPhone');
-                            if (phone) phone.textContent = config.contactPhone;
-                        }
-                        if (config.contactEmail) {
-                            const email = document.getElementById('footerEmail');
-                            if (email) email.textContent = config.contactEmail;
-                        }
-                        if (config.contactWhatsapp) {
-                            const whatsapp = document.getElementById('footerWhatsapp');
-                            if (whatsapp) whatsapp.textContent = config.contactWhatsapp;
-                        }
-                        if (config.contactTelegram) {
-                            const telegram = document.getElementById('footerTelegram');
-                            if (telegram) telegram.textContent = config.contactTelegram;
-                        }
-                        if (config.faqs && Array.isArray(config.faqs)) {
-                            renderFaqs(config.faqs);
-                        }
-                        
-                        // Load adverts
-                        loadAdverts();
-                    }
-                }, (error) => {
-                    console.error('Config listener error:', error);
-                });
+                // Try cache first
+                const cachedConfig = await getCachedData('config', 'store');
+                if (cachedConfig) {
+                    applyConfig(cachedConfig);
+                }
+
+                // Fetch from Firebase
+                const docSnap = await getDoc(doc(db, 'config', 'store'));
+                if (docSnap.exists()) {
+                    const config = docSnap.data();
+                    await setCachedData('config', 'store', config);
+                    applyConfig(config);
+                }
             } catch (error) {
                 console.error('Error loading config:', error);
             }
         };
+
+        function applyConfig(config) {
+            if (config.whatsappNumber) {
+                whatsappNumber = config.whatsappNumber;
+            }
+            if (config.mtnNumber) {
+                document.getElementById('mtnNumber').textContent = config.mtnNumber;
+            }
+            if (config.mtnName) {
+                document.getElementById('mtnName').textContent = config.mtnName;
+            }
+            if (config.airtelNumber) {
+                document.getElementById('airtelNumber').textContent = config.airtelNumber;
+            }
+            if (config.airtelName) {
+                document.getElementById('airtelName').textContent = config.airtelName;
+            }
+            if (config.instagramUrl) {
+                const insta = document.getElementById('footerInstagram');
+                if (insta) insta.href = config.instagramUrl;
+            }
+            if (config.facebookUrl) {
+                const fb = document.getElementById('footerFacebook');
+                if (fb) fb.href = config.facebookUrl;
+            }
+            if (config.whatsappChannelUrl) {
+                const whatsapp = document.getElementById('footerWhatsappChannel');
+                if (whatsapp) whatsapp.href = config.whatsappChannelUrl;
+            }
+            if (config.telegramChannelUrl) {
+                const telegram = document.getElementById('footerTelegramChannel');
+                if (telegram) telegram.href = config.telegramChannelUrl;
+            }
+            if (config.contactPhone) {
+                const phone = document.getElementById('footerPhone');
+                if (phone) phone.textContent = config.contactPhone;
+            }
+            if (config.contactEmail) {
+                const email = document.getElementById('footerEmail');
+                if (email) email.textContent = config.contactEmail;
+            }
+            if (config.contactWhatsapp) {
+                const whatsapp = document.getElementById('footerWhatsapp');
+                if (whatsapp) whatsapp.textContent = config.contactWhatsapp;
+            }
+            if (config.contactTelegram) {
+                const telegram = document.getElementById('footerTelegram');
+                if (telegram) telegram.textContent = config.contactTelegram;
+            }
+            if (config.faqs && Array.isArray(config.faqs)) {
+                renderFaqs(config.faqs);
+            }
+            
+            // Load adverts
+            loadAdverts();
+        }
 
         // ----- SESSION VALIDATION -----
         window.validateCustomerSession = async function() {
@@ -3117,9 +3224,14 @@
         };
 
         // ----- INITIALIZATION -----
-        document.getElementById('searchInput').addEventListener('input', window.renderProducts);
+        let renderTimeout;
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(window.renderProducts, 300);
+        });
 
         (async function init() {
+            await initCache();
             await window.loadConfig();
             await window.fetchProducts();
             window.loadWishlistFromLocalStorage();
