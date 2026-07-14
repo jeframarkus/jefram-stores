@@ -731,88 +731,98 @@ th, td { font-size: 12px; padding: 8px; }
 <!-- SETTINGS SECTION -->
 <div id="settings" class="section">
 <div class="section-title"><span>Store Settings</span></div>
-<!-- Advert Management -->
+<!-- ===== FIXED: ADVERT MANAGEMENT ===== -->
 <div class="timer-management">
-<h4 style="margin-bottom: 10px;">📢 Advert Management (2 Ad Spaces)</h4>
-<p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">
-Upload banner images for adverts. Customers can click on them to visit the link you provide.
-</p>
-<!-- Advert Space 1 -->
-<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #667eea;">
-<h5 style="margin-bottom: 10px; color: #333;">📌 Advert Space 1 (Top Banner)</h5>
-<div style="display: flex; flex-direction: column; gap: 10px;">
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Enable Advert</label>
-<select id="advert1Enabled" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
-<option value="true">✅ Enabled</option>
-<option value="false">❌ Disabled</option>
-</select>
-</div>
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Upload Banner Image</label>
-<div class="upload-area" onclick="document.getElementById('advert1ImageInput').click()" style="border: 2px dashed #667eea; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; background: #f0f2ff;">
-<i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #667eea;"></i>
-<p style="margin-top: 10px; color: #666;">Click to upload banner image</p>
-<small style="color: #999;">Recommended size: 1200 x 400 pixels</small>
-</div>
-<input type="file" id="advert1ImageInput" style="display:none" accept="image/*" onchange="previewAdvertImage(1, this)">
-<div id="advert1Preview" style="margin-top: 10px; display: none;">
-<img id="advert1PreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
-<button onclick="removeAdvertImage(1)" style="margin-top: 5px; background: #dc3545; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove Image</button>
-</div>
-<div id="advert1PreviewText" style="color: #999; font-size: 13px; margin-top: 5px;">No image uploaded</div>
-</div>
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Advert Link (URL) - Where customers go when they click</label>
-<input type="text" id="advert1Link" placeholder="https://example.com/offer" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
-<small style="color: #999;">Paste the full URL including https://</small>
-</div>
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Alt Text (for accessibility)</label>
-<input type="text" id="advert1Alt" placeholder="Special Offer - 50% Off" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
-</div>
-</div>
-</div>
-<!-- Advert Space 2 -->
-<div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff6b81;">
-<h5 style="margin-bottom: 10px; color: #333;">📌 Advert Space 2 (Between Products)</h5>
-<div style="display: flex; flex-direction: column; gap: 10px;">
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Enable Advert</label>
-<select id="advert2Enabled" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
-<option value="true">✅ Enabled</option>
-<option value="false">❌ Disabled</option>
-</select>
-</div>
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Upload Banner Image</label>
-<div class="upload-area" onclick="document.getElementById('advert2ImageInput').click()" style="border: 2px dashed #ff6b81; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; background: #fff0f0;">
-<i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #ff6b81;"></i>
-<p style="margin-top: 10px; color: #666;">Click to upload banner image</p>
-<small style="color: #999;">Recommended size: 600 x 400 pixels</small>
-</div>
-<input type="file" id="advert2ImageInput" style="display:none" accept="image/*" onchange="previewAdvertImage(2, this)">
-<div id="advert2Preview" style="margin-top: 10px; display: none;">
-<img id="advert2PreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
-<button onclick="removeAdvertImage(2)" style="margin-top: 5px; background: #dc3545; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove Image</button>
-</div>
-<div id="advert2PreviewText" style="color: #999; font-size: 13px; margin-top: 5px;">No image uploaded</div>
-</div>
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Advert Link (URL) - Where customers go when they click</label>
-<input type="text" id="advert2Link" placeholder="https://example.com/special" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
-<small style="color: #999;">Paste the full URL including https://</small>
-</div>
-<div>
-<label style="font-weight: 500; font-size: 0.9rem;">Alt Text (for accessibility)</label>
-<input type="text" id="advert2Alt" placeholder="New Arrivals - Shop Now" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
-</div>
-</div>
-</div>
-<button class="btn-primary" onclick="saveAdverts()" style="width: 100%; padding: 12px; margin-top: 10px;">
-<i class="fas fa-save"></i> Save Advert Settings
-</button>
-<div id="advertMessage" style="margin-top: 10px;"></div>
+    <h4 style="margin-bottom: 10px;">📢 Advert Management (2 Ad Spaces)</h4>
+    <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">
+        Upload banner images for adverts. Customers can click on them to visit the link you provide.
+        <br><strong>Note:</strong> Images are compressed to save space.
+    </p>
+    
+    <!-- Advert Space 1 -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #667eea;">
+        <h5 style="margin-bottom: 10px; color: #333;">📌 Advert Space 1 (Top Banner)</h5>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Enable Advert</label>
+                <select id="advert1Enabled" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
+                    <option value="true">✅ Enabled</option>
+                    <option value="false">❌ Disabled</option>
+                </select>
+            </div>
+            
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Upload Banner Image</label>
+                <div class="upload-area" onclick="document.getElementById('advert1ImageInput').click()" style="border: 2px dashed #667eea; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; background: #f0f2ff;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #667eea;"></i>
+                    <p style="margin-top: 10px; color: #666;">Click to upload banner image</p>
+                    <small style="color: #999;">Recommended size: 1200 x 400 pixels</small>
+                </div>
+                <input type="file" id="advert1ImageInput" style="display:none" accept="image/*" onchange="previewAdvertImage(1, this)">
+                <div id="advert1Preview" style="margin-top: 10px; display: none;">
+                    <img id="advert1PreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
+                    <button onclick="removeAdvertImage(1)" style="margin-top: 5px; background: #dc3545; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove Image</button>
+                </div>
+                <div id="advert1PreviewText" style="color: #999; font-size: 13px; margin-top: 5px;">No image uploaded</div>
+            </div>
+            
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Advert Link (URL) - Where customers go when they click</label>
+                <input type="text" id="advert1Link" placeholder="https://example.com/offer" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
+                <small style="color: #999;">Paste the full URL including https://</small>
+            </div>
+            
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Alt Text (for accessibility)</label>
+                <input type="text" id="advert1Alt" placeholder="Special Offer - 50% Off" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Advert Space 2 -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #ff6b81;">
+        <h5 style="margin-bottom: 10px; color: #333;">📌 Advert Space 2 (Between Products)</h5>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Enable Advert</label>
+                <select id="advert2Enabled" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
+                    <option value="true">✅ Enabled</option>
+                    <option value="false">❌ Disabled</option>
+                </select>
+            </div>
+            
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Upload Banner Image</label>
+                <div class="upload-area" onclick="document.getElementById('advert2ImageInput').click()" style="border: 2px dashed #ff6b81; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; background: #fff0f0;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #ff6b81;"></i>
+                    <p style="margin-top: 10px; color: #666;">Click to upload banner image</p>
+                    <small style="color: #999;">Recommended size: 600 x 400 pixels</small>
+                </div>
+                <input type="file" id="advert2ImageInput" style="display:none" accept="image/*" onchange="previewAdvertImage(2, this)">
+                <div id="advert2Preview" style="margin-top: 10px; display: none;">
+                    <img id="advert2PreviewImg" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid #ddd;">
+                    <button onclick="removeAdvertImage(2)" style="margin-top: 5px; background: #dc3545; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove Image</button>
+                </div>
+                <div id="advert2PreviewText" style="color: #999; font-size: 13px; margin-top: 5px;">No image uploaded</div>
+            </div>
+            
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Advert Link (URL) - Where customers go when they click</label>
+                <input type="text" id="advert2Link" placeholder="https://example.com/special" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
+                <small style="color: #999;">Paste the full URL including https://</small>
+            </div>
+            
+            <div>
+                <label style="font-weight: 500; font-size: 0.9rem;">Alt Text (for accessibility)</label>
+                <input type="text" id="advert2Alt" placeholder="New Arrivals - Shop Now" style="padding: 8px; border: 1px solid #ddd; border-radius: 6px; width: 100%; margin-top: 4px;">
+            </div>
+        </div>
+    </div>
+    
+    <button class="btn-primary" onclick="saveAdverts()" style="width: 100%; padding: 12px; margin-top: 10px;">
+        <i class="fas fa-save"></i> Save Advert Settings
+    </button>
+    <div id="advertMessage" style="margin-top: 10px;"></div>
 </div>
 <!-- Discount Timer -->
 <div class="timer-management">
@@ -1339,12 +1349,13 @@ if (section === 'settings') loadSettings();
 });
 });
 // ===== ADVERT MANAGEMENT FUNCTIONS =====
-window.previewAdvertImage = function(advertId, input) {
+window.previewAdvertImage = async function(advertId, input) {
 const file = input.files[0];
 if (!file) return;
-const reader = new FileReader();
-reader.onload = function(e) {
-const base64 = e.target.result;
+const maxWidth = advertId === 1 ? 1200 : 800;
+const maxHeight = advertId === 1 ? 400 : 400;
+try {
+const base64 = await compressImage(file, maxWidth, maxHeight, 0.75);
 if (advertId === 1) {
 advert1ImageBase64 = base64;
 document.getElementById('advert1PreviewImg').src = base64;
@@ -1358,8 +1369,10 @@ document.getElementById('advert2Preview').style.display = 'block';
 const previewText = document.getElementById('advert2PreviewText');
 if (previewText) previewText.style.display = 'none';
 }
-};
-reader.readAsDataURL(file);
+} catch (error) {
+console.error('Error compressing advert image:', error);
+showToast('Failed to process image. Try a smaller file.', 'error');
+}
 };
 window.removeAdvertImage = function(advertId) {
 if (advertId === 1) {
@@ -1378,11 +1391,8 @@ const previewText = document.getElementById('advert2PreviewText');
 if (previewText) previewText.style.display = 'block';
 }
 };
-async function loadAdvertSettings() {
-try {
-const configDoc = await getDoc(doc(db, 'config', 'store'));
-if (configDoc.exists()) {
-const config = configDoc.data();
+function populateAdvertSettings(config) {
+if (!config) return;
 if (config.advert1) {
 document.getElementById('advert1Enabled').value = config.advert1.enabled ? 'true' : 'false';
 document.getElementById('advert1Link').value = config.advert1.link || '';
@@ -1408,6 +1418,15 @@ advert2ImageBase64 = config.advert2.image;
 }
 }
 }
+async function loadAdvertSettings(existingConfig) {
+try {
+let config = existingConfig;
+if (!config) {
+const configDoc = await getDoc(doc(db, 'config', 'store'));
+if (!configDoc.exists()) return;
+config = configDoc.data();
+}
+populateAdvertSettings(config);
 } catch (error) {
 console.error('Error loading advert settings:', error);
 }
@@ -1419,6 +1438,12 @@ const advert1Alt = document.getElementById('advert1Alt').value.trim();
 const advert2Enabled = document.getElementById('advert2Enabled').value === 'true';
 const advert2Link = document.getElementById('advert2Link').value.trim();
 const advert2Alt = document.getElementById('advert2Alt').value.trim();
+try {
+const configRef = doc(db, 'config', 'store');
+const configDoc = await getDoc(configRef);
+const existing = configDoc.exists() ? configDoc.data() : {};
+const advert1Image = advert1ImageBase64 || existing.advert1?.image || '';
+const advert2Image = advert2ImageBase64 || existing.advert2?.image || '';
 if (advert1Enabled && !advert1Link) {
 document.getElementById('advertMessage').innerHTML = '<span style="color:red;">⚠️ Please enter a link for Advert 1</span>';
 return;
@@ -1427,32 +1452,29 @@ if (advert2Enabled && !advert2Link) {
 document.getElementById('advertMessage').innerHTML = '<span style="color:red;">⚠️ Please enter a link for Advert 2</span>';
 return;
 }
-if (advert1Enabled && !advert1ImageBase64) {
+if (advert1Enabled && !advert1Image) {
 document.getElementById('advertMessage').innerHTML = '<span style="color:red;">⚠️ Please upload an image for Advert 1</span>';
 return;
 }
-if (advert2Enabled && !advert2ImageBase64) {
+if (advert2Enabled && !advert2Image) {
 document.getElementById('advertMessage').innerHTML = '<span style="color:red;">⚠️ Please upload an image for Advert 2</span>';
 return;
 }
-try {
-const configRef = doc(db, 'config', 'store');
 const advertData = {
 advert1: {
 enabled: advert1Enabled,
-image: advert1ImageBase64 || '',
+image: advert1Image,
 link: advert1Link,
 alt: advert1Alt || 'Advertisement'
 },
 advert2: {
 enabled: advert2Enabled,
-image: advert2ImageBase64 || '',
+image: advert2Image,
 link: advert2Link,
 alt: advert2Alt || 'Advertisement'
 },
 updatedAt: new Date().toISOString()
 };
-const configDoc = await getDoc(configRef);
 if (configDoc.exists()) {
 await updateDoc(configRef, advertData);
 } else {
@@ -2446,7 +2468,7 @@ await loadPromoProducts();
 const configDoc = await getDoc(doc(db, 'config', 'store'));
 if (configDoc.exists()) {
 const config = configDoc.data();
-loadAdvertSettings();
+await loadAdvertSettings(config);
 if (config.timerEndTime) {
 const timerDate = new Date(parseInt(config.timerEndTime));
 document.getElementById('currentTimerDisplay').innerHTML = timerDate.toLocaleString();

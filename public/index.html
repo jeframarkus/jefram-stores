@@ -897,29 +897,39 @@
             return true;
         };
 
-        async function loadAdverts() {
+        function displayAdverts(config) {
+            if (!config) return;
+            const advert1 = config.advert1;
+            const advert2 = config.advert2;
+
+            if (advert1 && advert1.enabled && advert1.image && advert1.link) {
+                document.getElementById('advert1Image').src = advert1.image;
+                document.getElementById('advert1Image').alt = advert1.alt || 'Advertisement';
+                document.getElementById('advert1Link').href = advert1.link;
+                document.getElementById('advert1Container').style.display = 'block';
+            } else {
+                document.getElementById('advert1Container').style.display = 'none';
+            }
+
+            if (advert2 && advert2.enabled && advert2.image && advert2.link) {
+                document.getElementById('advert2Image').src = advert2.image;
+                document.getElementById('advert2Image').alt = advert2.alt || 'Advertisement';
+                document.getElementById('advert2Link').href = advert2.link;
+                document.getElementById('advert2Container').style.display = 'block';
+            } else {
+                document.getElementById('advert2Container').style.display = 'none';
+            }
+        }
+
+        async function loadAdverts(config) {
             try {
+                if (config) {
+                    displayAdverts(config);
+                    return;
+                }
                 const configDoc = await getDoc(doc(db, 'config', 'store'));
                 if (configDoc.exists()) {
-                    const config = configDoc.data();
-                    
-                    if (config.advert1 && config.advert1.enabled && config.advert1.image && config.advert1.link) {
-                        document.getElementById('advert1Image').src = config.advert1.image;
-                        document.getElementById('advert1Image').alt = config.advert1.alt || 'Advertisement';
-                        document.getElementById('advert1Link').href = config.advert1.link;
-                        document.getElementById('advert1Container').style.display = 'block';
-                    } else {
-                        document.getElementById('advert1Container').style.display = 'none';
-                    }
-                    
-                    if (config.advert2 && config.advert2.enabled && config.advert2.image && config.advert2.link) {
-                        document.getElementById('advert2Image').src = config.advert2.image;
-                        document.getElementById('advert2Image').alt = config.advert2.alt || 'Advertisement';
-                        document.getElementById('advert2Link').href = config.advert2.link;
-                        document.getElementById('advert2Container').style.display = 'block';
-                    } else {
-                        document.getElementById('advert2Container').style.display = 'none';
-                    }
+                    displayAdverts(configDoc.data());
                 }
             } catch (error) {
                 console.error('Error loading adverts:', error);
@@ -2541,6 +2551,7 @@
                 onSnapshot(doc(db, 'config', 'store'), (docSnap) => {
                     if (docSnap.exists()) {
                         const config = docSnap.data();
+                        displayAdverts(config);
                         if (config.timerEndTime) {
                             timerEndTime = config.timerEndTime;
                             
@@ -3193,7 +3204,7 @@
             }
             
             // Load adverts
-            loadAdverts();
+            loadAdverts(config);
         }
 
         // ----- SESSION VALIDATION -----
