@@ -673,12 +673,22 @@
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <h2>Sign In</h2>
-            <div class="register-form">
-                <input type="tel" id="loginPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
-                <button onclick="window.loginUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Sign In</button>
+            <div id="loginStep1">
+                <div class="register-form">
+                    <input type="tel" id="loginPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
+                    <div id="recaptcha-container-login"></div>
+                    <button onclick="window.sendLoginOTP()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Send OTP</button>
+                </div>
+            </div>
+            <div id="loginStep2" style="display: none;">
+                <div class="register-form">
+                    <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter the 6-digit OTP sent to your phone.</p>
+                    <input type="text" id="loginOTP" placeholder="Enter OTP" maxlength="6" style="width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; text-align: center; letter-spacing: 5px; font-size: 1.2rem;">
+                    <button onclick="window.verifyLoginOTP()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Verify OTP</button>
+                    <button onclick="window.resendLoginOTP()" style="background: #f5f5f5; color: #666; padding: 10px; border: none; border-radius: 8px; margin-top: 10px; width: 100%;">Resend OTP</button>
+                </div>
             </div>
             <p style="margin-top: 10px; text-align: center;">Don't have an account? <a href="#" onclick="window.closeLoginModal(); window.openRegisterModal();" style="color: #667eea;">Register</a></p>
-            <p style="margin-top: 5px; text-align: center;"><a href="#" onclick="window.closeLoginModal(); window.openPasswordResetModal();" style="color: #667eea; font-size: 14px;">Forgot Password?</a></p>
             <button onclick="window.closeLoginModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
         </div>
     </div>
@@ -707,13 +717,24 @@
     <div id="registerModal" class="modal">
         <div class="modal-content">
             <h2>Register</h2>
-            <div class="register-form">
-                <input type="text" id="customerName" placeholder="Full Name" required>
-                <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
-                <input type="text" id="customerWhatsapp" placeholder="WhatsApp Number (optional)">
-                <input type="email" id="customerEmail" placeholder="Email (Optional)">
-                <input type="text" id="customerLocation" placeholder="Location in Uganda" required>
-                <button onclick="window.registerUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Register</button>
+            <div id="registerStep1">
+                <div class="register-form">
+                    <input type="text" id="customerName" placeholder="Full Name" required>
+                    <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
+                    <input type="text" id="customerWhatsapp" placeholder="WhatsApp Number (optional)">
+                    <input type="email" id="customerEmail" placeholder="Email (Optional)">
+                    <input type="text" id="customerLocation" placeholder="Location in Uganda" required>
+                    <div id="recaptcha-container-register"></div>
+                    <button onclick="window.sendRegisterOTP()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Send OTP</button>
+                </div>
+            </div>
+            <div id="registerStep2" style="display: none;">
+                <div class="register-form">
+                    <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter the 6-digit OTP sent to your phone.</p>
+                    <input type="text" id="registerOTP" placeholder="Enter OTP" maxlength="6" style="width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; text-align: center; letter-spacing: 5px; font-size: 1.2rem;">
+                    <button onclick="window.verifyRegisterOTP()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Verify OTP & Register</button>
+                    <button onclick="window.resendRegisterOTP()" style="background: #f5f5f5; color: #666; padding: 10px; border: none; border-radius: 8px; margin-top: 10px; width: 100%;">Resend OTP</button>
+                </div>
             </div>
             <p style="margin-top: 10px; text-align: center;">Already have an account? <a href="#" onclick="window.closeRegisterModal(); window.openLoginModal();" style="color: #667eea;">Sign In</a></p>
             <button onclick="window.closeRegisterModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
@@ -724,7 +745,8 @@
         {
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
             }
         }
     </script>
@@ -732,6 +754,7 @@
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, deleteDoc, getDoc, orderBy, limit, onSnapshot, setDoc } from "firebase/firestore";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged, signOut } from "firebase/auth";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -742,10 +765,12 @@
             appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
         };
 
-        let app, db;
+        let app, db, auth;
+        let confirmationResult = null;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
+            auth = getAuth(app);
             console.log('Firebase connected successfully');
         } catch (error) {
             console.error('Firebase initialization error:', error);
@@ -1675,20 +1700,61 @@
         };
 
         // ----- USER FUNCTIONS -----
-        window.registerUser = async function() {
-            if (!db) { window.showToast('Database not connected', 'error'); return; }
+        window.sendRegisterOTP = async function() {
+            if (!auth) { window.showToast('Auth not initialized', 'error'); return; }
             const name = document.getElementById('customerName').value;
             const phone = document.getElementById('customerPhone').value;
             const whatsapp = document.getElementById('customerWhatsapp').value;
             const email = document.getElementById('customerEmail').value;
             const location = document.getElementById('customerLocation').value;
-            
+
             if (!name || !phone || !location) { window.showToast('Fill all required fields', 'error'); return; }
             if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
+
             try {
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
                 if (!existing.empty) { window.showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
-                
+
+                const formattedPhone = phone.startsWith('+') ? phone : '+256' + phone.substring(1);
+
+                if (!window.recaptchaVerifierRegister) {
+                    window.recaptchaVerifierRegister = new RecaptchaVerifier(auth, 'recaptcha-container-register', {
+                        'size': 'invisible',
+                        'callback': (response) => {
+                        }
+                    });
+                }
+
+                confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifierRegister);
+                document.getElementById('registerStep1').style.display = 'none';
+                document.getElementById('registerStep2').style.display = 'block';
+                window.showToast('OTP sent to your phone!', 'success');
+            } catch (error) {
+                console.error('Error sending OTP:', error);
+                if (error.code === 'auth/invalid-phone-number') {
+                    window.showToast('Invalid phone number format', 'error');
+                } else if (error.code === 'auth/too-many-requests') {
+                    window.showToast('Too many attempts. Please try again later.', 'error');
+                } else {
+                    window.showToast('Failed to send OTP: ' + error.message, 'error');
+                }
+            }
+        };
+
+        window.verifyRegisterOTP = async function() {
+            const otp = document.getElementById('registerOTP').value;
+            if (!otp || otp.length !== 6) { window.showToast('Enter valid 6-digit OTP', 'error'); return; }
+
+            try {
+                const result = await confirmationResult.confirm(otp);
+                const user = result.user;
+
+                const name = document.getElementById('customerName').value;
+                const phone = document.getElementById('customerPhone').value;
+                const whatsapp = document.getElementById('customerWhatsapp').value;
+                const email = document.getElementById('customerEmail').value;
+                const location = document.getElementById('customerLocation').value;
+
                 const docRef = await addDoc(collection(db, 'customers'), {
                     name: name,
                     phone: phone,
@@ -1697,12 +1763,14 @@
                     location: location,
                     registeredAt: new Date().toISOString(),
                     wishlist: [],
-                    cart: []
+                    cart: [],
+                    uid: user.uid
                 });
-                currentUser = { name: name, phone: phone, whatsapp: whatsapp || phone, email: email, location: location, registeredAt: new Date().toISOString() };
+
+                currentUser = { name: name, phone: phone, whatsapp: whatsapp || phone, email: email, location: location, registeredAt: new Date().toISOString(), uid: user.uid };
                 currentUserDocId = docRef.id;
                 window.showToast('Registration successful!', 'success');
-                
+
                 const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
                     customerId: currentUserDocId,
                     customer: currentUser,
@@ -1711,29 +1779,78 @@
                 });
                 customerSessionId = sessionRef.id;
                 window.setCookie('jefram_session_id', customerSessionId, 30);
-                
+
                 await window.loadWishlistFromFirebase();
                 await window.mergeGuestCartIntoFirebase();
                 await window.loadCartFromFirebase();
                 document.getElementById('registerModal').style.display = 'none';
-                ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation'].forEach(id => document.getElementById(id).value = '');
-            } catch(e) {
-                console.error('Registration error:', e);
-                window.showToast('Registration failed', 'error');
+                ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation', 'registerOTP'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('registerStep1').style.display = 'block';
+                document.getElementById('registerStep2').style.display = 'none';
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                window.showToast('Invalid OTP. Please try again.', 'error');
             }
         };
 
-        window.loginUser = async function() {
-            if (!db) { window.showToast('Database not connected', 'error'); return; }
+        window.resendRegisterOTP = async function() {
+            window.sendRegisterOTP();
+        };
+
+        window.sendLoginOTP = async function() {
+            if (!auth) { window.showToast('Auth not initialized', 'error'); return; }
             const phone = document.getElementById('loginPhone').value;
-            if (!phone) { window.showToast('Enter phone number', 'error'); return; }
-            if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
+
+            if (!phone || !phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
+
             try {
                 const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-                if (existing.empty) { window.showToast('Phone number not found. Please register.', 'error'); return; }
-                existing.forEach(d => { currentUser = d.data(); currentUserDocId = d.id; });
-                window.showToast('Welcome back!', 'success');
+                if (existing.empty) { window.showToast('Phone number not registered. Please register first.', 'error'); return; }
+
+                const formattedPhone = phone.startsWith('+') ? phone : '+256' + phone.substring(1);
+
+                if (!window.recaptchaVerifierLogin) {
+                    window.recaptchaVerifierLogin = new RecaptchaVerifier(auth, 'recaptcha-container-login', {
+                        'size': 'invisible',
+                        'callback': (response) => {
+                        }
+                    });
+                }
+
+                confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifierLogin);
+                document.getElementById('loginStep1').style.display = 'none';
+                document.getElementById('loginStep2').style.display = 'block';
+                window.showToast('OTP sent to your phone!', 'success');
+            } catch (error) {
+                console.error('Error sending OTP:', error);
+                if (error.code === 'auth/invalid-phone-number') {
+                    window.showToast('Invalid phone number format', 'error');
+                } else if (error.code === 'auth/too-many-requests') {
+                    window.showToast('Too many attempts. Please try again later.', 'error');
+                } else {
+                    window.showToast('Failed to send OTP: ' + error.message, 'error');
+                }
+            }
+        };
+
+        window.verifyLoginOTP = async function() {
+            const otp = document.getElementById('loginOTP').value;
+            if (!otp || otp.length !== 6) { window.showToast('Enter valid 6-digit OTP', 'error'); return; }
+
+            try {
+                const result = await confirmationResult.confirm(otp);
+                const user = result.user;
+
+                const phone = document.getElementById('loginPhone').value;
+                const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
                 
+                if (existing.empty) { window.showToast('User not found', 'error'); return; }
+
+                const userDoc = existing.docs[0];
+                currentUser = userDoc.data();
+                currentUserDocId = userDoc.id;
+                window.showToast('Login successful!', 'success');
+
                 const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
                     customerId: currentUserDocId,
                     customer: currentUser,
@@ -1742,23 +1859,49 @@
                 });
                 customerSessionId = sessionRef.id;
                 window.setCookie('jefram_session_id', customerSessionId, 30);
-                
+
                 await window.loadWishlistFromFirebase();
                 await window.mergeGuestCartIntoFirebase();
                 await window.loadCartFromFirebase();
                 document.getElementById('loginModal').style.display = 'none';
-                document.getElementById('loginPhone').value = '';
-            } catch(e) {
-                console.error('Login error:', e);
-                window.showToast('Login failed', 'error');
+                ['loginPhone', 'loginOTP'].forEach(id => document.getElementById(id).value = '');
+                document.getElementById('loginStep1').style.display = 'block';
+                document.getElementById('loginStep2').style.display = 'none';
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                window.showToast('Invalid OTP. Please try again.', 'error');
             }
         };
 
-        window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; };
-        window.closeLoginModal = function() { document.getElementById('loginModal').style.display = 'none'; };
-        window.openRegisterModal = function() { document.getElementById('registerModal').style.display = 'flex'; };
-        window.closeRegisterModal = function() { document.getElementById('registerModal').style.display = 'none'; };
-        
+        window.resendLoginOTP = async function() {
+            window.sendLoginOTP();
+        };
+
+
+        window.openLoginModal = function() {
+            document.getElementById('loginStep1').style.display = 'block';
+            document.getElementById('loginStep2').style.display = 'none';
+            document.getElementById('loginModal').style.display = 'flex';
+        };
+        window.closeLoginModal = function() {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('loginPhone').value = '';
+            document.getElementById('loginOTP').value = '';
+            document.getElementById('loginStep1').style.display = 'block';
+            document.getElementById('loginStep2').style.display = 'none';
+        };
+        window.openRegisterModal = function() {
+            document.getElementById('registerStep1').style.display = 'block';
+            document.getElementById('registerStep2').style.display = 'none';
+            document.getElementById('registerModal').style.display = 'flex';
+        };
+        window.closeRegisterModal = function() {
+            document.getElementById('registerModal').style.display = 'none';
+            ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation', 'registerOTP'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('registerStep1').style.display = 'block';
+            document.getElementById('registerStep2').style.display = 'none';
+        };
+
         window.openPasswordResetModal = function() {
             document.getElementById('resetStep1').style.display = 'block';
             document.getElementById('resetStep2').style.display = 'none';
@@ -1768,7 +1911,7 @@
             document.getElementById('newPassword').value = '';
             document.getElementById('passwordResetModal').style.display = 'flex';
         };
-        
+
         window.closePasswordResetModal = function() { document.getElementById('passwordResetModal').style.display = 'none'; };
         
         window.sendResetCode = async function() {
