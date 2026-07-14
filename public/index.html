@@ -1476,16 +1476,14 @@
                 
                 const orderNotes = document.getElementById('orderNotes').value.trim();
                 
-                const message = '*NEW ORDER* 🛍️\n\nCustomer: ' + currentUser.name + 
-                    '\nPhone: ' + currentUser.phone + 
-                    '\nLocation: ' + currentUser.location + 
+                const message = '*NEW ORDER* 🛍️\n\nCustomer: ' + currentUser.name +
+                    '\nPhone: ' + currentUser.phone +
+                    '\nLocation: ' + currentUser.location +
                     '\nTracking: ' + trackingNumber +
-                    '\nEst. Delivery: ' + estimatedDeliveryStr +
-                    '\n\nItems:\n' + itemsList + 
-                    '\n\nSubtotal: UGX ' + subtotal.toLocaleString() + 
-                    (discount > 0 ? '\nDiscount: -UGX ' + discount.toLocaleString() : '') + 
-                    '\nTotal: UGX ' + total.toLocaleString() + 
-                    '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money (Payment Pending - Check Admin Panel)') + 
+                    '\n\nItems:\n' + itemsList +
+                    '\n\nSubtotal: UGX ' + subtotal.toLocaleString() +
+                    (discount > 0 ? '\nDiscount: -UGX ' + discount.toLocaleString() : '') +
+                    '\nPayment: ' + (paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money (Payment Pending - Check Admin Panel)') +
                     (mobileNumber ? '\nMobile: ' + mobileNumber : '') +
                     (orderNotes ? '\n\nNotes: ' + orderNotes : '');
                 
