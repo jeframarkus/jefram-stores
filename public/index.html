@@ -1701,118 +1701,120 @@
         };
 
         // ===== FIXED: USER REGISTRATION WITH ENCRYPTED PASSWORD =====
-        window.registerUser = async function() {
-            if (!db) { window.showToast('Database not connected', 'error'); return; }
-            const name = document.getElementById('customerName').value;
-            const phone = document.getElementById('customerPhone').value;
-            const email = document.getElementById('customerEmail').value;
-            const whatsapp = document.getElementById('customerWhatsapp').value;
-            const location = document.getElementById('customerLocation').value;
-            const password = document.getElementById('customerPassword').value;
+       window.registerUser = async function() {
+    if (!db) { window.showToast('Database not connected', 'error'); return; }
+    const name = document.getElementById('customerName').value.trim();
+    const phone = document.getElementById('customerPhone').value.trim();
+    const email = document.getElementById('customerEmail').value.trim();
+    const whatsapp = document.getElementById('customerWhatsapp').value.trim();
+    const location = document.getElementById('customerLocation').value.trim();
+    const password = document.getElementById('customerPassword').value.trim();
 
-            if (!name || !phone || !location || !password) { window.showToast('Fill all required fields', 'error'); return; }
-            if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
-            if (password.length < 6) { window.showToast('Password must be at least 6 characters', 'error'); return; }
-            try {
-                const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-                if (!existing.empty) { window.showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
+    if (!name || !phone || !location || !password) { window.showToast('Fill all required fields', 'error'); return; }
+    if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
+    if (password.length < 6) { window.showToast('Password must be at least 6 characters', 'error'); return; }
+    try {
+        const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
+        if (!existing.empty) { window.showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
 
-                // ENCRYPT PASSWORD BEFORE STORING
-                const encryptedPassword = await window.hashPassword(password);
+        // ===== ENCRYPT PASSWORD BEFORE STORING =====
+        const encryptedPassword = await window.hashPassword(password);
 
-                const docRef = await addDoc(collection(db, 'customers'), {
-                    name: name,
-                    phone: phone,
-                    whatsapp: whatsapp || phone,
-                    email: email || '',
-                    location: location,
-                    password: encryptedPassword,
-                    registeredAt: new Date().toISOString(),
-                    wishlist: [],
-                    cart: []
-                });
-                currentUser = { 
-                    name: name, 
-                    phone: phone, 
-                    whatsapp: whatsapp || phone, 
-                    email: email || '', 
-                    location: location, 
-                    registeredAt: new Date().toISOString(),
-                    password: encryptedPassword
-                };
-                currentUserDocId = docRef.id;
-                window.showToast('Registration successful!', 'success');
-
-                const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
-                    customerId: currentUserDocId,
-                    customer: currentUser,
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                });
-                customerSessionId = sessionRef.id;
-                window.setCookie('jefram_session_id', customerSessionId, 30);
-
-                await window.loadWishlistFromFirebase();
-                await window.mergeGuestCartIntoFirebase();
-                await window.loadCartFromFirebase();
-                document.getElementById('registerModal').style.display = 'none';
-                ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation', 'customerPassword'].forEach(id => document.getElementById(id).value = '');
-            } catch(e) {
-                console.error('Registration error:', e);
-                window.showToast('Registration failed', 'error');
-            }
+        const docRef = await addDoc(collection(db, 'customers'), {
+            name: name,
+            phone: phone,
+            whatsapp: whatsapp || phone,
+            email: email || '',
+            location: location,
+            password: encryptedPassword, // Store encrypted
+            registeredAt: new Date().toISOString(),
+            wishlist: [],
+            cart: []
+        });
+        
+        currentUser = { 
+            name: name, 
+            phone: phone, 
+            whatsapp: whatsapp || phone, 
+            email: email || '', 
+            location: location, 
+            registeredAt: new Date().toISOString(),
+            password: encryptedPassword
         };
+        currentUserDocId = docRef.id;
+        window.showToast('Registration successful!', 'success');
+
+        const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
+            customerId: currentUserDocId,
+            customer: currentUser,
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        });
+        customerSessionId = sessionRef.id;
+        window.setCookie('jefram_session_id', customerSessionId, 30);
+
+        await window.loadWishlistFromFirebase();
+        await window.mergeGuestCartIntoFirebase();
+        await window.loadCartFromFirebase();
+        document.getElementById('registerModal').style.display = 'none';
+        ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation', 'customerPassword'].forEach(id => document.getElementById(id).value = '');
+    } catch(e) {
+        console.error('Registration error:', e);
+        window.showToast('Registration failed', 'error');
+    }
+};
 
         // ===== FIXED: LOGIN WITH ENCRYPTED PASSWORD VERIFICATION =====
         window.loginUser = async function() {
-            if (!db) { window.showToast('Database not connected', 'error'); return; }
-            const phoneOrEmail = document.getElementById('loginPhone').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            if (!phoneOrEmail || !password) { window.showToast('Enter phone/email and password', 'error'); return; }
-            try {
-                let existing;
-                if (phoneOrEmail.includes('@')) {
-                    existing = await getDocs(query(collection(db, 'customers'), where("email", "==", phoneOrEmail)));
-                } else {
-                    existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phoneOrEmail)));
-                }
-                if (existing.empty) { window.showToast('Account not found. Please register.', 'error'); return; }
+    if (!db) { window.showToast('Database not connected', 'error'); return; }
+    const phoneOrEmail = document.getElementById('loginPhone').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
+    if (!phoneOrEmail || !password) { window.showToast('Enter phone/email and password', 'error'); return; }
+    try {
+        let existing;
+        if (phoneOrEmail.includes('@')) {
+            existing = await getDocs(query(collection(db, 'customers'), where("email", "==", phoneOrEmail)));
+        } else {
+            existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phoneOrEmail)));
+        }
+        if (existing.empty) { window.showToast('Account not found. Please register.', 'error'); return; }
 
-                const userDoc = existing.docs[0];
-                const userData = userDoc.data();
-                
-                // ENCRYPT THE INPUT PASSWORD AND COMPARE
-                const encryptedInputPassword = await window.hashPassword(password);
-                if (userData.password !== encryptedInputPassword) { 
-                    window.showToast('Incorrect password', 'error'); 
-                    return; 
-                }
+        const userDoc = existing.docs[0];
+        const userData = userDoc.data();
+        
+        // ===== FIXED: ENCRYPT THE INPUT PASSWORD BEFORE COMPARING =====
+        const encryptedInputPassword = await window.hashPassword(password);
+        
+        // Now compare encrypted password with stored encrypted password
+        if (userData.password !== encryptedInputPassword) { 
+            window.showToast('Incorrect password', 'error'); 
+            return; 
+        }
 
-                currentUser = userData;
-                currentUserDocId = userDoc.id;
-                window.showToast('Welcome back!', 'success');
+        currentUser = userData;
+        currentUserDocId = userDoc.id;
+        window.showToast('Welcome back!', 'success');
 
-                const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
-                    customerId: currentUserDocId,
-                    customer: currentUser,
-                    createdAt: new Date().toISOString(),
-                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-                });
-                customerSessionId = sessionRef.id;
-                window.setCookie('jefram_session_id', customerSessionId, 30);
+        const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
+            customerId: currentUserDocId,
+            customer: currentUser,
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        });
+        customerSessionId = sessionRef.id;
+        window.setCookie('jefram_session_id', customerSessionId, 30);
 
-                await window.loadWishlistFromFirebase();
-                await window.mergeGuestCartIntoFirebase();
-                await window.loadCartFromFirebase();
-                document.getElementById('loginModal').style.display = 'none';
-                document.getElementById('loginPhone').value = '';
-                document.getElementById('loginPassword').value = '';
-            } catch(e) {
-                console.error('Login error:', e);
-                window.showToast('Login failed', 'error');
-            }
-        };
-
+        await window.loadWishlistFromFirebase();
+        await window.mergeGuestCartIntoFirebase();
+        await window.loadCartFromFirebase();
+        document.getElementById('loginModal').style.display = 'none';
+        document.getElementById('loginPhone').value = '';
+        document.getElementById('loginPassword').value = '';
+    } catch(e) {
+        console.error('Login error:', e);
+        window.showToast('Login failed', 'error');
+    }
+};
         window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; };
         window.closeLoginModal = function() { 
             document.getElementById('loginModal').style.display = 'none'; 
