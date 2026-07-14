@@ -490,7 +490,7 @@ th, td { font-size: 12px; padding: 8px; }
 </style>
 </head>
 <body>
-<!-- SIDEBAR - Keep your existing sidebar -->
+<!-- SIDEBAR -->
 <div class="sidebar">
 <div class="logo">
 <h2>Jefram Stores</h2>
@@ -688,7 +688,7 @@ th, td { font-size: 12px; padding: 8px; }
 </table>
 </div>
 </div>
-<!-- ===== FIXED: ADD PRODUCT SECTION WITH MULTI-IMAGE SUPPORT ===== -->
+<!-- ===== ADD PRODUCT SECTION WITH IMAGE COMPRESSION ===== -->
 <div id="add-product" class="section">
 <div class="section-title"><span>Add New Product</span></div>
 <div class="product-form">
@@ -717,7 +717,6 @@ th, td { font-size: 12px; padding: 8px; }
 <input type="number" id="productStock" placeholder="Stock Quantity" value="10">
 </div>
 </div>
-<!-- ===== FIXED: Multi-image upload with preview ===== -->
 <div class="upload-area" onclick="document.getElementById('productImages').click()">
 <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos (up to 5)
 </div>
@@ -1073,7 +1072,7 @@ Upload banner images for adverts. Customers can click on them to visit the link 
 </div>
 </div>
 </div>
-<!-- ===== FIXED: EDIT PRODUCT MODAL WITH MULTI-IMAGE SUPPORT ===== -->
+<!-- EDIT PRODUCT MODAL -->
 <div id="editProductModal" class="modal">
 <div class="modal-content">
 <h3>Edit Product</h3>
@@ -1104,7 +1103,6 @@ Upload banner images for adverts. Customers can click on them to visit the link 
 </div>
 </div>
 <textarea id="editProductDesc" placeholder="Description" style="width:100%; margin-bottom:10px; padding:10px;"></textarea>
-<!-- ===== FIXED: Multi-image upload with preview ===== -->
 <div class="upload-area" onclick="document.getElementById('editProductImages').click()">
 <i class="fas fa-cloud-upload-alt"></i> Click to upload product photos (up to 5)
 </div>
@@ -1186,6 +1184,7 @@ Upload banner images for adverts. Customers can click on them to visit the link 
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where, orderBy, getDoc, setDoc } from "firebase/firestore";
+
 const firebaseConfig = {
 apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
 authDomain: "jefram-stores.firebaseapp.com",
@@ -1194,8 +1193,49 @@ storageBucket: "jefram-stores.firebasestorage.app",
 messagingSenderId: "669495715459",
 appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// ===== IMAGE COMPRESSION FUNCTION =====
+function compressImage(file, maxWidth = 600, maxHeight = 600, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > height) {
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                } else {
+                    if (height > maxHeight) {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+                resolve(compressedDataUrl);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // Size management variables
 let productSizes = [];
 let editProductSizes = [];
@@ -1207,6 +1247,7 @@ let promoProducts = [];
 // Advert variables
 let advert1ImageBase64 = null;
 let advert2ImageBase64 = null;
+
 // Cookie helpers
 function setCookie(name, value, days) {
 const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
@@ -1265,6 +1306,7 @@ document.getElementById('permissionBadge').innerHTML = '👑 Full Access';
 document.getElementById('navAdmins').style.display = 'flex';
 }
 document.getElementById('adminRole').innerHTML = `<i class="fas fa-shield-alt"></i> ${currentAdmin.role} Admin`;
+
 function switchToSection(sectionId) {
 const section = document.getElementById(sectionId);
 if (section) {
@@ -1516,100 +1558,85 @@ ${s.price ? ' (UGX ' + s.price.toLocaleString() + ')' : ''}
 `).join('');
 }
 
-// ===== HELPER: COMPRESS IMAGE =====
-function compressImage(file, callback) {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function(event) {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800; // Resize to max 800px width
-            const MAX_HEIGHT = 800;
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height) {
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-            } else {
-                if (height > MAX_HEIGHT) {
-                    width *= MAX_HEIGHT / height;
-                    height = MAX_HEIGHT;
-                }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            // Compress to JPEG with 0.7 quality
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            callback(dataUrl);
-        };
-    };
-}
-
 // ===== FIXED: previewProductImage with compression =====
 window.previewProductImage = function(input) {
+    if (!input.files || input.files.length === 0) {
+        document.getElementById('productImagePreview').style.display = 'none';
+        return;
+    }
+
     currentImageBase64List = [];
     const previewContainer = document.getElementById('productImagePreview');
     previewContainer.innerHTML = '';
+    previewContainer.style.display = 'flex';
+    previewContainer.style.flexWrap = 'wrap';
+    previewContainer.style.gap = '10px';
+    previewContainer.style.padding = '10px';
     
-    if (input.files && input.files.length) {
-        const maxFiles = Math.min(input.files.length, 5);
-        if (input.files.length > 5) {
-            document.getElementById('productMessage').innerHTML = '<span style="color:orange;">⚠️ Maximum 5 images allowed. Only first 5 will be processed.</span>';
-            setTimeout(() => { document.getElementById('productMessage').innerHTML = ''; }, 3000);
-        }
+    const maxFiles = Math.min(input.files.length, 5);
+    if (input.files.length > 5) {
+        document.getElementById('productMessage').innerHTML = '<span style="color:orange;">⚠️ Maximum 5 images allowed. Only first 5 will be processed.</span>';
+        setTimeout(() => { document.getElementById('productMessage').innerHTML = ''; }, 3000);
+    }
+
+    let processedCount = 0;
+    const loadingMsg = document.createElement('div');
+    loadingMsg.style.cssText = 'width:100%; text-align:center; color:#666; padding:10px;';
+    loadingMsg.textContent = 'Compressing images...';
+    previewContainer.appendChild(loadingMsg);
+
+    for (let i = 0; i < maxFiles; i++) {
+        const file = input.files[i];
         
-        previewContainer.style.display = 'flex';
-        previewContainer.style.flexWrap = 'wrap';
-        
-        let processedCount = 0;
-        
-        // Process files sequentially to maintain order
-        Array.from(input.files).slice(0, 5).forEach((file) => {
-            compressImage(file, (compressedBase64) => {
-                currentImageBase64List.push(compressedBase64);
-                
-                // Create UI Element
-                const thumbContainer = document.createElement('div');
-                thumbContainer.className = 'thumb-container';
-                thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #667eea; position:relative; margin:5px;';
-                
-                // Get the index of the item we just pushed
-                const currentIndex = currentImageBase64List.length - 1;
-                
-                thumbContainer.innerHTML = `
-                    <img src="${compressedBase64}" style="width:100%; height:100%; object-fit:cover;">
-                    <button class="remove-thumb" onclick="removeProductImage(${currentIndex})" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:bold;">×</button>
-                `;
-                previewContainer.appendChild(thumbContainer);
-                
-                processedCount++;
-                // Update counter only when all selected files are processed
-                if(processedCount === maxFiles) {
-                     previewContainer.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${currentImageBase64List.length} of 5)</div>`;
-                }
-            });
+        compressImage(file, 600, 600, 0.7).then((compressedDataUrl) => {
+            currentImageBase64List.push(compressedDataUrl);
+            processedCount++;
+            
+            if (loadingMsg.parentNode) {
+                loadingMsg.remove();
+            }
+            
+            const thumbContainer = document.createElement('div');
+            thumbContainer.className = 'thumb-container';
+            thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #667eea; position:relative; background:#f5f5f5; flex-shrink:0;';
+            const currentIndex = currentImageBase64List.length - 1;
+            
+            thumbContainer.innerHTML = `
+                <img src="${compressedDataUrl}" style="width:100%; height:100%; object-fit:cover;">
+                <button class="remove-thumb" onclick="removeProductImage(${currentIndex})" 
+                        style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; font-weight:bold; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                    ×
+                </button>
+            `;
+            previewContainer.appendChild(thumbContainer);
+            
+            // Update count
+            const existingCount = previewContainer.querySelector('.image-count');
+            if (existingCount) {
+                existingCount.textContent = `(${currentImageBase64List.length} of ${maxFiles})`;
+            } else {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'image-count';
+                countDiv.style.cssText = 'padding:6px; color:#666; align-self:center; font-size:11px; width:100%; text-align:center;';
+                countDiv.textContent = `(${currentImageBase64List.length} of ${maxFiles})`;
+                previewContainer.appendChild(countDiv);
+            }
+            
+            console.log(`✅ Image ${processedCount}/${maxFiles} compressed`);
+        }).catch((error) => {
+            console.error('Error compressing image:', error);
+            document.getElementById('productMessage').innerHTML = '<span style="color:red;">Failed to compress image: ' + file.name + '</span>';
         });
-    } else {
-        previewContainer.style.display = 'none';
     }
 };
 
-// ===== REMOVE INDIVIDUAL PRODUCT IMAGE (FIXED INDEX BUG) =====
+// ===== FIXED: removeProductImage with correct re-render =====
 window.removeProductImage = function(index) {
     if (currentImageBase64List.length > index) {
         currentImageBase64List.splice(index, 1);
         
         const previewContainer = document.getElementById('productImagePreview');
-        previewContainer.innerHTML = ''; // Clear current
+        previewContainer.innerHTML = '';
         
         if (currentImageBase64List.length === 0) {
             previewContainer.style.display = 'none';
@@ -1618,68 +1645,103 @@ window.removeProductImage = function(index) {
         
         previewContainer.style.display = 'flex';
         previewContainer.style.flexWrap = 'wrap';
+        previewContainer.style.gap = '10px';
+        previewContainer.style.padding = '10px';
         
         // Re-render all remaining images with CORRECT new indices
         currentImageBase64List.forEach((image, i) => {
             const thumbContainer = document.createElement('div');
             thumbContainer.className = 'thumb-container';
-            thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #667eea; position:relative; margin:5px;';
+            thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #667eea; position:relative; background:#f5f5f5; flex-shrink:0;';
             thumbContainer.innerHTML = `
                 <img src="${image}" style="width:100%; height:100%; object-fit:cover;">
-                <button class="remove-thumb" onclick="removeProductImage(${i})" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:bold;">×</button>
+                <button class="remove-thumb" onclick="removeProductImage(${i})" 
+                        style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; font-weight:bold; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                    ×
+                </button>
             `;
             previewContainer.appendChild(thumbContainer);
         });
         
-        previewContainer.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${currentImageBase64List.length} of 5)</div>`;
+        const countDiv = document.createElement('div');
+        countDiv.className = 'image-count';
+        countDiv.style.cssText = 'padding:6px; color:#666; align-self:center; font-size:11px; width:100%; text-align:center;';
+        countDiv.textContent = `(${currentImageBase64List.length} of 5)`;
+        previewContainer.appendChild(countDiv);
     }
 };
 
 // ===== FIXED: previewEditProductImage with compression =====
 window.previewEditProductImage = function(input) {
+    if (!input.files || input.files.length === 0) {
+        document.getElementById('editProductImagePreview').style.display = 'none';
+        return;
+    }
+
     editImageBase64List = [];
     const previewContainer = document.getElementById('editProductImagePreview');
     previewContainer.innerHTML = '';
+    previewContainer.style.display = 'flex';
+    previewContainer.style.flexWrap = 'wrap';
+    previewContainer.style.gap = '10px';
+    previewContainer.style.padding = '10px';
     
-    if (input.files && input.files.length) {
-        const maxFiles = Math.min(input.files.length, 5);
-        if (input.files.length > 5) {
-            showToast('Maximum 5 images allowed. Only first 5 will be uploaded.', 'warning');
-        }
+    const maxFiles = Math.min(input.files.length, 5);
+    if (input.files.length > 5) {
+        showToast('Maximum 5 images allowed. Only first 5 will be uploaded.', 'warning');
+    }
+
+    let processedCount = 0;
+    const loadingMsg = document.createElement('div');
+    loadingMsg.style.cssText = 'width:100%; text-align:center; color:#666; padding:10px;';
+    loadingMsg.textContent = 'Compressing images...';
+    previewContainer.appendChild(loadingMsg);
+
+    for (let i = 0; i < maxFiles; i++) {
+        const file = input.files[i];
         
-        previewContainer.style.display = 'flex';
-        previewContainer.style.flexWrap = 'wrap';
-        
-        let processedCount = 0;
-        
-        Array.from(input.files).slice(0, 5).forEach((file) => {
-            compressImage(file, (compressedBase64) => {
-                editImageBase64List.push(compressedBase64);
-                
-                const thumbContainer = document.createElement('div');
-                thumbContainer.className = 'thumb-container';
-                thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; margin:5px;';
-                
-                const currentIndex = editImageBase64List.length - 1;
-                
-                thumbContainer.innerHTML = `
-                    <img src="${compressedBase64}" style="width:100%; height:100%; object-fit:cover;">
-                    <button class="remove-thumb" onclick="removeEditProductImage(${currentIndex})" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:bold;">×</button>
-                `;
-                previewContainer.appendChild(thumbContainer);
-                
-                processedCount++;
-                if(processedCount === maxFiles) {
-                     previewContainer.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${editImageBase64List.length} of 5)</div>`;
-                }
-            });
+        compressImage(file, 600, 600, 0.7).then((compressedDataUrl) => {
+            editImageBase64List.push(compressedDataUrl);
+            processedCount++;
+            
+            if (loadingMsg.parentNode) {
+                loadingMsg.remove();
+            }
+            
+            const thumbContainer = document.createElement('div');
+            thumbContainer.className = 'thumb-container';
+            thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; background:#f5f5f5; flex-shrink:0;';
+            const currentIndex = editImageBase64List.length - 1;
+            
+            thumbContainer.innerHTML = `
+                <img src="${compressedDataUrl}" style="width:100%; height:100%; object-fit:cover;">
+                <button class="remove-thumb" onclick="removeEditProductImage(${currentIndex})" 
+                        style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; font-weight:bold; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                    ×
+                </button>
+            `;
+            previewContainer.appendChild(thumbContainer);
+            
+            const existingCount = previewContainer.querySelector('.image-count');
+            if (existingCount) {
+                existingCount.textContent = `(${editImageBase64List.length} of ${maxFiles})`;
+            } else {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'image-count';
+                countDiv.style.cssText = 'padding:6px; color:#666; align-self:center; font-size:11px; width:100%; text-align:center;';
+                countDiv.textContent = `(${editImageBase64List.length} of ${maxFiles})`;
+                previewContainer.appendChild(countDiv);
+            }
+            
+            console.log(`✅ Edit image ${processedCount}/${maxFiles} compressed`);
+        }).catch((error) => {
+            console.error('Error compressing image:', error);
+            showToast('Failed to compress image: ' + file.name, 'error');
         });
-    } else {
-        previewContainer.style.display = 'none';
     }
 };
 
-// ===== REMOVE INDIVIDUAL EDIT PRODUCT IMAGE (FIXED INDEX BUG) =====
+// ===== FIXED: removeEditProductImage =====
 window.removeEditProductImage = function(index) {
     if (editImageBase64List.length > index) {
         editImageBase64List.splice(index, 1);
@@ -1694,19 +1756,28 @@ window.removeEditProductImage = function(index) {
         
         previewContainer.style.display = 'flex';
         previewContainer.style.flexWrap = 'wrap';
+        previewContainer.style.gap = '10px';
+        previewContainer.style.padding = '10px';
         
         editImageBase64List.forEach((image, i) => {
             const thumbContainer = document.createElement('div');
             thumbContainer.className = 'thumb-container';
-            thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; margin:5px;';
+            thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; background:#f5f5f5; flex-shrink:0;';
             thumbContainer.innerHTML = `
                 <img src="${image}" style="width:100%; height:100%; object-fit:cover;">
-                <button class="remove-thumb" onclick="removeEditProductImage(${i})" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:bold;">×</button>
+                <button class="remove-thumb" onclick="removeEditProductImage(${i})" 
+                        style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; font-weight:bold; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+                    ×
+                </button>
             `;
             previewContainer.appendChild(thumbContainer);
         });
         
-        previewContainer.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${editImageBase64List.length} of 5)</div>`;
+        const countDiv = document.createElement('div');
+        countDiv.className = 'image-count';
+        countDiv.style.cssText = 'padding:6px; color:#666; align-self:center; font-size:11px; width:100%; text-align:center;';
+        countDiv.textContent = `(${editImageBase64List.length} of 5)`;
+        previewContainer.appendChild(countDiv);
     }
 };
 
@@ -1740,38 +1811,55 @@ document.getElementById('editSimpleStockSection').style.display = 'block';
 document.getElementById('editProductStock').value = product.stock || 0;
 }
 renderEditSizeTags();
-// ===== FIXED: Show existing images =====
 const editPreview = document.getElementById('editProductImagePreview');
 editPreview.innerHTML = '';
 editImageBase64List = [];
 if (product.image_urls && product.image_urls.length > 0) {
 editPreview.style.display = 'flex';
 editPreview.style.flexWrap = 'wrap';
+editPreview.style.gap = '10px';
+editPreview.style.padding = '10px';
 product.image_urls.forEach((url, index) => {
 const thumbContainer = document.createElement('div');
 thumbContainer.className = 'thumb-container';
-thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; margin:5px;';
+thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; background:#f5f5f5; flex-shrink:0;';
 thumbContainer.innerHTML = `
 <img src="${url}" style="width:100%; height:100%; object-fit:cover;">
-<button class="remove-thumb" onclick="removeEditProductImage(${index})" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:bold;">×</button>
+<button class="remove-thumb" onclick="removeEditProductImage(${index})" 
+        style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; font-weight:bold; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+    ×
+</button>
 `;
 editPreview.appendChild(thumbContainer);
 editImageBase64List.push(url);
 });
-editPreview.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(${product.image_urls.length} images)</div>`;
+const countDiv = document.createElement('div');
+countDiv.className = 'image-count';
+countDiv.style.cssText = 'padding:6px; color:#666; align-self:center; font-size:11px; width:100%; text-align:center;';
+countDiv.textContent = `(${product.image_urls.length} images)`;
+editPreview.appendChild(countDiv);
 } else if (product.image_url) {
 editPreview.style.display = 'flex';
 editPreview.style.flexWrap = 'wrap';
+editPreview.style.gap = '10px';
+editPreview.style.padding = '10px';
 const thumbContainer = document.createElement('div');
 thumbContainer.className = 'thumb-container';
-thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; margin:5px;';
+thumbContainer.style.cssText = 'width:100px; height:100px; overflow:hidden; border-radius:8px; border:2px solid #28a745; position:relative; background:#f5f5f5; flex-shrink:0;';
 thumbContainer.innerHTML = `
 <img src="${product.image_url}" style="width:100%; height:100%; object-fit:cover;">
-<button class="remove-thumb" onclick="removeEditProductImage(0)" style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; font-weight:bold;">×</button>
+<button class="remove-thumb" onclick="removeEditProductImage(0)" 
+        style="position:absolute; top:-8px; right:-8px; background:#dc3545; color:white; border:none; border-radius:50%; width:22px; height:22px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; font-weight:bold; line-height:1; box-shadow:0 2px 4px rgba(0,0,0,0.2);">
+    ×
+</button>
 `;
 editPreview.appendChild(thumbContainer);
 editImageBase64List.push(product.image_url);
-editPreview.innerHTML += `<div style="padding:6px; color:#666; align-self:center; font-size:11px;">(1 image)</div>`;
+const countDiv = document.createElement('div');
+countDiv.className = 'image-count';
+countDiv.style.cssText = 'padding:6px; color:#666; align-self:center; font-size:11px; width:100%; text-align:center;';
+countDiv.textContent = '(1 image)';
+editPreview.appendChild(countDiv);
 } else {
 editPreview.style.display = 'none';
 }
@@ -1858,7 +1946,8 @@ console.error('Error deleting product:', error);
 showToast('Failed to delete product', 'error');
 }
 };
-// ===== FIXED: addNewProduct with multiple images =====
+
+// ===== FIXED: addNewProduct with compressed images =====
 window.addNewProduct = async function() {
 const name = document.getElementById('productName').value.trim();
 const price = parseFloat(document.getElementById('productPrice').value);
@@ -1868,15 +1957,36 @@ const brand = document.getElementById('productBrand').value.trim();
 const discountPercent = parseFloat(document.getElementById('productDiscountPercent').value) || 0;
 const description = document.getElementById('productDesc').value.trim();
 const hasSizes = document.getElementById('hasSizes').checked;
+
 if (!name || !price || !category) {
 document.getElementById('productMessage').innerHTML = '<span style="color:red;">Product Name, Price, and Category are required</span>';
 return;
 }
-// Make sure we have at least one image
+
 if (currentImageBase64List.length === 0) {
 document.getElementById('productMessage').innerHTML = '<span style="color:red;">Please upload at least one product image</span>';
 return;
 }
+
+// Calculate total size to warn if needed
+let totalSize = 0;
+currentImageBase64List.forEach(img => {
+const size = Math.round((img.length * 3) / 4);
+totalSize += size;
+});
+
+if (totalSize > 900000) {
+const shouldContinue = confirm(
+`⚠️ Image total size: ${(totalSize/1024).toFixed(0)}KB\n` +
+`Firestore limit is 1MB (1024KB).\n\n` +
+`Your images are close to or exceeding this limit.\n` +
+`Do you want to try uploading anyway?`
+);
+if (!shouldContinue) return;
+}
+
+console.log(`📸 Total image size: ${(totalSize/1024).toFixed(0)}KB (${currentImageBase64List.length} images)`);
+
 let productData = {
 name,
 price,
@@ -1890,6 +2000,7 @@ description: description || '',
 hasSizes: hasSizes,
 createdAt: new Date().toISOString()
 };
+
 if (hasSizes) {
 if (productSizes.length === 0) {
 document.getElementById('productMessage').innerHTML = '<span style="color:red;">Please add at least one size</span>';
@@ -1902,9 +2013,14 @@ const stock = parseInt(document.getElementById('productStock').value) || 0;
 productData.stock = stock;
 productData.sizes = [];
 }
+
 try {
+document.getElementById('productMessage').innerHTML = '<span style="color:#667eea;">⏳ Uploading product...</span>';
+
 await addDoc(collection(db, 'products'), productData);
-document.getElementById('productMessage').innerHTML = '<span style="color:green;">✅ Product added successfully with ' + currentImageBase64List.length + ' images!</span>';
+
+document.getElementById('productMessage').innerHTML = `<span style="color:green;">✅ Product added successfully with ${currentImageBase64List.length} images! (${(totalSize/1024).toFixed(0)}KB)</span>`;
+
 // Reset form
 document.getElementById('productName').value = '';
 document.getElementById('productPrice').value = '';
@@ -1918,19 +2034,26 @@ document.getElementById('productImagePreview').style.display = 'none';
 document.getElementById('productImagePreview').innerHTML = '';
 document.getElementById('productImages').value = '';
 currentImageBase64List = [];
+
 productSizes = [];
 renderSizeTags();
 document.getElementById('sizeName').value = '';
 document.getElementById('sizePrice').value = '';
 document.getElementById('sizeStock').value = '10';
+
 loadProducts();
 if (isMaster) loadStats();
 setTimeout(() => document.getElementById('productMessage').innerHTML = '', 5000);
 } catch (error) {
 console.error('Error adding product:', error);
+if (error.message && error.message.includes('size')) {
+document.getElementById('productMessage').innerHTML = '<span style="color:red;">❌ Images are too large! Try using smaller images or upload fewer photos.</span>';
+} else {
 document.getElementById('productMessage').innerHTML = '<span style="color:red;">Failed to add product: ' + error.message + '</span>';
 }
+}
 };
+
 // ===== FIXED: loadProducts to display images properly =====
 async function loadProducts() {
 const productsSnap = await getDocs(collection(db, 'products'));
@@ -1954,11 +2077,9 @@ totalStock = product.sizes.reduce((sum, s) => sum + s.stock, 0);
 sizeDisplay = product.sizes.map(s => s.size + '(' + s.stock + ')').join(', ');
 }
 const stockClass = totalStock <= 0 ? 'stock-out' : (totalStock <= 5 ? 'stock-low' : 'stock-in');
-// Display first image from image_urls or single image_url
 const displayImage = (product.image_urls && product.image_urls.length > 0)
 ? product.image_urls[0]
 : (product.image_url || 'https://via.placeholder.com/40');
-// Image count badge
 const imageCount = (product.image_urls && product.image_urls.length > 0)
 ? product.image_urls.length
 : (product.image_url ? 1 : 0);
@@ -3002,7 +3123,6 @@ const ordersCount = await getDocs(query(collection(db, 'orders'), where("custome
 usersList.innerHTML += `<tr><td>${escapeHtml(user.name)}</td><td>${user.phone}</td><td>${user.whatsapp || user.phone}</td><td>${user.location}</td><td>${user.email || '-'}</td><td>${ordersCount.size}</td><td>UGX ${(userSpending[user.phone] || 0).toLocaleString()}</td><td><button onclick="viewUserDetails('${docSnap.id}')">View</button></td></tr>`;
 }
 }
-// ===== FIXED: loadProducts moved up already =====
 async function loadCoupons() {
 const couponsSnap = await getDocs(collection(db, 'coupons'));
 const couponsList = document.getElementById('couponsList');
