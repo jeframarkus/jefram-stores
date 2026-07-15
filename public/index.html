@@ -3018,21 +3018,25 @@
         async function initCache() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(CACHE_NAME, 1);
-                request.onerror = () => reject(request.error);
+                request.onerror = () => {
+                    console.error('IndexedDB error:', request.error);
+                    reject(request.error);
+                };
                 request.onsuccess = () => {
                     dbCache = request.result;
+                    console.log('IndexedDB initialized successfully');
                     resolve(dbCache);
                 };
                 request.onupgradeneeded = (event) => {
                     const db = event.target.result;
                     if (!db.objectStoreNames.contains('products')) {
-                        db.createObjectStore('products', { keyPath: 'id' });
+                        db.createObjectStore('products', { keyPath: 'key' });
                     }
                     if (!db.objectStoreNames.contains('config')) {
                         db.createObjectStore('config', { keyPath: 'key' });
                     }
                     if (!db.objectStoreNames.contains('categories')) {
-                        db.createObjectStore('categories', { keyPath: 'name' });
+                        db.createObjectStore('categories', { keyPath: 'key' });
                     }
                 };
             });
@@ -3057,13 +3061,24 @@
         }
 
         async function setCachedData(storeName, key, value) {
-            if (!dbCache) return;
+            if (!dbCache) {
+                console.warn('Cache not available, skipping write');
+                return;
+            }
             return new Promise((resolve) => {
-                const transaction = dbCache.transaction(storeName, 'readwrite');
-                const store = transaction.objectStore(storeName);
-                store.put({ key, value, timestamp: Date.now() });
-                transaction.oncomplete = () => resolve();
-                transaction.onerror = () => resolve();
+                try {
+                    const transaction = dbCache.transaction(storeName, 'readwrite');
+                    const store = transaction.objectStore(storeName);
+                    store.put({ key, value, timestamp: Date.now() });
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = (error) => {
+                        console.warn('Cache write failed:', error);
+                        resolve();
+                    };
+                } catch (error) {
+                    console.warn('Cache write error:', error);
+                    resolve();
+                }
             });
         }
 
@@ -3075,8 +3090,14 @@
             const grid = document.getElementById('productsGrid');
             if (grid) grid.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
             try {
-                // Try to get from cache first
-                const cachedProducts = await getCachedData('products', 'all');
+                // Try to get from cache first (with fallback)
+                let cachedProducts = null;
+                try {
+                    cachedProducts = await getCachedData('products', 'all');
+                } catch (cacheError) {
+                    console.warn('Cache read failed, fetching from Firebase:', cacheError);
+                }
+
                 if (cachedProducts) {
                     products = cachedProducts;
                     categories = [...new Set(products.map(p => p.category).filter(c => c))];
@@ -3111,8 +3132,12 @@
                     if (data.hasSizes && !data.sizes) data.sizes = [];
                     products.push({ id: doc.id, ...data });
                 });
-                // Cache the products
-                await setCachedData('products', 'all', products);
+                // Cache the products (with error handling)
+                try {
+                    await setCachedData('products', 'all', products);
+                } catch (cacheError) {
+                    console.warn('Failed to cache products:', cacheError);
+                }
                 
                 categories = [...new Set(products.map(p => p.category).filter(c => c))];
                 renderBrands();
@@ -3124,6 +3149,8 @@
                 startDiscountTimer();
             } catch (error) {
                 console.error('Error fetching fresh products:', error);
+                const grid = document.getElementById('productsGrid');
+                if (grid) grid.innerHTML = '<div style="text-align:center; padding:2rem; color:red;">Failed to load products. Please refresh the page.</div>';
             }
         }
 
@@ -3133,8 +3160,14 @@
                 return;
             }
             try {
-                // Try cache first
-                const cachedConfig = await getCachedData('config', 'store');
+                // Try cache first (with fallback)
+                let cachedConfig = null;
+                try {
+                    cachedConfig = await getCachedData('config', 'store');
+                } catch (cacheError) {
+                    console.warn('Config cache read failed:', cacheError);
+                }
+
                 if (cachedConfig) {
                     applyConfig(cachedConfig);
                 }
@@ -3143,7 +3176,11 @@
                 const docSnap = await getDoc(doc(db, 'config', 'store'));
                 if (docSnap.exists()) {
                     const config = docSnap.data();
-                    await setCachedData('config', 'store', config);
+                    try {
+                        await setCachedData('config', 'store', config);
+                    } catch (cacheError) {
+                        console.warn('Config cache write failed:', cacheError);
+                    }
                     applyConfig(config);
                 }
             } catch (error) {
@@ -3242,7 +3279,12 @@
         });
 
         (async function init() {
-            await initCache();
+            try {
+                await initCache();
+            } catch (cacheError) {
+                console.warn('Cache initialization failed, continuing without cache:', cacheError);
+            }
+            
             await window.loadConfig();
             await window.fetchProducts();
             window.loadWishlistFromLocalStorage();

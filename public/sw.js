@@ -3,28 +3,28 @@ const STATIC_CACHE = 'jefram-static-v1';
 const DYNAMIC_CACHE = 'jefram-dynamic-v1';
 
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/category.html',
-    '/product.html',
-    '/flash-sales.html',
-    '/top-selling.html',
-    '/all-products.html',
-    '/faqs.html',
-    '/privacy-policy.html',
-    '/terms-of-service.html',
-    '/admin/index.html',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-    'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap',
-    'https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js'
+    './',
+    './index.html',
+    './category.html',
+    './product.html',
+    './flash-sales.html',
+    './top-selling.html',
+    './all-products.html',
+    './faqs.html',
+    './privacy-policy.html',
+    './terms-of-service.html',
+    './admin/index.html'
 ];
 
 self.addEventListener('install', function(event) {
     event.waitUntil(
         caches.open(STATIC_CACHE)
             .then(cache => {
-                return cache.addAll(STATIC_ASSETS);
+                return cache.addAll(STATIC_ASSETS.map(url => new Request(url, {cache: 'reload'})))
+                    .catch(err => {
+                        console.log('Cache install failed:', err);
+                        // Continue even if caching fails
+                    });
             })
     );
     self.skipWaiting();
@@ -53,15 +53,22 @@ self.addEventListener('fetch', function(event) {
                     return response;
                 }
                 return fetch(event.request).then(response => {
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                    // Only cache successful responses
+                    if (!response || response.status !== 200 || response.type === 'opaque') {
                         return response;
                     }
                     const responseToCache = response.clone();
                     caches.open(DYNAMIC_CACHE)
                         .then(cache => {
                             cache.put(event.request, responseToCache);
+                        })
+                        .catch(err => {
+                            console.log('Cache write failed:', err);
                         });
                     return response;
+                }).catch(err => {
+                    console.log('Fetch failed:', err);
+                    throw err;
                 });
             })
     );
