@@ -3187,7 +3187,103 @@ showToast('Failed to update', 'error');
 }
 };
 
-// Keep the rest of your existing functions (loadOrders, loadDeliveryAgents, loadUsers, loadCoupons, loadReviews, loadSalesSummary, loadAdmins, export functions, etc.)
+// ===== DELIVERY AGENT FUNCTIONS =====
+window.loadDeliveryAgents = async function() {
+    try {
+        const agentsSnap = await getDocs(collection(db, 'delivery_agents'));
+        deliveryAgents = [];
+        agentsSnap.forEach(doc => deliveryAgents.push({ id: doc.id, ...doc.data() }));
+        
+        const agentsList = document.getElementById('deliveryAgentsList');
+        if (agentsList) {
+            agentsList.innerHTML = deliveryAgents.map(agent => `
+                <tr>
+                    <td>${agent.name}</td>
+                    <td>${agent.phone}</td>
+                    <td>
+                        <button onclick="deleteDeliveryAgent('${agent.id}')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Error loading delivery agents:', error);
+    }
+};
+
+window.addDeliveryAgent = async function() {
+    const name = document.getElementById('agentName').value.trim();
+    const phone = document.getElementById('agentPhone').value.trim();
+    
+    if (!name || !phone) {
+        showToast('Name and phone are required', 'error');
+        return;
+    }
+    
+    try {
+        await addDoc(collection(db, 'delivery_agents'), {
+            name: name,
+            phone: phone,
+            createdAt: new Date().toISOString()
+        });
+        showToast('Delivery agent added!', 'success');
+        closeAddAgentModal();
+        loadDeliveryAgents();
+    } catch (error) {
+        console.error('Error adding delivery agent:', error);
+        showToast('Failed to add agent', 'error');
+    }
+};
+
+window.deleteDeliveryAgent = async function(agentId) {
+    if (!confirm('Delete this delivery agent?')) return;
+    
+    try {
+        await deleteDoc(doc(db, 'delivery_agents', agentId));
+        showToast('Agent deleted', 'success');
+        loadDeliveryAgents();
+    } catch (error) {
+        console.error('Error deleting agent:', error);
+        showToast('Failed to delete agent', 'error');
+    }
+};
+
+window.assignDeliveryAgent = async function(orderId, agentId) {
+    if (!agentId) {
+        // Remove agent assignment
+        try {
+            const orderRef = doc(db, 'orders', orderId);
+            await updateDoc(orderRef, { delivery_agent: null });
+            showToast('Agent unassigned', 'success');
+        } catch (error) {
+            console.error('Error unassigning agent:', error);
+            showToast('Failed to unassign agent', 'error');
+        }
+        return;
+    }
+    
+    try {
+        const agent = deliveryAgents.find(a => a.id === agentId);
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { 
+            delivery_agent: {
+                id: agent.id,
+                name: agent.name,
+                phone: agent.phone
+            }
+        });
+        showToast('Agent assigned!', 'success');
+    } catch (error) {
+        console.error('Error assigning agent:', error);
+        showToast('Failed to assign agent', 'error');
+    }
+};
+
+window.closeAddAgentModal = function() {
+    document.getElementById('addAgentModal').style.display = 'none';
+    document.getElementById('agentName').value = '';
+    document.getElementById('agentPhone').value = '';
+};
 
 // Initialize
 if (isMaster) { loadStats(); loadOrders(); loadUsers(); loadSalesSummary(); loadAdmins(); }
