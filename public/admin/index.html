@@ -2979,7 +2979,7 @@ let paymentInfo = '';
 if (order.payment_method === 'mobile_money') {
 paymentInfo = `<div style="margin-top:5px;"><small>Mobile: ${order.mobile_money_number || 'N/A'}</small>`;
 if (order.payment_screenshot) {
-paymentInfo += `<br><a href="${order.payment_screenshot}" target="_blank" style="color:#667eea; text-decoration:underline;">View Screenshot</a>`;
+paymentInfo += `<br><button onclick="viewPaymentScreenshot('${order.payment_screenshot}')" style="background:#667eea; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px;">📷 View Screenshot</button>`;
 }
 if (order.status === 'pending_payment') {
 paymentInfo += `<br><button onclick="approvePayment('${orderId}')" style="background:#28a745; color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; margin-top:3px;">✓ Approve</button>`;
@@ -3084,6 +3084,90 @@ ${order.delivery_rating ? `<span title="Delivery">🚚 ${order.delivery_rating}/
 `;
 }
 }
+
+// ===== VIEW PAYMENT SCREENSHOT =====
+window.viewPaymentScreenshot = function(screenshotUrl) {
+    if (!screenshotUrl) {
+        showToast('No screenshot available', 'error');
+        return;
+    }
+    
+    // Create modal to display screenshot
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+    `;
+    
+    const img = document.createElement('img');
+    img.src = screenshotUrl;
+    img.style.cssText = `
+        max-width: 90%;
+        max-height: 90%;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    `;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Close';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    `;
+    
+    modal.appendChild(img);
+    modal.appendChild(closeBtn);
+    document.body.appendChild(modal);
+    
+    closeBtn.onclick = () => modal.remove();
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+    };
+};
+
+// ===== APPROVE PAYMENT =====
+window.approvePayment = async function(orderId) {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status: 'pending' });
+        showToast('Payment approved!', 'success');
+        loadOrders();
+        if (isMaster) loadStats();
+    } catch (error) {
+        console.error('Error approving payment:', error);
+        showToast('Failed to approve payment', 'error');
+    }
+};
+
+// ===== REJECT PAYMENT =====
+window.rejectPayment = async function(orderId) {
+    if (!confirm('Reject this payment? The order will be cancelled.')) return;
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status: 'cancelled' });
+        showToast('Payment rejected', 'success');
+        loadOrders();
+        if (isMaster) loadStats();
+    } catch (error) {
+        console.error('Error rejecting payment:', error);
+        showToast('Failed to reject payment', 'error');
+    }
+};
 
 // ===== UPDATE: updateOrderStatus - Refresh stats when status changes =====
 window.updateOrderStatus = async function(orderId, newStatus, deliveryFee) {
