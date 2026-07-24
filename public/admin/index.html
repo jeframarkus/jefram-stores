@@ -2178,7 +2178,11 @@ const flashSaleAddButton = document.getElementById('flashSaleAddButton');
 const inventorySelect = document.getElementById('inventoryAdjustProduct');
 const topSellingSelect = document.getElementById('topSellingProductSelect');
 const optionMarkup = '<option value="">Select a product</option>' + promoProducts.map(product => `<option value="${product.id}">${escapeHtml(product.name || product.id)}</option>`).join('');
-const hasActiveFlashEvent = config.currentFlashEvent && config.currentFlashEvent.endTime && new Date(config.currentFlashEvent.endTime).getTime() > Date.now();
+
+// Load config to check for active flash event
+const promoConfigDoc = await getDoc(doc(db, 'config', 'store'));
+const promoConfig = promoConfigDoc.exists() ? promoConfigDoc.data() : {};
+const hasActiveFlashEvent = promoConfig.currentFlashEvent && promoConfig.currentFlashEvent.endTime && new Date(promoConfig.currentFlashEvent.endTime).getTime() > Date.now();
 if (flashSelect) {
 if (hasActiveFlashEvent) {
 flashSelect.innerHTML = optionMarkup;
@@ -3283,6 +3287,158 @@ window.closeAddAgentModal = function() {
     document.getElementById('addAgentModal').style.display = 'none';
     document.getElementById('agentName').value = '';
     document.getElementById('agentPhone').value = '';
+};
+
+// ===== LOAD USERS FUNCTION =====
+window.loadUsers = async function() {
+    try {
+        const usersSnap = await getDocs(collection(db, 'customers'));
+        const usersList = document.getElementById('usersList');
+        if (usersList) {
+            usersList.innerHTML = '';
+            usersSnap.forEach(doc => {
+                const user = doc.data();
+                usersList.innerHTML += `
+                    <tr>
+                        <td>${user.name || 'N/A'}</td>
+                        <td>${user.phone || 'N/A'}</td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td>${new Date(doc.data().createdAt || Date.now()).toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+};
+
+// ===== LOAD ADMINS FUNCTION =====
+window.loadAdmins = async function() {
+    try {
+        const adminsSnap = await getDocs(collection(db, 'admin_users'));
+        const adminsList = document.getElementById('adminsList');
+        if (adminsList) {
+            adminsList.innerHTML = '';
+            adminsSnap.forEach(doc => {
+                const admin = doc.data();
+                adminsList.innerHTML += `
+                    <tr>
+                        <td>${admin.name || 'N/A'}</td>
+                        <td>${admin.phone || 'N/A'}</td>
+                        <td>${admin.role || 'admin'}</td>
+                        <td>${new Date(doc.data().createdAt || Date.now()).toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading admins:', error);
+    }
+};
+
+// ===== LOAD COUPONS FUNCTION =====
+window.loadCoupons = async function() {
+    try {
+        const couponsSnap = await getDocs(collection(db, 'coupons'));
+        const couponsList = document.getElementById('couponsList');
+        if (couponsList) {
+            couponsList.innerHTML = '';
+            couponsSnap.forEach(doc => {
+                const coupon = doc.data();
+                couponsList.innerHTML += `
+                    <tr>
+                        <td>${coupon.code || 'N/A'}</td>
+                        <td>${coupon.discount_percent || 0}%</td>
+                        <td>${coupon.usedCount || 0}</td>
+                        <td>${coupon.expiry_date ? new Date(coupon.expiry_date).toLocaleDateString() : 'No expiry'}</td>
+                        <td>
+                            <button onclick="deleteCoupon('${doc.id}')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading coupons:', error);
+    }
+};
+
+window.deleteCoupon = async function(couponId) {
+    if (!confirm('Delete this coupon?')) return;
+    try {
+        await deleteDoc(doc(db, 'coupons', couponId));
+        showToast('Coupon deleted', 'success');
+        loadCoupons();
+    } catch (error) {
+        console.error('Error deleting coupon:', error);
+        showToast('Failed to delete coupon', 'error');
+    }
+};
+
+// ===== LOAD REVIEWS FUNCTION =====
+window.loadReviews = async function() {
+    try {
+        const reviewsSnap = await getDocs(collection(db, 'reviews'));
+        const reviewsList = document.getElementById('reviewsList');
+        if (reviewsList) {
+            reviewsList.innerHTML = '';
+            reviewsSnap.forEach(doc => {
+                const review = doc.data();
+                reviewsList.innerHTML += `
+                    <tr>
+                        <td>${review.customer_name || 'N/A'}</td>
+                        <td>${review.product_name || 'N/A'}</td>
+                        <td>${review.rating || 0}/5</td>
+                        <td>${review.comment || 'No comment'}</td>
+                        <td>${new Date(doc.data().createdAt || Date.now()).toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+    }
+};
+
+// ===== LOAD SALES SUMMARY FUNCTION =====
+window.loadSalesSummary = async function() {
+    try {
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        const orders = [];
+        ordersSnap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
+        
+        const totalSales = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const totalOrders = orders.length;
+        const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+        const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'pending_payment').length;
+        
+        const salesSummary = document.getElementById('salesSummary');
+        if (salesSummary) {
+            salesSummary.innerHTML = `
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+                    <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                        <h3>Total Sales</h3>
+                        <p style="font-size:24px; font-weight:bold; color:#28a745;">UGX ${totalSales.toLocaleString()}</p>
+                    </div>
+                    <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                        <h3>Total Orders</h3>
+                        <p style="font-size:24px; font-weight:bold; color:#667eea;">${totalOrders}</p>
+                    </div>
+                    <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                        <h3>Delivered</h3>
+                        <p style="font-size:24px; font-weight:bold; color:#17a2b8;">${deliveredOrders}</p>
+                    </div>
+                    <div style="background:white; padding:20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+                        <h3>Pending</h3>
+                        <p style="font-size:24px; font-weight:bold; color:#ffc107;">${pendingOrders}</p>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading sales summary:', error);
+    }
 };
 
 // Initialize
