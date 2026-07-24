@@ -1356,7 +1356,7 @@ document.getElementById('navAdmins').style.display = 'flex';
 }
 document.getElementById('adminRole').innerHTML = `<i class="fas fa-shield-alt"></i> ${currentAdmin.role} Admin`;
 
-function switchToSection(sectionId) {
+window.switchToSection = function(sectionId) {
 const section = document.getElementById(sectionId);
 if (section) {
 document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -2116,7 +2116,7 @@ document.getElementById('productMessage').innerHTML = '<span style="color:red;">
 };
 
 // ===== FIXED: loadProducts to display images properly =====
-async function loadProducts() {
+window.loadProducts = async function() {
 const productsSnap = await getDocs(collection(db, 'products'));
 const reviewsSnap = await getDocs(collection(db, 'reviews'));
 const productRatings = {};
@@ -2505,7 +2505,7 @@ console.error('Error removing top selling entry:', error);
 showToast('Failed to remove top selling entry', 'error');
 }
 };
-async function loadSettings() {
+window.loadSettings = async function() {
 try {
 await loadPromoProducts();
 const configDoc = await getDoc(doc(db, 'config', 'store'));
@@ -2608,7 +2608,7 @@ container.innerHTML = faqs.map((faq, index) => `
 </div>
 `).join('');
 }
-function escapeHtml(text) {
+window.escapeHtml = function(text) {
 if (!text) return '';
 const div = document.createElement('div');
 div.textContent = text;
@@ -2875,7 +2875,7 @@ showToast('Failed to delete FAQ', 'error');
 }
 };
 // ===== FIXED: loadStats - ONLY count DELIVERED orders =====
-async function loadStats() {
+window.loadStats = async function() {
 if (!isMaster) return;
 const ordersSnap = await getDocs(collection(db, 'orders'));
 const usersSnap = await getDocs(collection(db, 'customers'));
@@ -2961,7 +2961,7 @@ showToast('Coupon created!', 'success');
 // The fix ensures each coupon can only be used once per customer account
 
 // ===== FIXED: loadOrders - Show only relevant data =====
-async function loadOrders() {
+window.loadOrders = async function() {
 if (!isMaster) return;
 const ordersSnap = await getDocs(collection(db, 'orders'));
 const ordersList = document.getElementById('ordersList');
@@ -3287,6 +3287,56 @@ window.closeAddAgentModal = function() {
     document.getElementById('addAgentModal').style.display = 'none';
     document.getElementById('agentName').value = '';
     document.getElementById('agentPhone').value = '';
+};
+
+// ===== SEND CUSTOMER WHATSAPP =====
+window.sendCustomerWhatsApp = async function(order, deliveryFee, status) {
+    try {
+        const configDoc = await getDoc(doc(db, 'config', 'store'));
+        const config = configDoc.exists() ? configDoc.data() : {};
+        const whatsappNumber = config.whatsappNumber;
+        
+        if (!whatsappNumber) return;
+        
+        let message = '';
+        const total = (order.total || 0) + (deliveryFee || 0);
+        
+        if (status === 'confirmed') {
+            message = `Hello ${order.customer.name}, your order #${order.tracking_number} has been confirmed! Total: UGX ${total.toLocaleString()}. We'll notify you when it's shipped.`;
+        } else if (status === 'on_way') {
+            message = `Hello ${order.customer.name}, your order #${order.tracking_number} is on the way! Delivery fee: UGX ${deliveryFee.toLocaleString()}. Total: UGX ${total.toLocaleString()}.`;
+        } else if (status === 'delivered') {
+            message = `Hello ${order.customer.name}, your order #${order.tracking_number} has been delivered! Thank you for shopping with Jefram Stores. Please rate your experience.`;
+        }
+        
+        const whatsappUrl = `https://wa.me/${whatsappNumber.replace('+', '')}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    } catch (error) {
+        console.error('Error sending WhatsApp:', error);
+    }
+};
+
+// ===== CONTACT CUSTOMER =====
+window.contactCustomer = function(phone, name) {
+    if (!phone) {
+        showToast('No phone number available', 'error');
+        return;
+    }
+    const whatsappUrl = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(`Hello ${name}, regarding your order...`)}`;
+    window.open(whatsappUrl, '_blank');
+};
+
+// ===== UPDATE DELIVERY FEE =====
+window.updateDeliveryFee = async function(orderId, deliveryFee) {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { delivery_fee: parseInt(deliveryFee) || 0 });
+        showToast('Delivery fee updated', 'success');
+        loadOrders();
+    } catch (error) {
+        console.error('Error updating delivery fee:', error);
+        showToast('Failed to update delivery fee', 'error');
+    }
 };
 
 // ===== LOAD USERS FUNCTION =====
