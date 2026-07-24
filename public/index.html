@@ -1408,7 +1408,17 @@
                 const snapshot = await getDocs(q);
                 if (snapshot.empty) { window.showToast('Invalid coupon', 'error'); return; }
                 snapshot.forEach(doc => { appliedCoupon = { id: doc.id, ...doc.data() }; });
-                if (appliedCoupon.expiryDate && new Date(appliedCoupon.expiryDate) < new Date()) {
+                
+                // Handle both field name variations for backward compatibility
+                const expiryDate = appliedCoupon.expiry_date || appliedCoupon.expiryDate;
+                const discountType = appliedCoupon.discountType || (appliedCoupon.discount_percent ? 'percentage' : 'fixed');
+                const discountValue = appliedCoupon.discountValue || appliedCoupon.discount_percent || 0;
+                
+                // Normalize the coupon object
+                appliedCoupon.discountType = discountType;
+                appliedCoupon.discountValue = discountValue;
+                
+                if (expiryDate && new Date(expiryDate) < new Date()) {
                     window.showToast('Coupon expired', 'error');
                     return;
                 }
@@ -1416,7 +1426,7 @@
                     window.showToast('Usage limit reached', 'error');
                     return;
                 }
-                document.getElementById('couponMessage').innerHTML = 'Coupon applied! ' + (appliedCoupon.discountType === 'percentage' ? appliedCoupon.discountValue + '% off' : 'UGX ' + appliedCoupon.discountValue.toLocaleString() + ' off');
+                document.getElementById('couponMessage').innerHTML = 'Coupon applied! ' + (discountType === 'percentage' ? discountValue + '% off' : 'UGX ' + discountValue.toLocaleString() + ' off');
                 window.showToast('Coupon applied!', 'success');
                 window.renderCart();
             } catch(e) {
@@ -1427,9 +1437,11 @@
 
         window.calculateDiscount = function(amount) {
             if (!appliedCoupon) return 0;
-            return appliedCoupon.discountType === 'percentage' ?
-                (amount * appliedCoupon.discountValue) / 100 :
-                Math.min(appliedCoupon.discountValue, amount);
+            const discountType = appliedCoupon.discountType || (appliedCoupon.discount_percent ? 'percentage' : 'fixed');
+            const discountValue = appliedCoupon.discountValue || appliedCoupon.discount_percent || 0;
+            return discountType === 'percentage' ?
+                (amount * discountValue) / 100 :
+                Math.min(discountValue, amount);
         };
 
         // ----- PAYMENT -----

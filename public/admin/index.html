@@ -2938,22 +2938,28 @@ const usageLimit = parseInt(document.getElementById('couponUsageLimit').value) |
 const expiryDate = document.getElementById('couponExpiry').value;
 if (!code || !value) return alert('Fill required fields');
 
-// ===== FIXED: Add per_user_limit to track usage per account =====
-await addDoc(collection(db, 'coupons'), { 
-code, 
-discountType: type, 
-discountValue: value, 
-active: true, 
-usageLimit, 
-perUserLimit: 1, // Each customer can use coupon only ONCE
-usedBy: [], // Track customer IDs who have used this coupon
-expiryDate: expiryDate ? new Date(expiryDate).toISOString() : null, 
-usedCount: 0, 
-createdAt: new Date().toISOString() 
-});
-closeAddCouponModal();
-loadCoupons();
-showToast('Coupon created!', 'success');
+try {
+    await addDoc(collection(db, 'coupons'), { 
+        code, 
+        discount_percent: type === 'percentage' ? value : 0, // Match client-side field name
+        discountType: type, 
+        discountValue: value, 
+        active: true, 
+        usageLimit, 
+        perUserLimit: 1, // Each customer can use coupon only ONCE
+        usedBy: [], // Track customer IDs who have used this coupon
+        expiryDate: expiryDate ? new Date(expiryDate).toISOString() : null, 
+        expiry_date: expiryDate ? new Date(expiryDate).toISOString() : null, // Match client-side field name
+        usedCount: 0, 
+        createdAt: new Date().toISOString() 
+    });
+    closeAddCouponModal();
+    loadCoupons();
+    showToast('Coupon created!', 'success');
+} catch (error) {
+    console.error('Error creating coupon:', error);
+    showToast('Failed to create coupon: ' + error.message, 'error');
+}
 };
 
 // ===== FIXED: applyCoupon - Check if customer already used this coupon =====
@@ -3396,12 +3402,15 @@ window.loadCoupons = async function() {
             couponsList.innerHTML = '';
             couponsSnap.forEach(doc => {
                 const coupon = doc.data();
+                // Handle both field name variations for backward compatibility
+                const discountPercent = coupon.discount_percent || (coupon.discountType === 'percentage' ? coupon.discountValue : 0);
+                const expiryDate = coupon.expiry_date || coupon.expiryDate;
                 couponsList.innerHTML += `
                     <tr>
                         <td>${coupon.code || 'N/A'}</td>
-                        <td>${coupon.discount_percent || 0}%</td>
+                        <td>${discountPercent || 0}%</td>
                         <td>${coupon.usedCount || 0}</td>
-                        <td>${coupon.expiry_date ? new Date(coupon.expiry_date).toLocaleDateString() : 'No expiry'}</td>
+                        <td>${expiryDate ? new Date(expiryDate).toLocaleDateString() : 'No expiry'}</td>
                         <td>
                             <button onclick="deleteCoupon('${doc.id}')" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button>
                         </td>
