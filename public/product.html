@@ -298,6 +298,7 @@
                 const { addDoc, collection } = await import("firebase/firestore");
                 await addDoc(collection(db, 'reviews'), {
                     productId: product.id,
+                    productName: product.name,
                     rating: selectedRating,
                     userName: name,
                     comment: comment,
