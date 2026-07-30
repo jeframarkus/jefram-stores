@@ -222,11 +222,11 @@
         .discount-timer .timer-label { font-size: 14px; opacity: 0.9; }
 
         .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.8rem; margin-top: 2rem; }
-        .products-roll { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; scroll-behavior: smooth; }
+        .products-roll { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; padding-bottom: 1rem; }
         .products-roll::-webkit-scrollbar { height: 6px; }
         .products-roll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
         .products-roll::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
-        .product-card { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 8px rgba(0,0,0,0.08); position: relative; cursor: pointer; flex-shrink: 0; width: 150px; }
+        .product-card { background: white; border-radius: 12px; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 8px rgba(0,0,0,0.08); position: relative; cursor: pointer; }
         .product-card:hover { transform: translateY(-2px); box-shadow: 0 4px 18px rgba(0,0,0,0.12); }
         .wishlist-btn { position: absolute; top: 8px; left: 8px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10; }
         .wishlist-btn i { font-size: 0.9rem; }
@@ -2936,15 +2936,58 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             if (search) filtered = filtered.filter(p => p.name.toLowerCase().includes(search) || (p.description && p.description.toLowerCase().includes(search)));
             
-            const latestProducts = filtered.slice(0, 20);
+            // Sort by creation date (most recent first)
+            filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
             
-            if (latestProducts.length === 0) {
+            if (filtered.length === 0) {
                 roll.innerHTML = '<div style="text-align:center; padding:2rem; width:100%;">' + window.t('noProducts') + '</div>';
                 return;
             }
             
-            roll.innerHTML = latestProducts.map(renderProductCard).join('');
+            // Show first 12 products (3 rows of 4 on desktop)
+            const recentProducts = filtered.slice(0, 12);
+            const olderProducts = filtered.slice(12);
+            
+            let html = recentProducts.map(renderProductCard).join('');
+            
+            // Add "See More" section if there are older products
+            if (olderProducts.length > 0) {
+                html += `
+                    <div id="seeMoreSection" style="margin-top: 2rem; display: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="font-size: 1.2rem; font-weight: 600;">More Products</h3>
+                            <button onclick="window.toggleSeeMore()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Show Less</button>
+                        </div>
+                        <div class="products-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                            ${olderProducts.map(renderProductCard).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                html += `
+                    <div id="seeMoreButton" style="text-align: center; margin-top: 2rem;">
+                        <button onclick="window.toggleSeeMore()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 500;">
+                            See More (${olderProducts.length} products)
+                        </button>
+                    </div>
+                `;
+            }
+            
+            roll.innerHTML = html;
             window.updateWishlistButtons();
+        };
+        
+        window.toggleSeeMore = function() {
+            const seeMoreSection = document.getElementById('seeMoreSection');
+            const seeMoreButton = document.getElementById('seeMoreButton');
+            
+            if (seeMoreSection.style.display === 'none') {
+                seeMoreSection.style.display = 'block';
+                seeMoreButton.style.display = 'none';
+            } else {
+                seeMoreSection.style.display = 'none';
+                seeMoreButton.style.display = 'block';
+            }
         };
 
         window.renderProductGallery = async function(productId) {
