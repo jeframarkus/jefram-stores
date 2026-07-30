@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jefram Stores - Wireframe Layout</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+        .wireframe-container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { text-align: center; margin-bottom: 20px; color: #333; }
+        .wireframe-box { border: 2px dashed #666; background: #f9f9f9; padding: 10px; margin-bottom: 10px; position: relative; }
+        .wireframe-box::before { content: attr(data-label); position: absolute; top: -12px; left: 10px; background: white; padding: 0 5px; font-size: 12px; font-weight: bold; color: #666; }
+        .header-box { display: flex; gap: 10px; height: 60px; }
+        .header-section { flex: 1; border: 1px solid #999; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .nav-box { height: 40px; border: 1px solid #999; background: #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .hero-box { height: 120px; border: 1px solid #999; background: #d0e0ff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
+        .section-box { height: 80px; border: 1px solid #999; background: #fff0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .products-box { height: 200px; border: 1px solid #999; background: #e0ffe0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .advert-box { height: 100px; border: 1px solid #999; background: #ffe0e0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .modal-box { height: 60px; border: 1px solid #999; background: #f0f0ff; display: flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 20px; }
+        .legend { margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+        .legend-color { width: 20px; height: 20px; border: 1px solid #999; }
+    </style>
+</head>
+<body>
+    <div class="wireframe-container">
+        <h1>Jefram Stores - Page Layout Wireframe</h1>
+        
+        <!-- Header Section -->
+        <div class="wireframe-box" data-label="HEADER (Sticky)">
+            <div class="header-box">
+                <div class="header-section" style="flex: 0.3;">Logo</div>
+                <div class="header-section" style="flex: 1;">Search Bar</div>
+                <div class="header-section" style="flex: 0.1;">Categories</div>
+                <div class="header-section" style="flex: 0.1;">Wishlist</div>
+                <div class="header-section" style="flex: 0.1;">Profile</div>
+                <div class="header-section" style="flex: 0.1;">Cart</div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="wireframe-box" data-label="NAVIGATION MENU">
+            <div class="nav-box">Category Navigation Links (Horizontal Scroll)</div>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="wireframe-box" data-label="HERO SECTION">
+            <div class="hero-box">Welcome Banner & Delivery Info</div>
+        </div>
+
+        <!-- Advert Space 1 -->
+        <div class="wireframe-box" data-label="ADVERTISEMENT SPACE 1">
+            <div class="advert-box">Top Banner Advertisement</div>
+        </div>
+
+        <!-- Discount Timer -->
+        <div class="wireframe-box" data-label="DISCOUNT TIMER">
+            <div class="section-box" style="background: #ffcccc;">Limited Time Offer Timer</div>
+        </div>
+
+        <!-- Flash Sales -->
+        <div class="wireframe-box" data-label="FLASH SALES SECTION">
+            <div class="section-box">Flash Sales Header + Timer</div>
+            <div class="products-box" style="height: 150px; margin-top: 10px;">Flash Sale Products (Horizontal Scroll)</div>
+        </div>
+
+        <!-- Top Selling -->
+        <div class="wireframe-box" data-label="TOP SELLING SECTION">
+            <div class="section-box">Top Selling Header</div>
+            <div class="products-box" style="height: 150px; margin-top: 10px;">Top Selling Products (Horizontal Scroll)</div>
+        </div>
+
+        <!-- Brand Filter -->
+        <div class="wireframe-box" data-label="BRAND FILTER SECTION">
+            <div class="section-box" style="height: 100px;">Shop by Brand (Grid of Brand Tags)</div>
+        </div>
+
+        <!-- Main Products -->
+        <div class="wireframe-box" data-label="PRODUCTS SECTION">
+            <div class="section-box">Our Products Header</div>
+            <div class="products-box" style="height: 300px; margin-top: 10px;">Recent Products Grid (3 rows × 4 columns)</div>
+            <div class="section-box" style="margin-top: 10px; background: #e0e0ff;">See More Button</div>
+        </div>
+
+        <!-- Advert Space 2 -->
+        <div class="wireframe-box" data-label="ADVERTISEMENT SPACE 2">
+            <div class="advert-box">Middle Banner Advertisement</div>
+        </div>
+
+        <!-- Recently Viewed -->
+        <div class="wireframe-box" data-label="RECENTLY VIEWED SECTION">
+            <div class="products-box" style="height: 150px;">Recently Viewed Products</div>
+        </div>
+
+        <!-- Related Products -->
+        <div class="wireframe-box" data-label="RELATED PRODUCTS SECTION">
+            <div class="products-box" style="height: 150px;">Related Products</div>
+        </div>
+
+        <!-- Modals -->
+        <div class="wireframe-box" data-label="MODALS (Hidden by default)">
+            <div class="modal-box">Cart Modal</div>
+            <div class="modal-box">Product Gallery Modal</div>
+            <div class="modal-box">Profile Modal</div>
+            <div class="modal-box">Wishlist Modal</div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Legend:</h3>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e0e0e0;"></div>
+                <span>Navigation & Header Elements</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #d0e0ff;"></div>
+                <span>Hero/Banner Sections</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #fff0e0;"></div>
+                <span>Section Headers</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #e0ffe0;"></div>
+                <span>Product Displays</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffe0e0;"></div>
+                <span>Advertisement Spaces</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #f0f0ff;"></div>
+                <span>Modals & Interactive Elements</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
