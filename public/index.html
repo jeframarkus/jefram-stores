@@ -601,7 +601,12 @@
         <div class="modal-content">
             <h2>My Wishlist</h2>
             <div id="wishlistItems"></div>
-            <button onclick="window.closeWishlist()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Close</button>
+            <div style="display: flex; gap: 10px; margin-top: 1rem;">
+                <button onclick="window.shareWishlist()" style="flex: 1; padding: 10px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-share-alt"></i> Share Wishlist
+                </button>
+                <button onclick="window.closeWishlist()" style="flex: 1; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px; cursor: pointer;">Close</button>
+            </div>
         </div>
     </div>
 
@@ -802,6 +807,7 @@
         let products = [];
         let cart = [];
         let wishlist = [];
+        let compareList = [];
         let categories = [];
         let brands = [];
         let currentUser = null;
@@ -1150,6 +1156,201 @@
 
         window.closeWishlist = function() {
             document.getElementById('wishlistModal').style.display = 'none';
+        };
+
+        window.shareWishlist = function() {
+            if (!wishlist || wishlist.length === 0) {
+                window.showToast('Your wishlist is empty', 'error');
+                return;
+            }
+
+            const wishlistText = wishlist.map(item => {
+                return `• ${item.name} - UGX ${Number(item.price || 0).toLocaleString()}`;
+            }).join('\n');
+
+            const shareMessage = `Check out my wishlist from Jefram Stores:\n\n${wishlistText}\n\nShop at Jefram Stores!`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Wishlist - Jefram Stores',
+                    text: shareMessage,
+                    url: window.location.href
+                }).catch(err => {
+                    console.log('Share failed:', err);
+                    // Fallback to clipboard
+                    window.copyWishlistToClipboard(shareMessage);
+                });
+            } else {
+                // Fallback to clipboard
+                window.copyWishlistToClipboard(shareMessage);
+            }
+        };
+
+        window.copyWishlistToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                window.showToast('Wishlist copied to clipboard!', 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                window.showToast('Failed to copy wishlist', 'error');
+            });
+        };
+
+        window.toggleCompare = function(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingIndex = compareList.findIndex(i => String(i.id) === String(productId));
+            if (existingIndex >= 0) {
+                compareList.splice(existingIndex, 1);
+                window.showToast('Removed from comparison', 'success');
+            } else {
+                if (compareList.length >= 3) {
+                    window.showToast('You can compare up to 3 products at a time', 'error');
+                    return;
+                }
+                compareList.push(product);
+                window.showToast('Added to comparison', 'success');
+            }
+
+            window.updateCompareButtons();
+            
+            if (compareList.length > 0) {
+                window.showCompareButton();
+            } else {
+                window.hideCompareButton();
+            }
+        };
+
+        window.updateCompareButtons = function() {
+            document.querySelectorAll('.compare-btn i').forEach(btn => {
+                const productId = btn.parentElement.dataset.id;
+                const inCompare = compareList.find(i => String(i.id) === String(productId));
+                btn.style.color = inCompare ? '#667eea' : '#999';
+            });
+        };
+
+        window.showCompareButton = function() {
+            let compareBtn = document.getElementById('compareFloatingBtn');
+            if (!compareBtn) {
+                compareBtn = document.createElement('button');
+                compareBtn.id = 'compareFloatingBtn';
+                compareBtn.innerHTML = `<i class="fas fa-balance-scale"></i> Compare (${compareList.length})`;
+                compareBtn.style.cssText = 'position: fixed; bottom: 80px; right: 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 15px 20px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 1000; font-weight: 600;';
+                compareBtn.onclick = window.openCompareModal;
+                document.body.appendChild(compareBtn);
+            } else {
+                compareBtn.innerHTML = `<i class="fas fa-balance-scale"></i> Compare (${compareList.length})`;
+                compareBtn.style.display = 'block';
+            }
+        };
+
+        window.hideCompareButton = function() {
+            const compareBtn = document.getElementById('compareFloatingBtn');
+            if (compareBtn) {
+                compareBtn.style.display = 'none';
+            }
+        };
+
+        window.openCompareModal = function() {
+            if (compareList.length === 0) {
+                window.showToast('No products to compare', 'error');
+                return;
+            }
+
+            const modal = document.getElementById('compareModal');
+            const compareContent = document.getElementById('compareContent');
+
+            if (!modal) {
+                // Create modal if it doesn't exist
+                const modalHTML = `
+                    <div id="compareModal" class="modal" style="display: flex;">
+                        <div class="modal-content" style="max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h2>Product Comparison</h2>
+                                <button onclick="window.closeCompareModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                            </div>
+                            <div id="compareContent"></div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
+
+            const compareTable = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 12px; border-bottom: 2px solid #eee; text-align: left; background: #f8f9fa;">Feature</th>
+                            ${compareList.map(product => `
+                                <th style="padding: 12px; border-bottom: 2px solid #eee; text-align: center; background: #f8f9fa; min-width: 200px;">
+                                    <img src="${product.image_url || 'https://via.placeholder.com/100'}" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 8px;">
+                                    <div style="font-size: 0.9rem; font-weight: 600;">${window.escapeHtml(product.name)}</div>
+                                </th>
+                            `).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 500;">Price</td>
+                            ${compareList.map(product => `
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">UGX ${Number(product.price || 0).toLocaleString()}</td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 500;">Category</td>
+                            ${compareList.map(product => `
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${window.escapeHtml(product.category || 'N/A')}</td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 500;">Brand</td>
+                            ${compareList.map(product => `
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${window.escapeHtml(product.brand || 'N/A')}</td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 500;">Rating</td>
+                            ${compareList.map(product => `
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${product.rating || 'N/A'} ★</td>
+                            `).join('')}
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 500;">Stock</td>
+                            ${compareList.map(product => {
+                                const stock = product.hasSizes && product.sizes ? product.sizes.reduce((sum, s) => sum + s.stock, 0) : (product.stock || 0);
+                                return `<td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${stock > 0 ? 'In Stock' : 'Out of Stock'}</td>`;
+                            }).join('')}
+                        </tr>
+                        <tr>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee; font-weight: 500;">Description</td>
+                            ${compareList.map(product => `
+                                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center; font-size: 0.85rem;">${window.escapeHtml(product.description || 'No description').substring(0, 100)}...</td>
+                            `).join('')}
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="window.clearCompareList()" style="background: #f5f5f5; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Clear All</button>
+                </div>
+            `;
+
+            document.getElementById('compareContent').innerHTML = compareTable;
+            document.getElementById('compareModal').style.display = 'flex';
+        };
+
+        window.closeCompareModal = function() {
+            const modal = document.getElementById('compareModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        window.clearCompareList = function() {
+            compareList = [];
+            window.updateCompareButtons();
+            window.hideCompareButton();
+            window.closeCompareModal();
+            window.showToast('Comparison list cleared', 'success');
         };
 
         // ----- CART WITH SIZE SUPPORT -----
@@ -2927,15 +3128,31 @@
             const heartClass = inWishlist ? 'fas fa-heart' : 'far fa-heart';
             const heartColor = inWishlist ? 'color:#ff4757;' : '';
             
+            // Calculate rating
+            const rating = product.rating || 0;
+            const ratingStars = rating > 0 ? `
+                <div class="product-rating" style="color: #ffc107; font-size: 0.8rem; margin-bottom: 0.2rem;">
+                    ${'★'.repeat(Math.floor(rating))}${'☆'.repeat(5 - Math.floor(rating))}
+                    <span style="color: #999; font-size: 0.7rem;">(${rating.toFixed(1)})</span>
+                </div>
+            ` : '';
+            
+            // Check if in compare list
+            const inCompare = (compareList || []).find(i => String(i.id) === String(product.id));
+            
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'" data-product-id="${product.id}">
                     ${discountBadge}
                     <div class="wishlist-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist('${product.id}');" title="Wishlist">
                         <i class="${heartClass}" style="${heartColor}"></i>
                     </div>
+                    <div class="compare-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleCompare('${product.id}');" title="Compare" style="position: absolute; top: 8px; right: 8px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10;">
+                        <i class="fas fa-balance-scale" style="font-size: 0.9rem; color: ${inCompare ? '#667eea' : '#999'};"></i>
+                    </div>
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" decoding="async" class="product-image" alt="${window.escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${window.escapeHtml(product.name)}</div>
+                        ${ratingStars}
                         ${priceDisplay}
                     </div>
                 </div>

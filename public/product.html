@@ -195,6 +195,30 @@
             `).join('');
         }
 
+        function renderReviewForm() {
+            return `
+                <div style="margin-top: 20px; padding: 20px; background: #f9fafb; border-radius: 12px;">
+                    <h4 style="margin-bottom: 12px; font-size: 1rem;">Write a Review</h4>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Your Rating</label>
+                        <div id="ratingStars" style="display: flex; gap: 8px; cursor: pointer;">
+                            ${[1,2,3,4,5].map(i => `<i class="far fa-star" data-rating="${i}" style="font-size: 1.5rem; color: #ddd;" onclick="window.setRating(${i})"></i>`).join('')}
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Your Name</label>
+                        <input type="text" id="reviewName" placeholder="Enter your name" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem;">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Your Review</label>
+                        <textarea id="reviewComment" placeholder="Share your experience with this product..." rows="3" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; resize: vertical;"></textarea>
+                    </div>
+                    <button onclick="window.submitReview()" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Submit Review</button>
+                    <div id="reviewStatus" class="status-message"></div>
+                </div>
+            `;
+        }
+
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
             const count = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
@@ -236,6 +260,150 @@
             localStorage.setItem('jefram-cart', JSON.stringify(cart));
             updateCartCount();
             setMessage(`${product.name} added to cart.`);
+        };
+
+        let selectedRating = 0;
+
+        window.setRating = function(rating) {
+            selectedRating = rating;
+            const stars = document.querySelectorAll('#ratingStars i');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.className = 'fas fa-star';
+                    star.style.color = '#ffc107';
+                } else {
+                    star.className = 'far fa-star';
+                    star.style.color = '#ddd';
+                }
+            });
+        };
+
+        window.submitReview = async function() {
+            if (selectedRating === 0) {
+                document.getElementById('reviewStatus').textContent = 'Please select a rating';
+                document.getElementById('reviewStatus').className = 'status-message error';
+                return;
+            }
+
+            const name = document.getElementById('reviewName').value.trim();
+            const comment = document.getElementById('reviewComment').value.trim();
+
+            if (!name || !comment) {
+                document.getElementById('reviewStatus').textContent = 'Please fill in all fields';
+                document.getElementById('reviewStatus').className = 'status-message error';
+                return;
+            }
+
+            try {
+                const { addDoc, collection } = await import("firebase/firestore");
+                await addDoc(collection(db, 'reviews'), {
+                    productId: product.id,
+                    rating: selectedRating,
+                    userName: name,
+                    comment: comment,
+                    createdAt: new Date().toISOString()
+                });
+
+                document.getElementById('reviewStatus').textContent = 'Review submitted successfully!';
+                document.getElementById('reviewStatus').className = 'status-message';
+
+                // Reset form
+                document.getElementById('reviewName').value = '';
+                document.getElementById('reviewComment').value = '';
+                selectedRating = 0;
+                document.querySelectorAll('#ratingStars i').forEach(star => {
+                    star.className = 'far fa-star';
+                    star.style.color = '#ddd';
+                });
+
+                // Reload reviews
+                await loadProduct();
+            } catch (error) {
+                console.error('Error submitting review:', error);
+                document.getElementById('reviewStatus').textContent = 'Failed to submit review. Please try again.';
+                document.getElementById('reviewStatus').className = 'status-message error';
+            }
+        };
+
+        window.showSizeGuide = function() {
+            const modal = document.getElementById('sizeGuideModal');
+            if (!modal) {
+                const modalHTML = `
+                    <div id="sizeGuideModal" class="modal" style="display: flex;">
+                        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h2>Size Guide</h2>
+                                <button onclick="window.closeSizeGuide()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                            </div>
+                            <div style="overflow-x: auto;">
+                                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                                    <thead>
+                                        <tr>
+                                            <th style="padding: 12px; border-bottom: 2px solid #eee; background: #f8f9fa;">Size</th>
+                                            <th style="padding: 12px; border-bottom: 2px solid #eee; background: #f8f9fa;">Chest (cm)</th>
+                                            <th style="padding: 12px; border-bottom: 2px solid #eee; background: #f8f9fa;">Waist (cm)</th>
+                                            <th style="padding: 12px; border-bottom: 2px solid #eee; background: #f8f9fa;">Hips (cm)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">XS</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">84-88</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">64-68</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">88-92</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">S</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">88-92</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">68-72</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">92-96</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">M</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">92-96</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">72-76</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">96-100</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">L</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">96-100</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">76-80</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">100-104</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">XL</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">100-104</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">80-84</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">104-108</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">XXL</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">104-108</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">84-88</td>
+                                            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">108-112</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <h4 style="margin-bottom: 10px;">How to Measure</h4>
+                                <ul style="margin-left: 20px; line-height: 1.8;">
+                                    <li><strong>Chest:</strong> Measure around the fullest part of your chest</li>
+                                    <li><strong>Waist:</strong> Measure around the narrowest part of your waist</li>
+                                    <li><strong>Hips:</strong> Measure around the fullest part of your hips</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
+            document.getElementById('sizeGuideModal').style.display = 'flex';
+        };
+
+        window.closeSizeGuide = function() {
+            const modal = document.getElementById('sizeGuideModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
         };
 
         async function loadProduct() {
@@ -308,6 +476,7 @@
 
                             <div class="btn-row">
                                 <button class="btn-primary" onclick="window.addToCart()"><i class="fas fa-cart-plus"></i> Add to cart</button>
+                                <button class="btn-outline" onclick="window.showSizeGuide()"><i class="fas fa-ruler"></i> Size Guide</button>
                                 <a class="btn-outline" href="index.html"><i class="fas fa-home"></i> Continue shopping</a>
                             </div>
                             <div id="statusMessage" class="status-message"></div>
@@ -320,6 +489,7 @@
                             <div class="section">
                                 <h3>Ratings & reviews</h3>
                                 ${renderReviews(reviews)}
+                                ${renderReviewForm()}
                             </div>
                         </div>
                     </div>
