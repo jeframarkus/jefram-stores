@@ -363,6 +363,26 @@
         .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        .chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 1000; }
+        .chat-button { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: transform 0.3s ease; position: relative; }
+        .chat-button:hover { transform: scale(1.1); }
+        .chat-badge { position: absolute; top: -5px; right: -5px; background: #ff4757; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
+        .chat-window { position: absolute; bottom: 80px; right: 0; width: 350px; max-width: 90vw; height: 450px; max-height: 70vh; background: white; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; }
+        .chat-header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h4 { margin: 0; font-size: 1rem; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-message { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; line-height: 1.4; }
+        .chat-message.bot { background: #f0f2ff; align-self: flex-start; }
+        .chat-message.user { background: linear-gradient(135deg, #667eea, #764ba2); color: white; align-self: flex-end; }
+        .chat-input { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 20px; outline: none; font-size: 0.9rem; }
+        .chat-input input:focus { border-color: #667eea; }
+        .chat-input button { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        @media (max-width: 768px) {
+            .chat-window { width: 300px; height: 400px; }
+            .chat-button { width: 50px; height: 50px; font-size: 1.2rem; }
+        }
+
         @media (max-width: 768px) {
             .category-dropdown-btn { display: flex; }
             .nav-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: white; padding: 0.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -546,6 +566,29 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Live Chat Widget -->
+    <div id="chatWidget" class="chat-widget">
+        <div id="chatButton" class="chat-button" onclick="window.toggleChat()">
+            <i class="fas fa-comments"></i>
+            <span class="chat-badge" id="chatBadge" style="display: none;">1</span>
+        </div>
+        <div id="chatWindow" class="chat-window" style="display: none;">
+            <div class="chat-header">
+                <h4>Customer Support</h4>
+                <button onclick="window.toggleChat()" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="chatMessages" class="chat-messages">
+                <div class="chat-message bot">
+                    <div class="message-content">Hello! How can I help you today?</div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message..." onkeypress="if(event.key === 'Enter') window.sendChatMessage()">
+                <button onclick="window.sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
     </div>
 
     <!-- Cart Modal -->
@@ -1351,6 +1394,83 @@
             window.hideCompareButton();
             window.closeCompareModal();
             window.showToast('Comparison list cleared', 'success');
+        };
+
+        // ----- LIVE CHAT SUPPORT -----
+        window.toggleChat = function() {
+            const chatWindow = document.getElementById('chatWindow');
+            const chatBadge = document.getElementById('chatBadge');
+            
+            if (chatWindow.style.display === 'none' || !chatWindow.style.display) {
+                chatWindow.style.display = 'flex';
+                chatBadge.style.display = 'none';
+                document.getElementById('chatInput').focus();
+            } else {
+                chatWindow.style.display = 'none';
+            }
+        };
+
+        window.sendChatMessage = function() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `
+                <div class="chat-message user">
+                    <div class="message-content">${window.escapeHtml(message)}</div>
+                </div>
+            `;
+            
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Simulate bot response
+            setTimeout(() => {
+                const botResponse = window.getBotResponse(message);
+                chatMessages.innerHTML += `
+                    <div class="chat-message bot">
+                        <div class="message-content">${botResponse}</div>
+                    </div>
+                `;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        };
+
+        window.getBotResponse = function(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Common responses
+            const responses = {
+                'hello': 'Hello! Welcome to Jefram Stores. How can I assist you today?',
+                'hi': 'Hi there! How can I help you with your shopping?',
+                'help': 'I can help you with:\n• Product information\n• Order tracking\n• Returns and refunds\n• Payment issues\n• General inquiries\n\nWhat do you need help with?',
+                'order': 'To track your order, please go to your profile and click on "Track Order". You can also provide your order number and I can help you check the status.',
+                'delivery': 'We offer delivery across Uganda. Standard delivery takes 2-3 business days. Express delivery is available for an additional fee.',
+                'payment': 'We accept:\n• Mobile Money (MTN, Airtel)\n• Cash on Delivery\n• Bank transfers\n\nWhich payment method would you like to use?',
+                'return': 'Our return policy allows returns within 7 days of delivery. Items must be unused and in original packaging. Please contact us for return authorization.',
+                'contact': 'You can reach us at:\n• Phone: +256 700 000 000\n• Email: support@jeframstores.com\n• WhatsApp: +256 700 000 000',
+                'price': 'Our prices are competitive and include all taxes. We also offer regular discounts and promotions. Check our flash sales section for great deals!',
+                'stock': 'Product availability is shown on each product page. If an item is out of stock, you can sign up for notifications when it becomes available.',
+                'shipping': 'Shipping costs depend on your location and order value. Orders above UGX 50,000 qualify for free shipping within Kampala.',
+                'default': 'Thank you for your message. Our support team will get back to you shortly. For urgent matters, please call us at +256 700 000 000.'
+            };
+            
+            // Check for keywords
+            if (lowerMessage.includes('hello') || lowerMessage.includes('hey')) return responses.hello;
+            if (lowerMessage.includes('help')) return responses.help;
+            if (lowerMessage.includes('order') || lowerMessage.includes('track')) return responses.order;
+            if (lowerMessage.includes('delivery') || lowerMessage.includes('deliver')) return responses.delivery;
+            if (lowerMessage.includes('payment') || lowerMessage.includes('pay') || lowerMessage.includes('mobile money')) return responses.payment;
+            if (lowerMessage.includes('return') || lowerMessage.includes('refund')) return responses.return;
+            if (lowerMessage.includes('contact') || lowerMessage.includes('phone') || lowerMessage.includes('email')) return responses.contact;
+            if (lowerMessage.includes('price') || lowerMessage.includes('cost')) return responses.price;
+            if (lowerMessage.includes('stock') || lowerMessage.includes('available')) return responses.stock;
+            if (lowerMessage.includes('shipping') || lowerMessage.includes('ship')) return responses.shipping;
+            
+            return responses.default;
         };
 
         // ----- CART WITH SIZE SUPPORT -----
