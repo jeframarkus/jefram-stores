@@ -3423,6 +3423,20 @@ window.loadCoupons = async function() {
     }
 };
 
+// ===== COUPON MODAL FUNCTIONS =====
+window.showAddCouponModal = function() {
+    document.getElementById('addCouponModal').style.display = 'block';
+};
+
+window.closeAddCouponModal = function() {
+    document.getElementById('addCouponModal').style.display = 'none';
+    document.getElementById('couponCode').value = '';
+    document.getElementById('couponType').value = 'percentage';
+    document.getElementById('couponValue').value = '';
+    document.getElementById('couponUsageLimit').value = '';
+    document.getElementById('couponExpiry').value = '';
+};
+
 window.deleteCoupon = async function(couponId) {
     if (!confirm('Delete this coupon?')) return;
     try {
