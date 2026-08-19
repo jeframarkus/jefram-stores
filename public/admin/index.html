@@ -3842,59 +3842,93 @@ async function hashPassword(password) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-window.viewUser = async function(userId) {
-    const modal = document.getElementById('userModal');
-    const details = document.getElementById('userDetails');
-    if (!modal || !details) return;
-    try {
-        const snap = await getDoc(doc(db, 'customers', userId));
-        if (!snap.exists()) {
-            showToast('User not found', 'error');
-            return;
-        }
-        const u = snap.data();
-        const storedHash = u.password || '';
-        details.innerHTML = `
-            <div style="margin-bottom:8px;"><strong>Name:</strong> ${escapeHtml(u.name || 'N/A')}</div>
-            <div style="margin-bottom:8px;"><strong>Phone:</strong> ${escapeHtml(u.phone || 'N/A')}</div>
-            <div style="margin-bottom:8px;"><strong>WhatsApp:</strong> ${escapeHtml(u.whatsapp || 'N/A')}</div>
-            <div style="margin-bottom:8px;"><strong>Email:</strong> ${escapeHtml(u.email || 'N/A')}</div>
-            <div style="margin-bottom:8px;"><strong>Location:</strong> ${escapeHtml(u.location || 'N/A')}</div>
-            <div style="margin-bottom:8px;"><strong>Stored Password (hashed):</strong> <code style="font-size:11px; word-break:break-all;">${escapeHtml(storedHash.slice(0, 32))}${storedHash.length > 32 ? '…' : ''}</code></div>
-            <hr style="margin:15px 0;">
-            <h4 style="margin-bottom:10px;">Change Password</h4>
-            <input type="password" id="newUserPassword" placeholder="New password (min 6 characters)" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
-            <button onclick="changeUserPassword('${userId}')" style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Update Password</button>
-        `;
-        modal.style.display = 'block';
-    } catch (error) {
-        console.error('Error loading user:', error);
-        showToast('Failed to load user', 'error');
-    }
-};
+        window.viewUser = async function(userId) {
+            const modal = document.getElementById('userModal');
+            const details = document.getElementById('userDetails');
+            if (!modal || !details) return;
+            try {
+                const snap = await getDoc(doc(db, 'customers', userId));
+                if (!snap.exists()) {
+                    showToast('User not found', 'error');
+                    return;
+                }
+                const u = snap.data();
+                const memberSince = u.registeredAt ? new Date(u.registeredAt).toLocaleDateString() : 'N/A';
+                details.innerHTML = `
+                    <div style="margin-bottom:15px; padding:12px; background:#f8f9fa; border-radius:8px;">
+                        <div style="margin-bottom:8px;"><strong>Name:</strong><br><input type="text" id="editUserName" value="${escapeHtml(u.name || '')}" style="width:100%; padding:8px; margin-top:4px; border:1px solid #ddd; border-radius:6px;"></div>
+                        <div style="margin-bottom:8px;"><strong>Phone:</strong><br><input type="tel" id="editUserPhone" value="${escapeHtml(u.phone || '')}" style="width:100%; padding:8px; margin-top:4px; border:1px solid #ddd; border-radius:6px;"></div>
+                        <div style="margin-bottom:8px;"><strong>WhatsApp:</strong><br><input type="tel" id="editUserWhatsapp" value="${escapeHtml(u.whatsapp || '')}" style="width:100%; padding:8px; margin-top:4px; border:1px solid #ddd; border-radius:6px;"></div>
+                        <div style="margin-bottom:8px;"><strong>Email:</strong><br><input type="email" id="editUserEmail" value="${escapeHtml(u.email || '')}" style="width:100%; padding:8px; margin-top:4px; border:1px solid #ddd; border-radius:6px;"></div>
+                        <div style="margin-bottom:8px;"><strong>Location:</strong><br><input type="text" id="editUserLocation" value="${escapeHtml(u.location || '')}" style="width:100%; padding:8px; margin-top:4px; border:1px solid #ddd; border-radius:6px;"></div>
+                        <div style="font-size:12px; color:#666; margin-top:6px;">Member since: ${memberSince} &nbsp;|&nbsp; Orders: ${u.ordersCount || 0} &nbsp;|&nbsp; Spent: UGX ${(Number(u.totalSpent) || 0).toLocaleString()}</div>
+                    </div>
+                    <button onclick="saveUserDetails('${userId}')" style="background:#667eea; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; margin-bottom:15px;">Save Details</button>
 
-window.changeUserPassword = async function(userId) {
-    const input = document.getElementById('newUserPassword');
-    if (!input) return;
-    const newPassword = input.value.trim();
-    if (!newPassword) {
-        showToast('Enter a new password', 'error');
-        return;
-    }
-    if (newPassword.length < 6) {
-        showToast('Password must be at least 6 characters', 'error');
-        return;
-    }
-    try {
-        const hashed = await hashPassword(newPassword);
-        await updateDoc(doc(db, 'customers', userId), { password: hashed });
-        showToast('Password updated!', 'success');
-        input.value = '';
-    } catch (error) {
-        console.error('Error updating password:', error);
-        showToast('Failed to update password', 'error');
-    }
-};
+                    <hr style="margin:15px 0;">
+                    <h4 style="margin-bottom:8px;">Password</h4>
+                    <div style="font-size:12px; color:#666; margin-bottom:10px;">Passwords are encrypted and cannot be displayed. Set a new one below — it will then be shown so you can share it with the customer.</div>
+                    <input type="password" id="newUserPassword" placeholder="New password (min 6 characters)" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
+                    <button onclick="changeUserPassword('${userId}')" style="background:#28a745; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Set / Reset Password</button>
+                    <div id="passwordChangeResult" style="margin-top:10px; font-weight:600; color:#155724;"></div>
+                `;
+                modal.style.display = 'flex';
+            } catch (error) {
+                console.error('Error loading user:', error);
+                showToast('Failed to load user', 'error');
+            }
+        };
+
+        window.saveUserDetails = async function(userId) {
+            const name = document.getElementById('editUserName').value.trim();
+            const phone = document.getElementById('editUserPhone').value.trim();
+            const whatsapp = document.getElementById('editUserWhatsapp').value.trim();
+            const email = document.getElementById('editUserEmail').value.trim();
+            const location = document.getElementById('editUserLocation').value.trim();
+            if (!name || !phone || !location) {
+                showToast('Name, phone and location are required', 'error');
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'customers', userId), {
+                    name: name,
+                    phone: phone,
+                    whatsapp: whatsapp || phone,
+                    email: email,
+                    location: location
+                });
+                showToast('Customer details updated!', 'success');
+                loadUsers();
+            } catch (error) {
+                console.error('Error updating user details:', error);
+                showToast('Failed to update details', 'error');
+            }
+        };
+
+        window.changeUserPassword = async function(userId) {
+            const input = document.getElementById('newUserPassword');
+            if (!input) return;
+            const newPassword = input.value.trim();
+            if (!newPassword) {
+                showToast('Enter a new password', 'error');
+                return;
+            }
+            if (newPassword.length < 6) {
+                showToast('Password must be at least 6 characters', 'error');
+                return;
+            }
+            try {
+                const hashed = await hashPassword(newPassword);
+                await updateDoc(doc(db, 'customers', userId), { password: hashed });
+                showToast('Password updated!', 'success');
+                input.value = '';
+                const result = document.getElementById('passwordChangeResult');
+                if (result) result.innerHTML = '✅ New password set: <strong>' + escapeHtml(newPassword) + '</strong> &nbsp;(share this with the customer)';
+            } catch (error) {
+                console.error('Error updating password:', error);
+                showToast('Failed to update password', 'error');
+            }
+        };
 
 // Initialize
 if (isMaster) { loadStats(); loadOrders(); loadUsers(); loadSalesSummary(); loadAdmins(); }
