@@ -222,7 +222,11 @@
         .discount-timer .timer-label { font-size: 14px; opacity: 0.9; }
 
         .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.8rem; margin-top: 2rem; }
-        .products-roll { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; padding-bottom: 1rem; }
+        .products-roll { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; padding-bottom: 1rem; }
+        @media (min-width: 600px) { .products-roll { grid-template-columns: repeat(4, 1fr); } }
+        @media (min-width: 900px) { .products-roll { grid-template-columns: repeat(6, 1fr); } }
+        @media (min-width: 1200px) { .products-roll { grid-template-columns: repeat(8, 1fr); } }
+        @media (min-width: 1500px) { .products-roll { grid-template-columns: repeat(10, 1fr); } }
         .products-roll::-webkit-scrollbar { height: 6px; }
         .products-roll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
         .products-roll::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
