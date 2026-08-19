@@ -3514,6 +3514,318 @@ window.loadSalesSummary = async function() {
     }
 };
 
+// ===== MISSING HANDLERS (added to fix broken admin UI) =====
+
+// --- XLSX export helper ---
+function downloadXlsx(rows, filename) {
+    if (typeof XLSX === 'undefined') {
+        showToast('Excel library failed to load', 'error');
+        return;
+    }
+    try {
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+        XLSX.writeFile(workbook, filename);
+    } catch (error) {
+        console.error('Error generating Excel file:', error);
+        showToast('Failed to generate Excel file', 'error');
+    }
+}
+
+// --- Logout ---
+window.logout = function() {
+    deleteCookie('admin_session_id');
+    window.location.href = 'login.html';
+};
+
+// --- Admin management ---
+window.showAddAdminModal = function() {
+    const modal = document.getElementById('addAdminModal');
+    if (modal) modal.style.display = 'block';
+};
+
+window.closeAddAdminModal = function() {
+    const modal = document.getElementById('addAdminModal');
+    if (modal) modal.style.display = 'none';
+    const u = document.getElementById('adminUsername'); if (u) u.value = '';
+    const p = document.getElementById('adminPassword'); if (p) p.value = '';
+};
+
+window.addNewAdmin = async function() {
+    const username = document.getElementById('adminUsername').value.trim();
+    const password = document.getElementById('adminPassword').value;
+    const role = document.getElementById('newAdminRole').value;
+    if (!username || !password) {
+        showToast('Username and password are required', 'error');
+        return;
+    }
+    try {
+        await addDoc(collection(db, 'admin_users'), {
+            name: username,
+            password: password,
+            role: role,
+            createdAt: new Date().toISOString()
+        });
+        showToast('Admin created!', 'success');
+        closeAddAdminModal();
+        loadAdmins();
+    } catch (error) {
+        console.error('Error creating admin:', error);
+        showToast('Failed to create admin', 'error');
+    }
+};
+
+// --- Delivery agent modal open ---
+window.showAddAgentModal = function() {
+    const modal = document.getElementById('addAgentModal');
+    if (modal) modal.style.display = 'block';
+};
+
+// --- User detail modal close ---
+window.closeUserModal = function() {
+    const modal = document.getElementById('userModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// --- Order confirm modal ---
+window.openOrderConfirmModal = function(orderId) {
+    const modal = document.getElementById('orderConfirmModal');
+    if (!modal) return;
+    document.getElementById('confirmOrderId').value = orderId;
+    document.getElementById('confirmDeliveryFee').value = '0';
+    document.getElementById('confirmDeliveryDate').value = '';
+    document.getElementById('confirmTrackingNumber').value = '';
+    modal.style.display = 'block';
+};
+
+window.confirmOrderWithDetails = async function() {
+    const orderId = document.getElementById('confirmOrderId').value;
+    if (!orderId) return;
+    const deliveryFee = parseFloat(document.getElementById('confirmDeliveryFee').value) || 0;
+    const deliveryDate = document.getElementById('confirmDeliveryDate').value;
+    const trackingNumber = document.getElementById('confirmTrackingNumber').value.trim();
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        const orderDoc = await getDoc(orderRef);
+        const order = orderDoc.data();
+        await updateDoc(orderRef, {
+            status: 'confirmed',
+            delivery_fee: deliveryFee,
+            estimated_delivery_date: deliveryDate || '',
+            tracking_number: trackingNumber || (order && order.tracking_number) || ''
+        });
+        showToast('Order confirmed!', 'success');
+        closeOrderConfirmModal();
+        if (order) await sendCustomerWhatsApp(order, deliveryFee, 'confirmed');
+        loadOrders();
+        if (isMaster) loadStats();
+    } catch (error) {
+        console.error('Error confirming order:', error);
+        showToast('Failed to confirm order', 'error');
+    }
+};
+
+window.closeOrderConfirmModal = function() {
+    const modal = document.getElementById('orderConfirmModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// --- Order response modal ---
+window.sendOrderResponse = function(orderId) {
+    const modal = document.getElementById('orderResponseModal');
+    if (!modal) return;
+    document.getElementById('responseOrderId').value = orderId;
+    document.getElementById('adminResponseText').value = '';
+    document.getElementById('sendWhatsAppResponse').checked = true;
+    modal.style.display = 'block';
+};
+
+window.submitOrderResponse = async function() {
+    const orderId = document.getElementById('responseOrderId').value;
+    if (!orderId) return;
+    const responseText = document.getElementById('adminResponseText').value.trim();
+    if (!responseText) {
+        showToast('Please enter a response', 'error');
+        return;
+    }
+    const sendWhatsApp = document.getElementById('sendWhatsAppResponse').checked;
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        const orderDoc = await getDoc(orderRef);
+        const order = orderDoc.data();
+        await updateDoc(orderRef, { admin_response: responseText });
+        if (sendWhatsApp && order && order.customer && order.customer.phone) {
+            const url = `https://wa.me/${order.customer.phone.replace('+', '')}?text=${encodeURIComponent('Jefram Stores: ' + responseText)}`;
+            window.open(url, '_blank');
+        }
+        showToast('Response sent!', 'success');
+        closeOrderResponseModal();
+        loadOrders();
+    } catch (error) {
+        console.error('Error sending response:', error);
+        showToast('Failed to send response', 'error');
+    }
+};
+
+window.closeOrderResponseModal = function() {
+    const modal = document.getElementById('orderResponseModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// --- Low stock check ---
+window.checkLowStock = async function() {
+    try {
+        const productsSnap = await getDocs(collection(db, 'products'));
+        const lowStock = [];
+        productsSnap.forEach(d => {
+            const p = d.data();
+            let totalStock = 0;
+            if (p.hasSizes && p.sizes && p.sizes.length) {
+                totalStock = p.sizes.reduce((s, sz) => s + (Number(sz.stock) || 0), 0);
+            } else {
+                totalStock = Number(p.stock || 0);
+            }
+            if (totalStock <= 5) lowStock.push({ name: p.name, stock: totalStock });
+        });
+        if (lowStock.length === 0) {
+            showToast('All products have sufficient stock', 'success');
+        } else {
+            const msg = lowStock.map(p => `${p.name}: ${p.stock}`).join('\n');
+            showToast(`${lowStock.length} product(s) low on stock`, 'warning');
+            alert(`Low stock products:\n${msg}`);
+        }
+    } catch (error) {
+        console.error('Error checking stock:', error);
+        showToast('Failed to check stock', 'error');
+    }
+};
+
+// --- Exports ---
+window.exportOrders = async function() {
+    try {
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        const data = [];
+        ordersSnap.forEach(d => {
+            const o = d.data();
+            data.push({
+                'Order ID': d.id.slice(-6),
+                'Customer': o.customer?.name || '',
+                'Phone': o.customer?.phone || '',
+                'Items': (o.items || []).map(i => i.name + (i.selectedSize ? ' (' + i.selectedSize + ')' : '')).join(', '),
+                'Subtotal': o.subtotal || 0,
+                'Discount': o.discount || 0,
+                'Delivery Fee': o.delivery_fee || 0,
+                'Total': (o.subtotal || 0) - (o.discount || 0) + (o.delivery_fee || 0),
+                'Status': o.status || '',
+                'Payment': o.payment_method || '',
+                'Tracking': o.tracking_number || '',
+                'Created': o.createdAt ? new Date(o.createdAt).toLocaleString() : ''
+            });
+        });
+        downloadXlsx(data, 'orders_export.xlsx');
+        showToast('Orders exported', 'success');
+    } catch (error) {
+        console.error('Error exporting orders:', error);
+        showToast('Failed to export orders', 'error');
+    }
+};
+
+window.exportUsers = async function() {
+    try {
+        const usersSnap = await getDocs(collection(db, 'customers'));
+        const data = [];
+        usersSnap.forEach(d => {
+            const u = d.data();
+            data.push({
+                'Name': u.name || '',
+                'Phone': u.phone || '',
+                'WhatsApp': u.whatsapp || '',
+                'Email': u.email || '',
+                'Location': u.location || '',
+                'Created': u.createdAt ? new Date(u.createdAt).toLocaleString() : ''
+            });
+        });
+        downloadXlsx(data, 'customers_export.xlsx');
+        showToast('Customers exported', 'success');
+    } catch (error) {
+        console.error('Error exporting users:', error);
+        showToast('Failed to export customers', 'error');
+    }
+};
+
+window.exportProducts = async function() {
+    try {
+        const productsSnap = await getDocs(collection(db, 'products'));
+        const data = [];
+        productsSnap.forEach(d => {
+            const p = d.data();
+            let totalStock = 0;
+            if (p.hasSizes && p.sizes && p.sizes.length) {
+                totalStock = p.sizes.reduce((s, sz) => s + (Number(sz.stock) || 0), 0);
+            } else {
+                totalStock = Number(p.stock || 0);
+            }
+            data.push({
+                'Name': p.name || '',
+                'Category': p.category || '',
+                'Brand': p.brand || '',
+                'Price': Number(p.price || 0),
+                'Discount %': p.discount_percent || 0,
+                'Total Stock': totalStock
+            });
+        });
+        downloadXlsx(data, 'products_export.xlsx');
+        showToast('Products exported', 'success');
+    } catch (error) {
+        console.error('Error exporting products:', error);
+        showToast('Failed to export products', 'error');
+    }
+};
+
+window.exportSalesReport = async function() {
+    try {
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        const orders = [];
+        ordersSnap.forEach(d => orders.push({ id: d.id, ...d.data() }));
+        const totalSales = orders.reduce((s, o) => s + ((o.subtotal || 0) - (o.discount || 0) + (o.delivery_fee || 0)), 0);
+        const delivered = orders.filter(o => o.status === 'delivered').length;
+        const pending = orders.filter(o => o.status === 'pending' || o.status === 'pending_payment').length;
+        const rows = [
+            { 'Metric': 'Total Orders', 'Value': orders.length },
+            { 'Metric': 'Total Revenue (UGX)', 'Value': totalSales },
+            { 'Metric': 'Delivered Orders', 'Value': delivered },
+            { 'Metric': 'Pending Orders', 'Value': pending }
+        ];
+        downloadXlsx(rows, 'sales_report.xlsx');
+        showToast('Sales report exported', 'success');
+    } catch (error) {
+        console.error('Error exporting sales report:', error);
+        showToast('Failed to export sales report', 'error');
+    }
+};
+
+// --- Inline order editors ---
+window.updateTrackingNumber = async function(orderId, value) {
+    try {
+        await updateDoc(doc(db, 'orders', orderId), { tracking_number: value || '' });
+        showToast('Tracking number updated', 'success');
+    } catch (error) {
+        console.error('Error updating tracking number:', error);
+        showToast('Failed to update tracking number', 'error');
+    }
+};
+
+window.updateEstimatedDelivery = async function(orderId, value) {
+    try {
+        await updateDoc(doc(db, 'orders', orderId), { estimated_delivery_date: value || '' });
+        showToast('Estimated delivery updated', 'success');
+    } catch (error) {
+        console.error('Error updating estimated delivery:', error);
+        showToast('Failed to update estimated delivery', 'error');
+    }
+};
+
 // Initialize
 if (isMaster) { loadStats(); loadOrders(); loadUsers(); loadSalesSummary(); loadAdmins(); }
 loadDeliveryAgents();
