@@ -3312,7 +3312,7 @@
                     <div class="wishlist-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleWishlist('${product.id}');" title="Wishlist">
                         <i class="${heartClass}" style="${heartColor}"></i>
                     </div>
-                    <div class="compare-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleCompare('${product.id}');" title="Compare" style="position: absolute; top: 8px; right: 8px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10;">
+                    <div class="compare-btn" data-id="${product.id}" onclick="event.stopPropagation(); window.toggleCompare('${product.id}');" title="Compare" style="position: absolute; top: 44px; left: 8px; background: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.12); z-index: 10;">
                         <i class="fas fa-balance-scale" style="font-size: 0.9rem; color: ${inCompare ? '#667eea' : '#999'};"></i>
                     </div>
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" decoding="async" class="product-image" alt="${window.escapeHtml(product.name)}">
