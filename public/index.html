@@ -1619,6 +1619,11 @@
                 return;
             }
 
+            const applyDiscount = (price, prod) => {
+                const discount = Number(prod.discount_percent || 0);
+                return discount > 0 ? Math.max(0, price - (price * discount / 100)) : price;
+            };
+
             if (!currentUser) {
                 const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
                 const existing = guestCart.find(item => item.id === productId);
@@ -1628,7 +1633,7 @@
                     guestCart.push({
                         id: product.id,
                         name: product.name,
-                        price: Number(product.price || 0),
+                        price: applyDiscount(Number(product.price || 0), product),
                         image: product.image_url || 'https://via.placeholder.com/150',
                         quantity: 1
                     });
@@ -1640,7 +1645,7 @@
             }
 
             let selectedSize = null;
-            let selectedPrice = product.price;
+            let selectedPrice = applyDiscount(product.price, product);
             let selectedStock = product.stock || 0;
 
             if (product.hasSizes && product.sizes && product.sizes.length > 0) {
@@ -1659,7 +1664,7 @@
                     window.showToast('Selected size is out of stock', 'error');
                     return;
                 }
-                selectedPrice = sizeData.price || product.price;
+                selectedPrice = applyDiscount(sizeData.price || product.price, product);
                 selectedStock = sizeData.stock;
             } else {
                 if (selectedStock === 0) {
