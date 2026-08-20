@@ -105,6 +105,7 @@
         let selectedImageIndex = 0;
         let currentUserName = 'Guest';
         let currentUserId = null;
+        let currentUnitPrice = 0;
 
         // Replaces the old custom-session cookie lookup. Uses Firebase Auth so
         // the reviewer's name + uid are available for the reviews collection.
@@ -282,7 +283,7 @@
                 cart.push({
                     id: product.id,
                     name: product.name,
-                    price: Number(product.price || 0),
+                    price: Number(currentUnitPrice || product.price || 0),
                     image: getImages(product)[0],
                     quantity: 1
                 });
@@ -467,7 +468,7 @@
                 const images = getImages(product);
                 const saleEntry = getFlashSaleEntry(product);
                 const discountPercent = getDiscountPercent(product, saleEntry);
-                const currentPrice = getCurrentPrice(product, discountPercent);
+                currentUnitPrice = getCurrentPrice(product, discountPercent);
                 const stockStatus = getStockStatus(product);
                 const averageRating = reviews.length ? (reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length).toFixed(1) : '0.0';
                 const flashSaleEndTime = saleEntry && (saleEntry.endTime || saleEntry.endsAt || saleEntry.ends_at || saleEntry.endTime || config?.timerEndTime || null);
@@ -486,7 +487,7 @@
                             </div>
 
                             <div class="price-row">
-                                <div class="price">${formatCurrency(currentPrice)}</div>
+                                <div class="price">${formatCurrency(currentUnitPrice)}</div>
                                 ${discountPercent > 0 ? `<div class="old-price">${formatCurrency(Number(product.price || 0))}</div>` : ''}
                                 ${discountPercent > 0 ? `<div class="discount-badge">-${discountPercent}%</div>` : ''}
                             </div>
@@ -496,7 +497,7 @@
                             ${saleEntry ? `
                                 <div class="flash-box">
                                     <strong>⚡ Flash sale details</strong>
-                                    <div>Current price: ${formatCurrency(currentPrice)}</div>
+                                    <div>Current price: ${formatCurrency(currentUnitPrice)}</div>
                                     <div>Original price: ${formatCurrency(Number(product.price || 0))}</div>
                                     <div>Discount: ${discountPercent}%</div>
                                     <div>Items left: ${saleEntry.itemsLeft ?? product.stock ?? 'Unlimited'}</div>

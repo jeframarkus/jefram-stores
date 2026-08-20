@@ -100,6 +100,8 @@
 
         function renderProductCard(product) {
             const discount = product.discount_percent ? product.discount_percent : 0;
+            const originalPrice = Number(product.price || 0);
+            const discountedPrice = discount > 0 ? Math.max(0, Math.round(originalPrice * (1 - discount / 100))) : originalPrice;
             const discountBadge = discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : '';
             return `
                 <div class="product-card" onclick="window.location.href='product.html?id=${product.id}'">
@@ -107,7 +109,9 @@
                     <img src="${product.image_url || 'https://via.placeholder.com/150'}" loading="lazy" class="product-image" alt="${escapeHtml(product.name)}">
                     <div class="product-info">
                         <div class="product-name">${escapeHtml(product.name)}</div>
-                        <div class="product-price">UGX ${parseInt(product.price).toLocaleString()}</div>
+                        ${discount > 0
+                            ? `<div class="product-price">UGX ${discountedPrice.toLocaleString()}</div><div style="font-size: 9px; color: #999; text-decoration: line-through;">UGX ${originalPrice.toLocaleString()}</div>`
+                            : `<div class="product-price">UGX ${originalPrice.toLocaleString()}</div>`}
                         <button class="add-to-cart-button" onclick="event.stopPropagation(); window.addToCart('${product.id}')" style="margin-top: 0.75rem; width:100%; padding: 0.65rem 0.8rem; background:#667eea; color:#fff; border:none; border-radius:8px; cursor:pointer;">
                             Add to cart
                         </button>
@@ -148,6 +152,10 @@
             const product = products.find(p => p.id === productId);
             if (!product) return;
 
+            const discount = Number(product.discount_percent || 0);
+            const originalPrice = Number(product.price || 0);
+            const unitPrice = discount > 0 ? Math.max(0, Math.round(originalPrice * (1 - discount / 100))) : originalPrice;
+
             const guestCart = JSON.parse(localStorage.getItem('jefram-cart') || '[]');
             const existing = guestCart.find(item => item.id === productId);
             if (existing) {
@@ -156,7 +164,7 @@
                 guestCart.push({
                     id: product.id,
                     name: product.name,
-                    price: Number(product.price || 0),
+                    price: unitPrice,
                     image: product.image_url || 'https://via.placeholder.com/150',
                     quantity: 1
                 });

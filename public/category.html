@@ -182,15 +182,22 @@
                             <div class="brand-section">
                                 <h3 class="brand-title">${brand}</h3>
                                 <div class="products-roll">
-                                    ${brandProds.map(p => `
+                                    ${brandProds.map(p => {
+                                        const discount = Number(p.discount_percent || 0);
+                                        const originalPrice = Number(p.price || 0);
+                                        const discountedPrice = discount > 0 ? Math.max(0, Math.round(originalPrice * (1 - discount / 100))) : originalPrice;
+                                        return `
                                         <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
                                             <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-image" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150'">
                                             <div class="product-info">
                                                 <div class="product-name">${p.name}</div>
-                                                <div class="product-price">UGX ${parseInt(p.price || 0).toLocaleString()}</div>
+                                                ${discount > 0
+                                                    ? `<div class="product-price">UGX ${discountedPrice.toLocaleString()}</div><div style="font-size: 9px; color: #999; text-decoration: line-through;">UGX ${originalPrice.toLocaleString()}</div>`
+                                                    : `<div class="product-price">UGX ${originalPrice.toLocaleString()}</div>`}
                                             </div>
                                         </div>
-                                    `).join('')}
+                                    `;
+                                    }).join('')}
                                 </div>
                             </div>
                         `;
@@ -201,15 +208,22 @@
                         <div class="brand-section">
                             <h3 class="brand-title">${category || 'All Products'}</h3>
                             <div class="products-roll">
-                                ${filtered.map(p => `
+                                ${filtered.map(p => {
+                                    const discount = Number(p.discount_percent || 0);
+                                    const originalPrice = Number(p.price || 0);
+                                    const discountedPrice = discount > 0 ? Math.max(0, Math.round(originalPrice * (1 - discount / 100))) : originalPrice;
+                                    return `
                                     <div class="product-card" onclick="window.location.href='product.html?id=${p.id}'">
                                         <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-image" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150'">
                                         <div class="product-info">
                                             <div class="product-name">${p.name}</div>
-                                            <div class="product-price">UGX ${parseInt(p.price || 0).toLocaleString()}</div>
+                                            ${discount > 0
+                                                ? `<div class="product-price">UGX ${discountedPrice.toLocaleString()}</div><div style="font-size: 9px; color: #999; text-decoration: line-through;">UGX ${originalPrice.toLocaleString()}</div>`
+                                                : `<div class="product-price">UGX ${originalPrice.toLocaleString()}</div>`}
                                         </div>
                                     </div>
-                                `).join('')}
+                                `;
+                                }).join('')}
                             </div>
                         </div>
                     `;
