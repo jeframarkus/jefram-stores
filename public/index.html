@@ -2745,6 +2745,12 @@
                 const currentIndex = statusSteps.indexOf(activeOrder.status);
                 
                 let trackingHtml = `
+                    <div style="margin-bottom:15px;">
+                        <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:#374151;">Select order to track:</label>
+                        <select onchange="window.trackingSelectedId = this.value; window.loadTracking();" style="width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px; font-size:0.9rem;">
+                            ${orders.map(o => `<option value="${o.id}" ${o.id === activeOrder.id ? 'selected' : ''}>#${o.id.slice(-6)} — ${o.status}</option>`).join('')}
+                        </select>
+                    </div>
                     <div style="background:#f8f9fa; padding:20px; border-radius:12px; margin-bottom:20px;">
                         <h3 style="margin-bottom:15px;">📦 Order #${activeOrder.id.slice(-6)}</h3>
                         <div style="margin-bottom:10px;"><strong>Tracking Number:</strong> <span style="color:#667eea; font-weight:bold;">${activeOrder.tracking_number || 'N/A'}</span></div>
