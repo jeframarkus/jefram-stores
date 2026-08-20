@@ -2071,6 +2071,7 @@
         };
 
         // ===== FIREBASE AUTH: USER REGISTRATION (email/password) =====
+        let isRegistering = false;
         window.registerUser = async function() {
             if (!db || !auth) { window.showToast('Database not connected', 'error'); return; }
             const name = document.getElementById('customerName').value.trim();
@@ -2084,6 +2085,7 @@
             if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
             if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { window.showToast('Valid email required', 'error'); return; }
             if (password.length < 6) { window.showToast('Password must be at least 6 characters', 'error'); return; }
+            isRegistering = true;
             try {
                 const userCred = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCred.user;
@@ -2117,6 +2119,8 @@
                 } else {
                     window.showToast('Registration failed: ' + e.message, 'error');
                 }
+            } finally {
+                isRegistering = false;
             }
         };
 
@@ -3506,6 +3510,10 @@
                 currentUser = null;
                 currentUserDocId = null;
                 window.updateCartCount();
+                return;
+            }
+            if (isRegistering) {
+                currentUserDocId = user.uid;
                 return;
             }
             try {
