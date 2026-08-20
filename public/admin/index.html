@@ -1347,7 +1347,7 @@ label { color: var(--text); }
 <div id="addAdminModal" class="modal">
 <div class="modal-content">
 <h3>Add New Admin</h3>
-<input type="text" id="adminUsername" placeholder="Username" style="width:100%; margin-bottom:10px; padding:10px;">
+<input type="email" id="adminEmail" placeholder="Admin Email" style="width:100%; margin-bottom:10px; padding:10px;">
 <input type="password" id="adminPassword" placeholder="Password" style="width:100%; margin-bottom:10px; padding:10px;">
 <select id="newAdminRole" style="width:100%; margin-bottom:10px; padding:10px;">
 <option value="subadmin" selected>Sub Admin</option>
@@ -1414,7 +1414,7 @@ label { color: var(--text); }
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where, orderBy, getDoc, setDoc } from "firebase/firestore";
-import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
 
 const firebaseConfig = {
 apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -3615,7 +3615,7 @@ window.loadUsers = async function() {
 // ===== LOAD ADMINS FUNCTION =====
 window.loadAdmins = async function() {
     try {
-        const adminsSnap = await getDocs(collection(db, 'admin_users'));
+        const adminsSnap = await getDocs(collection(db, 'admins'));
         const adminsList = document.getElementById('adminsList');
         if (adminsList) {
             adminsList.innerHTML = '';
@@ -3623,10 +3623,9 @@ window.loadAdmins = async function() {
                 const admin = doc.data();
                 adminsList.innerHTML += `
                     <tr>
-                        <td>${admin.name || 'N/A'}</td>
-                        <td>${admin.phone || 'N/A'}</td>
+                        <td>${admin.email || 'N/A'}</td>
                         <td>${admin.role || 'admin'}</td>
-                        <td>${new Date(doc.data().createdAt || Date.now()).toLocaleDateString()}</td>
+                        <td>${new Date(admin.createdAt || Date.now()).toLocaleDateString()}</td>
                     </tr>
                 `;
             });
@@ -3791,22 +3790,27 @@ window.showAddAdminModal = function() {
 window.closeAddAdminModal = function() {
     const modal = document.getElementById('addAdminModal');
     if (modal) modal.style.display = 'none';
-    const u = document.getElementById('adminUsername'); if (u) u.value = '';
+    const e = document.getElementById('adminEmail'); if (e) e.value = '';
     const p = document.getElementById('adminPassword'); if (p) p.value = '';
 };
 
 window.addNewAdmin = async function() {
-    const username = document.getElementById('adminUsername').value.trim();
+    const email = document.getElementById('adminEmail').value.trim();
     const password = document.getElementById('adminPassword').value;
     const role = document.getElementById('newAdminRole').value;
-    if (!username || !password) {
-        showToast('Username and password are required', 'error');
+    if (!email || !password) {
+        showToast('Email and password are required', 'error');
+        return;
+    }
+    if (password.length < 6) {
+        showToast('Password must be at least 6 characters', 'error');
         return;
     }
     try {
-        await addDoc(collection(db, 'admin_users'), {
-            name: username,
-            password: password,
+        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCred.user.uid;
+        await setDoc(doc(db, 'admins', uid), {
+            email: email,
             role: role,
             createdAt: new Date().toISOString()
         });
@@ -3815,7 +3819,7 @@ window.addNewAdmin = async function() {
         loadAdmins();
     } catch (error) {
         console.error('Error creating admin:', error);
-        showToast('Failed to create admin', 'error');
+        showToast('Failed to create admin: ' + error.message, 'error');
     }
 };
 
