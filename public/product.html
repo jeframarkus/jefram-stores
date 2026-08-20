@@ -100,6 +100,35 @@
         let config = null;
         let reviews = [];
         let selectedImageIndex = 0;
+        let currentUserName = 'Guest';
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        async function loadCurrentUser() {
+            try {
+                const sessionId = getCookie('jefram_session_id');
+                if (!sessionId) return;
+                const sessionSnap = await getDoc(doc(db, 'customer_sessions', sessionId));
+                if (!sessionSnap.exists()) return;
+                const session = sessionSnap.data();
+                const customer = session.customer || {};
+                if (customer.name) {
+                    currentUserName = customer.name;
+                } else if (customer.id) {
+                    const customerSnap = await getDoc(doc(db, 'customers', customer.id));
+                    if (customerSnap.exists()) currentUserName = customerSnap.data().name || 'Guest';
+                }
+                const nameEl = document.getElementById('reviewUserName');
+                if (nameEl) nameEl.textContent = currentUserName;
+            } catch (error) {
+                console.error('Error loading current user:', error);
+            }
+        }
 
         function escapeHtml(text) {
             if (!text) return '';
@@ -205,9 +234,8 @@
                             ${[1,2,3,4,5].map(i => `<i class="far fa-star" data-rating="${i}" style="font-size: 1.5rem; color: #ddd;" onclick="window.setRating(${i})"></i>`).join('')}
                         </div>
                     </div>
-                    <div style="margin-bottom: 12px;">
-                        <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Your Name</label>
-                        <input type="text" id="reviewName" placeholder="Enter your name" style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem;">
+                    <div style="margin-bottom: 12px; font-size: 0.85rem; color: #6b7280;">
+                        Reviewing as: <strong id="reviewUserName" style="color: #1f2937;">${escapeHtml(currentUserName)}</strong>
                     </div>
                     <div style="margin-bottom: 12px;">
                         <label style="display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500;">Your Review</label>
@@ -285,11 +313,10 @@
                 return;
             }
 
-            const name = document.getElementById('reviewName').value.trim();
             const comment = document.getElementById('reviewComment').value.trim();
 
-            if (!name || !comment) {
-                document.getElementById('reviewStatus').textContent = 'Please fill in all fields';
+            if (!comment) {
+                document.getElementById('reviewStatus').textContent = 'Please write your review';
                 document.getElementById('reviewStatus').className = 'status-message error';
                 return;
             }
@@ -300,7 +327,7 @@
                     productId: product.id,
                     productName: product.name,
                     rating: selectedRating,
-                    userName: name,
+                    userName: currentUserName,
                     comment: comment,
                     createdAt: new Date().toISOString()
                 });
@@ -309,7 +336,6 @@
                 document.getElementById('reviewStatus').className = 'status-message';
 
                 // Reset form
-                document.getElementById('reviewName').value = '';
                 document.getElementById('reviewComment').value = '';
                 selectedRating = 0;
                 document.querySelectorAll('#ratingStars i').forEach(star => {
@@ -532,6 +558,7 @@
 
         loadProduct();
         updateCartCount();
+        loadCurrentUser();
     </script>
 </body>
 </html>

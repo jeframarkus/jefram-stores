@@ -1885,10 +1885,6 @@
                 
                 const trackingNumber = 'JF-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
                 
-                const estimatedDelivery = new Date();
-                estimatedDelivery.setDate(estimatedDelivery.getDate() + 3);
-                const estimatedDeliveryStr = estimatedDelivery.toLocaleDateString();
-                
                 const orderNotes = document.getElementById('orderNotes').value.trim();
                 
                 const message = '*NEW ORDER* 🛍️\n\nCustomer: ' + currentUser.name +
@@ -1912,7 +1908,6 @@
                     payment_screenshot: paymentScreenshotUrl,
                     order_notes: orderNotes,
                     tracking_number: trackingNumber,
-                    estimated_delivery: estimatedDeliveryStr,
                     status: paymentMethod === 'mobile_money' ? 'pending_payment' : 'pending',
                     createdAt: new Date().toISOString()
                 };
@@ -1950,7 +1945,7 @@
                     <strong>Total:</strong> UGX ${total.toLocaleString()}<br>
                     <strong>Payment:</strong> ${paymentMethod === 'cash' ? 'Cash on Delivery' : 'Mobile Money'}<br>
                     <strong>Items:</strong> ${cart.length} item(s)<br>
-                    <strong>Estimated Delivery:</strong> ${estimatedDeliveryStr}<br>
+                    <strong>Estimated Delivery:</strong> Set by admin after confirmation<br>
                     <strong>Date:</strong> ${new Date().toLocaleString()}
                 `;
                 document.getElementById('confirmationOrderDetails').innerHTML = confirmationDetails;
@@ -2603,11 +2598,15 @@
                         '<div style="font-size:14px; color:#667eea; font-weight:bold;">' + o.tracking_number + '</div>' +
                         '</div>' : '';
                     
-                    const deliveryDisplay = o.estimated_delivery ? 
-                        '<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:6px; border-left:3px solid #28a745;">' +
+                    const edd = o.estimated_delivery_date || o.estimated_delivery;
+                    const deliveryDisplay = edd ? 
+                        '<div style="margin-top:8px; padding:8px; background:#e8f5e9; border-radius:6px; border-left:3px solid #28a755;">' +
                         '<div style="font-size:11px; color:#666; margin-bottom:2px;">🚚 ESTIMATED DELIVERY</div>' +
-                        '<div style="font-size:14px; color:#28a745; font-weight:bold;">' + o.estimated_delivery + '</div>' +
-                        '</div>' : '';
+                        '<div style="font-size:14px; color:#28a755; font-weight:bold;">' + edd + '</div>' +
+                        '</div>' : 
+                        '<div style="margin-top:8px; padding:8px; background:#fff3cd; border-radius:6px; border-left:3px solid #f59e0b;">' +
+                        '<div style="font-size:12px; color:#92400e;">🚚 Estimated delivery will be set by admin after confirmation</div>' +
+                        '</div>';
                     
                     const agentDisplay = o.delivery_agent ? 
                         '<div style="margin-top:8px; padding:10px; background:#e8f0fe; border-radius:6px; font-size:12px;">' +
@@ -2665,11 +2664,12 @@
                         '<span class="order-status status-' + o.status + '">' + o.status.toUpperCase() + '</span>' +
                         ratingBadge +
                         '</div>' +
-                        progressBar +
                         '<div class="order-items">' + itemsWithSizes + '</div>' +
                         '<div class="order-total">Total: UGX ' + (o.total || o.subtotal).toLocaleString() + '</div>' +
                         '<div style="font-size:12px; color:#999;">' + new Date(o.createdAt).toLocaleString() + '</div>' +
-                        trackingDisplay + deliveryDisplay + agentDisplay + adminResponseDisplay + cancelButton + ratingButton +
+                        '<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;">' +
+                        '<button onclick="window.switchTab(\'tracking\')" style="background:#667eea; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">📦 Track Order</button>' +
+                        cancelButton + ratingButton +
                         '</div>';
                 });
                 ordersList.innerHTML = html;
@@ -2703,6 +2703,8 @@
         };
 
         // ----- TRACKING TAB -----
+        window.trackingSelectedId = null;
+
         window.loadTracking = async function() {
             if (!db) { console.error('Database not initialized'); return; }
             const trackingInfo = document.getElementById('trackingInfo');
@@ -2718,7 +2720,7 @@
                 snapshot.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
                 orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 
-                const activeOrder = orders.find(o => o.status !== 'delivered' && o.status !== 'cancelled') || orders[0];
+                const activeOrder = orders.find(o => (window.trackingSelectedId && o.id === window.trackingSelectedId) || (!window.trackingSelectedId && o.status !== 'delivered' && o.status !== 'cancelled')) || orders[0];
                 
                 if (!activeOrder) {
                     trackingInfo.innerHTML = '<div style="text-align:center; padding:2rem;">No orders found</div>';
@@ -2746,7 +2748,7 @@
                     <div style="background:#f8f9fa; padding:20px; border-radius:12px; margin-bottom:20px;">
                         <h3 style="margin-bottom:15px;">📦 Order #${activeOrder.id.slice(-6)}</h3>
                         <div style="margin-bottom:10px;"><strong>Tracking Number:</strong> <span style="color:#667eea; font-weight:bold;">${activeOrder.tracking_number || 'N/A'}</span></div>
-                        <div style="margin-bottom:10px;"><strong>Estimated Delivery:</strong> <span style="color:#28a745;">${activeOrder.estimated_delivery || 'N/A'}</span></div>
+                        <div style="margin-bottom:10px;"><strong>Estimated Delivery:</strong> <span style="color:#28a745;">${activeOrder.estimated_delivery_date || activeOrder.estimated_delivery || 'Set by admin after confirmation'}</span></div>
                         <div style="margin-bottom:10px;"><strong>Total:</strong> UGX ${(activeOrder.total || activeOrder.subtotal).toLocaleString()}</div>
                         <div style="margin-bottom:10px;"><strong>Status:</strong> <span class="order-status status-${activeOrder.status}">${activeOrder.status.toUpperCase()}</span></div>
                         
