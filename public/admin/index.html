@@ -1413,7 +1413,7 @@ label { color: var(--text); }
 }
 </script>
 <script type="module">
-import { initializeApp } from "firebase/app";
+import { initializeApp, deleteApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where, orderBy, getDoc, setDoc } from "firebase/firestore";
 import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword } from "firebase/auth";
 
@@ -1549,7 +1549,7 @@ function initDashboard() {
   toggleSizeSection();
 }
 
-onAuthStateChanged(auth, async (user) => {
+const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = 'login.html';
     return;
@@ -3812,15 +3812,23 @@ window.addNewAdmin = async function() {
         return;
     }
     try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const secondaryApp = initializeApp(firebaseConfig, 'adminCreation_' + Date.now());
+        const secondaryAuth = getAuth(secondaryApp);
+        
+        const userCred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
         const uid = userCred.user.uid;
+        
         await setDoc(doc(db, 'admins', uid), {
             username: username,
             email: email,
             role: role,
             createdAt: new Date().toISOString()
         });
-        showToast('Admin created!', 'success');
+        
+        await signOut(secondaryAuth);
+        await deleteApp(secondaryApp);
+        
+        showToast('Admin created successfully!', 'success');
         closeAddAdminModal();
         loadAdmins();
     } catch (error) {
