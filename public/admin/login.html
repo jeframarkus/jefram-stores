@@ -97,7 +97,7 @@
     <div class="login-container">
         <h2>Admin Login</h2>
         <div class="subtitle">Jefram Stores Dashboard</div>
-        <input type="text" id="username" placeholder="Username">
+        <input type="email" id="username" placeholder="Admin Email">
         <input type="password" id="password" placeholder="Password">
         <button onclick="login()">Login</button>
         <div id="message" class="message"></div>
@@ -107,14 +107,16 @@
         {
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
             }
         }
     </script>
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, query, where } from "firebase/firestore";
+        import { getFirestore, doc, getDoc } from "firebase/firestore";
+        import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -127,80 +129,51 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // Cookie helpers for session management
-        function setCookie(name, value, days) {
-            const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-            document.cookie = `${name}=${value}; expires=${expires}; path=/`;
-        }
-
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        }
-
-        function deleteCookie(name) {
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
-        }
-
-        // Simple SHA-256 hash function using Web Crypto API
-        async function hashPassword(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hashHex;
-        }
+        const auth = getAuth(app);
 
         window.login = async function() {
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const messageDiv = document.getElementById('message');
 
-            if (!username || !password) {
-                messageDiv.textContent = 'Please enter username and password';
+            if (!email || !password) {
+                messageDiv.textContent = 'Please enter email and password';
                 messageDiv.className = 'message error';
                 return;
             }
 
             try {
-                const hashedPassword = await hashPassword(password);
-                const adminsRef = collection(db, 'admins');
-                const q = query(adminsRef, where("username", "==", username));
-                const snapshot = await getDocs(q);
-
-                if (snapshot.empty) {
-                    messageDiv.textContent = 'Invalid credentials';
+                const userCred = await signInWithEmailAndPassword(auth, email, password);
+                const uid = userCred.user.uid;
+                // Verify this Firebase Auth user is an admin (admins/{uid} doc).
+                let adminSnap;
+                try {
+                    adminSnap = await getDoc(doc(db, 'admins', uid));
+                } catch (e) {
+                    messageDiv.textContent = `Admin record read denied. In Firestore, create an "admins" document whose Document ID is exactly: ${uid} (then ensure rules are published).`;
                     messageDiv.className = 'message error';
                     return;
                 }
-
-                let admin = null;
-                snapshot.forEach(doc => {
-                    admin = { id: doc.id, ...doc.data() };
-                });
-
-                if (admin.password === hashedPassword) {
-                    // Create session in Firebase
-                    const sessionRef = await addDoc(collection(db, 'admin_sessions'), {
-                        adminId: admin.id,
-                        username: admin.username,
-                        role: admin.role,
-                        createdAt: new Date().toISOString(),
-                        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
-                    });
-                    setCookie('admin_session_id', sessionRef.id, 1);
-                    window.location.href = 'index.html';
-                } else {
-                    messageDiv.textContent = 'Invalid credentials';
+                if (!adminSnap.exists()) {
+                    await signOut(auth);
+                    messageDiv.textContent = `No admin record for this account. In Firestore, create an "admins" document whose Document ID is exactly: ${uid}`;
                     messageDiv.className = 'message error';
+                    return;
                 }
+                window.location.href = 'index.html';
             } catch (error) {
                 console.error('Login error:', error);
-                messageDiv.textContent = 'Login failed. Please try again.';
+                let msg = 'Login failed. Please try again.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential' || error.code === 'auth/invalid-email') {
+                    msg = 'Invalid email or password';
+                } else if (error.code === 'auth/operation-not-allowed') {
+                    msg = 'Email/Password sign-in is NOT enabled. Enable it in Firebase Console → Authentication → Sign-in method.';
+                } else if (error.code === 'permission-denied') {
+                    msg = 'Admin record read denied. Ensure the admins/{uid} Document ID exactly matches the Auth user UID and the new rules are deployed.';
+                } else if (error.message) {
+                    msg = error.message;
+                }
+                messageDiv.textContent = msg;
                 messageDiv.className = 'message error';
             }
         };

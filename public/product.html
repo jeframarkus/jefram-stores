@@ -75,7 +75,8 @@
         {
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
             }
         }
     </script>
@@ -83,6 +84,7 @@
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+        import { getAuth, onAuthStateChanged } from "firebase/auth";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -95,39 +97,39 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         let product = null;
         let config = null;
         let reviews = [];
         let selectedImageIndex = 0;
         let currentUserName = 'Guest';
+        let currentUserId = null;
 
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        }
-
-        async function loadCurrentUser() {
-            try {
-                const sessionId = getCookie('jefram_session_id');
-                if (!sessionId) return;
-                const sessionSnap = await getDoc(doc(db, 'customer_sessions', sessionId));
-                if (!sessionSnap.exists()) return;
-                const session = sessionSnap.data();
-                const customer = session.customer || {};
-                if (customer.name) {
-                    currentUserName = customer.name;
-                } else if (customer.id) {
-                    const customerSnap = await getDoc(doc(db, 'customers', customer.id));
-                    if (customerSnap.exists()) currentUserName = customerSnap.data().name || 'Guest';
-                }
+        // Replaces the old custom-session cookie lookup. Uses Firebase Auth so
+        // the reviewer's name + uid are available for the reviews collection.
+        function subscribeCurrentUser() {
+            onAuthStateChanged(auth, async (user) => {
                 const nameEl = document.getElementById('reviewUserName');
+                if (!user) {
+                    currentUserName = 'Guest';
+                    currentUserId = null;
+                    if (nameEl) nameEl.textContent = currentUserName;
+                    return;
+                }
+                currentUserId = user.uid;
+                try {
+                    const snap = await getDoc(doc(db, 'customers', user.uid));
+                    if (snap.exists() && snap.data().name) {
+                        currentUserName = snap.data().name;
+                    } else if (user.email) {
+                        currentUserName = user.email.split('@')[0];
+                    }
+                } catch (e) {
+                    console.error('Error loading customer profile:', e);
+                }
                 if (nameEl) nameEl.textContent = currentUserName;
-            } catch (error) {
-                console.error('Error loading current user:', error);
-            }
+            });
         }
 
         function escapeHtml(text) {
@@ -326,6 +328,7 @@
                 await addDoc(collection(db, 'reviews'), {
                     productId: product.id,
                     productName: product.name,
+                    userId: currentUserId,
                     rating: selectedRating,
                     userName: currentUserName,
                     comment: comment,
@@ -558,7 +561,7 @@
 
         loadProduct();
         updateCartCount();
-        loadCurrentUser();
+        subscribeCurrentUser();
     </script>
 </body>
 </html>
