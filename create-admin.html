@@ -105,7 +105,7 @@
             } catch (error) {
                 console.error('Create admin error:', error);
                 if (error.code === 'auth/email-already-in-use') {
-                    setResult('That email is already registered.', '#dc3545');
+                    setResult('That email is already registered in Firebase Auth. If it has no admin record, go to Firebase Console → Authentication → Users, copy the UID, and use the "Recover Admin" feature in the admin dashboard.', '#dc3545');
                 } else if (error.code === 'auth/invalid-email') {
                     setResult('Invalid email address.', '#dc3545');
                 } else if (error.code === 'auth/weak-password') {

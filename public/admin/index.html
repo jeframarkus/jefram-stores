@@ -1292,6 +1292,7 @@ label { color: var(--text); }
 <div class="section-title">
 <span>Admin Management</span>
 <button class="btn-primary" onclick="showAddAdminModal()">Add Admin</button>
+<button class="btn-primary" style="background:#ffc107; color:#333;" onclick="showRecoverAdminModal()">Recover Admin</button>
 </div>
 <div class="table-container">
 <table>
@@ -1356,6 +1357,21 @@ label { color: var(--text); }
 </select>
 <button class="btn-primary" onclick="addNewAdmin()">Create</button>
 <button onclick="closeAddAdminModal()">Cancel</button>
+</div>
+</div>
+<div id="recoverAdminModal" class="modal">
+<div class="modal-content">
+<h3>🔧 Recover Admin</h3>
+<p style="font-size:12px; color:#666; margin-bottom:10px;">Use this when an email is already in Firebase Auth but has no admin record. Find the UID in Firebase Console → Authentication → Users.</p>
+<input type="text" id="recoverAdminUid" placeholder="Firebase Auth User UID" style="width:100%; margin-bottom:10px; padding:10px;">
+<input type="text" id="recoverAdminUsername" placeholder="Display Name" style="width:100%; margin-bottom:10px; padding:10px;">
+<input type="email" id="recoverAdminEmail" placeholder="Admin Email" style="width:100%; margin-bottom:10px; padding:10px;">
+<select id="recoverAdminRole" style="width:100%; margin-bottom:10px; padding:10px;">
+<option value="subadmin" selected>Sub Admin</option>
+<option value="master">Master Admin</option>
+</select>
+<button class="btn-primary" onclick="recoverAdmin()">Recover</button>
+<button onclick="closeRecoverAdminModal()">Cancel</button>
 </div>
 </div>
 <div id="addAgentModal" class="modal"><div class="modal-content"><h3>Add Delivery Agent</h3><input type="text" id="agentName" placeholder="Agent Name" style="width:100%; margin-bottom:10px; padding:10px;"><input type="tel" id="agentPhone" placeholder="Phone Number" style="width:100%; margin-bottom:10px; padding:10px;"><button class="btn-primary" onclick="addDeliveryAgent()">Add</button><button onclick="closeAddAgentModal()">Cancel</button></div></div>
@@ -3833,7 +3849,50 @@ window.addNewAdmin = async function() {
         loadAdmins();
     } catch (error) {
         console.error('Error creating admin:', error);
-        showToast('Failed to create admin: ' + error.message, 'error');
+        if (error.code === 'auth/email-already-in-use') {
+            showToast('This email already exists in Firebase Auth but has no admin record. Go to Firebase Console → Authentication → Users, find this email, copy the UID, and use "Recover Admin" below.', 'error');
+        } else {
+            showToast('Failed to create admin: ' + error.message, 'error');
+        }
+    }
+};
+
+// --- Recover Admin ---
+window.showRecoverAdminModal = function() {
+    const modal = document.getElementById('recoverAdminModal');
+    if (modal) modal.style.display = 'block';
+};
+
+window.closeRecoverAdminModal = function() {
+    const modal = document.getElementById('recoverAdminModal');
+    if (modal) modal.style.display = 'none';
+    document.getElementById('recoverAdminUid').value = '';
+    document.getElementById('recoverAdminUsername').value = '';
+    document.getElementById('recoverAdminEmail').value = '';
+};
+
+window.recoverAdmin = async function() {
+    const uid = document.getElementById('recoverAdminUid').value.trim();
+    const username = document.getElementById('recoverAdminUsername').value.trim();
+    const email = document.getElementById('recoverAdminEmail').value.trim();
+    const role = document.getElementById('recoverAdminRole').value;
+    if (!uid || !username || !email) {
+        showToast('UID, display name and email are required', 'error');
+        return;
+    }
+    try {
+        await setDoc(doc(db, 'admins', uid), {
+            username: username,
+            email: email,
+            role: role,
+            createdAt: new Date().toISOString()
+        });
+        showToast('Admin recovered successfully!', 'success');
+        closeRecoverAdminModal();
+        loadAdmins();
+    } catch (error) {
+        console.error('Error recovering admin:', error);
+        showToast('Failed to recover admin: ' + error.message, 'error');
     }
 };
 
