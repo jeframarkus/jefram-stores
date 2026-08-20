@@ -804,7 +804,7 @@
         <div class="modal-content">
             <h2>Sign In</h2>
             <div class="register-form">
-                <input type="tel" id="loginPhone" placeholder="Phone Number or Email" required>
+                <input type="email" id="loginPhone" placeholder="Email" required>
                 <input type="password" id="loginPassword" placeholder="Password" required>
                 <button onclick="window.loginUser()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px;">Sign In</button>
             </div>
@@ -818,24 +818,11 @@
     <div id="passwordResetModal" class="modal">
         <div class="modal-content">
             <h2>🔐 Reset Password</h2>
-            <div id="resetStep1">
-                <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter your phone number to receive a reset code via WhatsApp.</p>
-                <p style="margin-bottom: 15px; color: #25D366; font-size: 13px; background: #e8f5e9; padding: 8px 12px; border-radius: 6px;">
-                    <i class="fab fa-whatsapp"></i> We'll send the code automatically to your WhatsApp
-                </p>
-                <input type="tel" id="resetPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
-                <button onclick="window.sendResetCode()" style="background: #25D366; color: white; padding: 12px; border: none; border-radius: 8px; width:100%; font-weight:600;">
-                    <i class="fab fa-whatsapp"></i> Send Reset Code via WhatsApp
-                </button>
-            </div>
-            <div id="resetStep2" style="display: none;">
-                <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter the 6-digit code sent to your WhatsApp and your new password.</p>
-                <input type="text" id="resetCode" placeholder="6-digit Code" maxlength="6" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
-                <input type="password" id="newPassword" placeholder="New Password (min 6 characters)" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
-                <button onclick="window.confirmPasswordReset()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px; width:100%; font-weight:600;">
-                    <i class="fas fa-check"></i> Reset Password
-                </button>
-            </div>
+            <p style="margin-bottom: 10px; color: #666; font-size: 14px;">Enter your account email and we'll send a secure password reset link.</p>
+            <input type="email" id="resetEmail" placeholder="Email Address" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #ddd; border-radius:5px;">
+            <button onclick="window.sendResetCode()" style="background: #667eea; color: white; padding: 12px; border: none; border-radius: 8px; width:100%; font-weight:600;">
+                <i class="fas fa-envelope"></i> Send Reset Link
+            </button>
             <div id="resetMessage" style="margin-top: 10px; text-align: center; font-size: 14px;"></div>
             <button onclick="window.closePasswordResetModal()" style="margin-top: 1rem; width: 100%; padding: 10px; background: #f5f5f5; border: none; border-radius: 8px;">Cancel</button>
         </div>
@@ -848,7 +835,7 @@
             <div class="register-form">
                 <input type="text" id="customerName" placeholder="Full Name" required>
                 <input type="tel" id="customerPhone" placeholder="Phone Number (e.g., 07XX XXX XXX)" required>
-                <input type="email" id="customerEmail" placeholder="Email (Optional)">
+                <input type="email" id="customerEmail" placeholder="Email (required)" required>
                 <input type="text" id="customerWhatsapp" placeholder="WhatsApp Number (optional)">
                 <input type="text" id="customerLocation" placeholder="Location in Uganda" required>
                 <input type="password" id="customerPassword" placeholder="Password (min 6 characters)" required>
@@ -863,7 +850,8 @@
         {
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
             }
         }
     </script>
@@ -871,6 +859,7 @@
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, query, where, updateDoc, doc, deleteDoc, getDoc, orderBy, limit, onSnapshot, setDoc } from "firebase/firestore";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateEmail, updatePassword, deleteUser, sendPasswordResetEmail, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -881,10 +870,11 @@
             appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
         };
 
-        let app, db;
+        let app, db, auth;
         try {
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
+            auth = getAuth(app);
             console.log('Firebase connected successfully');
         } catch (error) {
             console.error('Firebase initialization error:', error);
@@ -909,7 +899,6 @@
         let currentReviewProduct = null;
         let reviewRating = 0;
         let whatsappNumber = '256743113984';
-        let customerSessionId = null;
 
         // Recently Viewed
         let recentlyViewed = [];
@@ -924,16 +913,6 @@
 
         const translations = {
             en: { welcome: "Welcome to Jefram Stores", heroText: "Quality products delivered to your doorstep anywhere in Uganda", shopByCategory: "Shop by Category", ourProducts: "Our Products", addToCart: "Add to Cart", outOfStock: "Out of Stock", inStock: "In Stock", noProducts: "No products found" }
-        };
-
-        // ----- HASH PASSWORD FUNCTION (SHA-256 ENCRYPTION) -----
-        window.hashPassword = async function(password) {
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hashHex;
         };
 
         // ----- UTILITY FUNCTIONS -----
@@ -956,23 +935,6 @@
                 if (m === '>') return '&gt;';
                 return m;
             });
-        };
-
-        // Cookie helpers
-        window.setCookie = function(name, value, days) {
-            const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-            document.cookie = name + '=' + value + '; expires=' + expires + '; path=/';
-        };
-
-        window.getCookie = function(name) {
-            const value = '; ' + document.cookie;
-            const parts = value.split('; ' + name + '=');
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        };
-
-        window.deleteCookie = function(name) {
-            document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
         };
 
         // ----- NOTIFICATIONS -----
@@ -1898,6 +1860,7 @@
                     (orderNotes ? '\n\nNotes: ' + orderNotes : '');
                 
                 const orderData = {
+                    customerId: currentUserDocId,
                     customer: currentUser,
                     items: cart.map(i => ({ ...i })),
                     subtotal: subtotal,
@@ -2107,121 +2070,78 @@
             document.getElementById('ratingModal').style.display = 'none';
         };
 
-        // ===== FIXED: USER REGISTRATION WITH ENCRYPTED PASSWORD =====
-       window.registerUser = async function() {
-    if (!db) { window.showToast('Database not connected', 'error'); return; }
-    const name = document.getElementById('customerName').value.trim();
-    const phone = document.getElementById('customerPhone').value.trim();
-    const email = document.getElementById('customerEmail').value.trim();
-    const whatsapp = document.getElementById('customerWhatsapp').value.trim();
-    const location = document.getElementById('customerLocation').value.trim();
-    const password = document.getElementById('customerPassword').value.trim();
+        // ===== FIREBASE AUTH: USER REGISTRATION (email/password) =====
+        window.registerUser = async function() {
+            if (!db || !auth) { window.showToast('Database not connected', 'error'); return; }
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            const email = document.getElementById('customerEmail').value.trim();
+            const whatsapp = document.getElementById('customerWhatsapp').value.trim();
+            const location = document.getElementById('customerLocation').value.trim();
+            const password = document.getElementById('customerPassword').value.trim();
 
-    if (!name || !phone || !location || !password) { window.showToast('Fill all required fields', 'error'); return; }
-    if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
-    if (password.length < 6) { window.showToast('Password must be at least 6 characters', 'error'); return; }
-    try {
-        const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-        if (!existing.empty) { window.showToast('Phone number already registered. Please sign in instead.', 'error'); return; }
+            if (!name || !phone || !email || !location || !password) { window.showToast('Fill all required fields', 'error'); return; }
+            if (!phone.match(/^[0-9]{10,13}$/)) { window.showToast('Valid phone number required', 'error'); return; }
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) { window.showToast('Valid email required', 'error'); return; }
+            if (password.length < 6) { window.showToast('Password must be at least 6 characters', 'error'); return; }
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCred.user;
+                currentUserDocId = user.uid;
+                currentUser = {
+                    name: name,
+                    phone: phone,
+                    whatsapp: whatsapp || phone,
+                    email: email,
+                    location: location,
+                    registeredAt: new Date().toISOString(),
+                    wishlist: [],
+                    cart: []
+                };
+                await setDoc(doc(db, 'customers', currentUserDocId), currentUser);
+                window.showToast('Registration successful!', 'success');
 
-        // ===== ENCRYPT PASSWORD BEFORE STORING =====
-        const encryptedPassword = await window.hashPassword(password);
-
-        const docRef = await addDoc(collection(db, 'customers'), {
-            name: name,
-            phone: phone,
-            whatsapp: whatsapp || phone,
-            email: email || '',
-            location: location,
-            password: encryptedPassword, // Store encrypted
-            registeredAt: new Date().toISOString(),
-            wishlist: [],
-            cart: []
-        });
-        
-        currentUser = { 
-            name: name, 
-            phone: phone, 
-            whatsapp: whatsapp || phone, 
-            email: email || '', 
-            location: location, 
-            registeredAt: new Date().toISOString(),
-            password: encryptedPassword
+                await window.loadWishlistFromFirebase();
+                await window.mergeGuestCartIntoFirebase();
+                await window.loadCartFromFirebase();
+                document.getElementById('registerModal').style.display = 'none';
+                ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation', 'customerPassword'].forEach(id => document.getElementById(id).value = '');
+            } catch(e) {
+                console.error('Registration error:', e);
+                if (e.code === 'auth/email-already-in-use') {
+                    window.showToast('Email already registered. Please sign in.', 'error');
+                } else if (e.code === 'auth/invalid-email') {
+                    window.showToast('Invalid email address', 'error');
+                } else if (e.code === 'auth/weak-password') {
+                    window.showToast('Password is too weak (min 6 characters)', 'error');
+                } else {
+                    window.showToast('Registration failed: ' + e.message, 'error');
+                }
+            }
         };
-        currentUserDocId = docRef.id;
-        window.showToast('Registration successful!', 'success');
 
-        const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
-            customerId: currentUserDocId,
-            customer: currentUser,
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        });
-        customerSessionId = sessionRef.id;
-        window.setCookie('jefram_session_id', customerSessionId, 30);
-
-        await window.loadWishlistFromFirebase();
-        await window.mergeGuestCartIntoFirebase();
-        await window.loadCartFromFirebase();
-        document.getElementById('registerModal').style.display = 'none';
-        ['customerName', 'customerPhone', 'customerWhatsapp', 'customerEmail', 'customerLocation', 'customerPassword'].forEach(id => document.getElementById(id).value = '');
-    } catch(e) {
-        console.error('Registration error:', e);
-        window.showToast('Registration failed', 'error');
-    }
-};
-
-        // ===== FIXED: LOGIN WITH ENCRYPTED PASSWORD VERIFICATION =====
+        // ===== FIREBASE AUTH: LOGIN (email/password) =====
         window.loginUser = async function() {
-    if (!db) { window.showToast('Database not connected', 'error'); return; }
-    const phoneOrEmail = document.getElementById('loginPhone').value.trim();
-    const password = document.getElementById('loginPassword').value.trim();
-    if (!phoneOrEmail || !password) { window.showToast('Enter phone/email and password', 'error'); return; }
-    try {
-        let existing;
-        if (phoneOrEmail.includes('@')) {
-            existing = await getDocs(query(collection(db, 'customers'), where("email", "==", phoneOrEmail)));
-        } else {
-            existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phoneOrEmail)));
-        }
-        if (existing.empty) { window.showToast('Account not found. Please register.', 'error'); return; }
-
-        const userDoc = existing.docs[0];
-        const userData = userDoc.data();
-        
-        // ===== FIXED: ENCRYPT THE INPUT PASSWORD BEFORE COMPARING =====
-        const encryptedInputPassword = await window.hashPassword(password);
-        
-        // Now compare encrypted password with stored encrypted password
-        if (userData.password !== encryptedInputPassword) { 
-            window.showToast('Incorrect password', 'error'); 
-            return; 
-        }
-
-        currentUser = userData;
-        currentUserDocId = userDoc.id;
-        window.showToast('Welcome back!', 'success');
-
-        const sessionRef = await addDoc(collection(db, 'customer_sessions'), {
-            customerId: currentUserDocId,
-            customer: currentUser,
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        });
-        customerSessionId = sessionRef.id;
-        window.setCookie('jefram_session_id', customerSessionId, 30);
-
-        await window.loadWishlistFromFirebase();
-        await window.mergeGuestCartIntoFirebase();
-        await window.loadCartFromFirebase();
-        document.getElementById('loginModal').style.display = 'none';
-        document.getElementById('loginPhone').value = '';
-        document.getElementById('loginPassword').value = '';
-    } catch(e) {
-        console.error('Login error:', e);
-        window.showToast('Login failed', 'error');
-    }
-};
+            if (!db || !auth) { window.showToast('Database not connected', 'error'); return; }
+            const email = document.getElementById('loginPhone').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            if (!email || !password) { window.showToast('Enter email and password', 'error'); return; }
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                window.showToast('Welcome back!', 'success');
+                document.getElementById('loginModal').style.display = 'none';
+                document.getElementById('loginPhone').value = '';
+                document.getElementById('loginPassword').value = '';
+                // onAuthStateChanged listener loads profile, cart, wishlist and refreshes UI
+            } catch(e) {
+                console.error('Login error:', e);
+                if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' || e.code === 'auth/invalid-email') {
+                    window.showToast('Incorrect email or password', 'error');
+                } else {
+                    window.showToast('Login failed: ' + e.message, 'error');
+                }
+            }
+        };
         window.openLoginModal = function() { document.getElementById('loginModal').style.display = 'flex'; };
         window.closeLoginModal = function() { 
             document.getElementById('loginModal').style.display = 'none'; 
@@ -2235,192 +2155,51 @@
         };
 
         window.openPasswordResetModal = function() {
-            document.getElementById('resetStep1').style.display = 'block';
-            document.getElementById('resetStep2').style.display = 'none';
             document.getElementById('resetMessage').innerHTML = '';
-            document.getElementById('resetPhone').value = '';
-            document.getElementById('resetCode').value = '';
-            document.getElementById('newPassword').value = '';
+            document.getElementById('resetEmail').value = '';
             document.getElementById('passwordResetModal').style.display = 'flex';
         };
 
         window.closePasswordResetModal = function() { 
             document.getElementById('passwordResetModal').style.display = 'none';
-            document.getElementById('resetPhone').value = '';
-            document.getElementById('resetCode').value = '';
-            document.getElementById('newPassword').value = '';
+            document.getElementById('resetEmail').value = '';
             document.getElementById('resetMessage').innerHTML = '';
         };
         
-        // ===== FIXED: SEND RESET CODE VIA WHATSAPP (AUTO-SEND) =====
+        // ===== FIREBASE AUTH: SEND PASSWORD RESET EMAIL =====
         window.sendResetCode = async function() {
-            if (!db) { 
-                window.showToast('Database not connected', 'error'); 
-                return; 
+            if (!auth) {
+                window.showToast('Database not connected', 'error');
+                return;
             }
-            const phone = document.getElementById('resetPhone').value.trim();
-            if (!phone) { 
-                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Enter phone number</span>';
-                return; 
+            const email = document.getElementById('resetEmail').value.trim();
+            if (!email) {
+                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Enter your email address</span>';
+                return;
             }
-            
-            // Validate phone number (Ugandan format)
-            if (!phone.match(/^[0-9]{10,13}$/)) {
-                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Valid phone number required (e.g., 07XX XXX XXX)</span>';
+            if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Valid email required</span>';
                 return;
             }
 
             try {
-                // Check if customer exists
-                const existing = await getDocs(query(collection(db, 'customers'), where("phone", "==", phone)));
-                if (existing.empty) { 
-                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">❌ Phone number not found. Please register first.</span>'; 
-                    return; 
-                }
-
-                // Generate 6-digit reset code
-                const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-                const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 minutes expiry
-
-                // Store reset code in Firebase
-                await addDoc(collection(db, 'password_resets'), {
-                    phone: phone,
-                    code: resetCode,
-                    expiresAt: expiresAt,
-                    createdAt: new Date().toISOString()
-                });
-
-                // ===== AUTO SEND VIA WHATSAPP USING STORE NUMBER =====
-                // Get the store WhatsApp number from config
-                const configDoc = await getDoc(doc(db, 'config', 'store'));
-                let storeWhatsApp = whatsappNumber; // Default: 256743113984
-                
-                if (configDoc.exists()) {
-                    const config = configDoc.data();
-                    if (config.whatsappNumber) {
-                        storeWhatsApp = config.whatsappNumber;
-                    }
-                }
-                
-                // Format phone number for WhatsApp (remove leading 0 and add 256 if needed)
-                let formattedPhone = phone.replace(/^0+/, '');
-                if (!formattedPhone.startsWith('256')) {
-                    formattedPhone = '256' + formattedPhone;
-                }
-                
-                // Create WhatsApp message with reset code
-                const message = `🔐 *Jefram Stores - Password Reset*\n\nHello,\n\nYou requested to reset your password. Here is your 6-digit verification code:\n\n*${resetCode}*\n\nThis code expires in 15 minutes.\n\nIf you didn't request this, please ignore this message.\n\nThank you for shopping with Jefram Stores! 🛒`;
-                
-                // Auto-send via WhatsApp using wa.me link (opens WhatsApp automatically)
-                // This will open the customer's WhatsApp with the pre-filled message
-                const whatsappLink = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
-                
-                // Open WhatsApp in a new window/tab (auto-sends)
-                window.open(whatsappLink, '_blank');
-                
-                console.log(`📱 Reset code ${resetCode} sent to ${phone} via WhatsApp from ${storeWhatsApp}`);
-
-                // Show success message
-                document.getElementById('resetMessage').innerHTML = '<span style="color:green;">✅ Reset code sent to your WhatsApp! Please check your messages.</span>';
-                document.getElementById('resetStep1').style.display = 'none';
-                document.getElementById('resetStep2').style.display = 'block';
-                
-            } catch(e) {
-                console.error('Reset code error:', e);
-                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Failed to send reset code. Please try again.</span>';
-                window.showToast('Failed to send reset code', 'error');
-            }
-        };
-
-        // ===== FIXED: CONFIRM PASSWORD RESET WITH ENCRYPTION =====
-        window.confirmPasswordReset = async function() {
-            if (!db) { 
-                window.showToast('Database not connected', 'error'); 
-                return; 
-            }
-            
-            const phone = document.getElementById('resetPhone').value.trim();
-            const code = document.getElementById('resetCode').value.trim();
-            const newPassword = document.getElementById('newPassword').value;
-
-            if (!code || code.length !== 6) { 
-                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Enter valid 6-digit code</span>'; 
-                return; 
-            }
-            
-            if (!newPassword || newPassword.length < 6) { 
-                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Password must be at least 6 characters</span>'; 
-                return; 
-            }
-
-            try {
-                // Query for the reset code
-                const resetsRef = collection(db, 'password_resets');
-                const q = query(resetsRef, where("phone", "==", phone), where("code", "==", code));
-                const snapshot = await getDocs(q);
-
-                if (snapshot.empty) { 
-                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">❌ Invalid or expired code</span>'; 
-                    return; 
-                }
-
-                // Find valid (non-expired) reset record
-                let resetDoc = null;
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (new Date(data.expiresAt) > new Date()) {
-                        resetDoc = { id: doc.id, ...data };
-                    }
-                });
-
-                if (!resetDoc) {
-                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">⏰ Code expired. Request a new one.</span>';
-                    return;
-                }
-
-                // ===== ENCRYPT THE NEW PASSWORD =====
-                const encryptedPassword = await window.hashPassword(newPassword);
-
-                // Update customer password
-                const customersRef = collection(db, 'customers');
-                const customerQuery = query(customersRef, where("phone", "==", phone));
-                const customerSnap = await getDocs(customerQuery);
-
-                if (!customerSnap.empty) {
-                    customerSnap.forEach(async (doc) => {
-                        await updateDoc(doc.ref, { 
-                            password: encryptedPassword,
-                            updatedAt: new Date().toISOString()
-                        });
-                    });
-                } else {
-                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">❌ Customer not found</span>';
-                    return;
-                }
-
-                // Delete the used reset code
-                await deleteDoc(doc(db, 'password_resets', resetDoc.id));
-
-                document.getElementById('resetMessage').innerHTML = '<span style="color:green;">✅ Password reset successful! You can now login.</span>';
-                window.showToast('Password reset successful!', 'success');
-
-                // Clear fields
-                document.getElementById('resetCode').value = '';
-                document.getElementById('newPassword').value = '';
-
-                // Close modal and open login after 2 seconds
+                await sendPasswordResetEmail(auth, email);
+                document.getElementById('resetMessage').innerHTML = '<span style="color:green;">✅ Password reset email sent! Check your inbox (and spam folder).</span>';
+                window.showToast('Reset link sent to your email', 'success');
                 setTimeout(() => {
                     window.closePasswordResetModal();
                     window.openLoginModal();
-                }, 2000);
-
+                }, 2500);
             } catch(e) {
-                console.error('Password reset error:', e);
-                document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Failed to reset password. Please try again.</span>';
-                window.showToast('Failed to reset password', 'error');
+                console.error('Reset error:', e);
+                if (e.code === 'auth/user-not-found') {
+                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">❌ No account found with that email.</span>';
+                } else {
+                    document.getElementById('resetMessage').innerHTML = '<span style="color:red;">Failed to send reset email. Please try again.</span>';
+                }
+                window.showToast('Failed to send reset email', 'error');
             }
         };
-
         window.openProfileModal = function() {
             if (!currentUser) { window.openLoginModal(); return; }
             window.loadProfileData();
@@ -2432,14 +2211,12 @@
         };
 
         window.logout = async function() {
-            if (customerSessionId && db) {
-                try { await deleteDoc(doc(db, 'customer_sessions', customerSessionId)); } catch(e) { console.error('Error deleting session:', e); }
-            }
-            window.deleteCookie('jefram_session_id');
+            try { if (auth) await signOut(auth); } catch (e) { console.error('Sign out error:', e); }
             currentUser = null;
+            currentUserDocId = null;
             cart = [];
             wishlist = [];
-            customerSessionId = null;
+            recentlyViewed = [];
             window.updateCartCount();
             window.showToast('Signed out', 'success');
             window.location.reload();
@@ -2450,16 +2227,22 @@
             if (!confirm('This is your last chance. All your data will be permanently deleted. Continue?')) return;
             
             try {
-                await deleteDoc(doc(db, 'customers', currentUserDocId));
-                const sessionsSnap = await getDocs(query(collection(db, 'customer_sessions'), where("customerId", "==", currentUserDocId)));
-                sessionsSnap.forEach(async (doc) => {
-                    await deleteDoc(doc.ref);
-                });
-                window.logout();
+                if (currentUserDocId && db) {
+                    await deleteDoc(doc(db, 'customers', currentUserDocId));
+                }
+                if (auth && auth.currentUser) {
+                    await deleteUser(auth.currentUser);
+                }
+                currentUser = null;
+                currentUserDocId = null;
+                cart = [];
+                wishlist = [];
+                window.updateCartCount();
                 window.showToast('Account deleted successfully', 'success');
+                window.location.reload();
             } catch(e) {
                 console.error('Account deletion error:', e);
-                window.showToast('Failed to delete account', 'error');
+                window.showToast('Failed to delete account: ' + e.message, 'error');
             }
         };
 
@@ -2503,22 +2286,15 @@
             ['currentPassword', 'newPassword', 'confirmPassword'].forEach(id => document.getElementById(id).value = '');
         };
 
-        // ===== FIXED: CHANGE PASSWORD WITH ENCRYPTION =====
+        // ===== FIREBASE AUTH: CHANGE PASSWORD =====
         window.changePassword = async function() {
-            if (!db) { window.showToast('Database not connected', 'error'); return; }
+            if (!auth || !auth.currentUser) { window.showToast('Please sign in again', 'error'); return; }
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
                 window.showToast('Fill all password fields', 'error');
-                return;
-            }
-            
-            // ENCRYPT current password and compare
-            const encryptedCurrentPassword = await window.hashPassword(currentPassword);
-            if (encryptedCurrentPassword !== currentUser.password) {
-                window.showToast('Current password is incorrect', 'error');
                 return;
             }
             if (newPassword.length < 6) {
@@ -2531,17 +2307,20 @@
             }
 
             try {
-                // ENCRYPT new password before storing
-                const encryptedNewPassword = await window.hashPassword(newPassword);
-                await updateDoc(doc(db, 'customers', currentUserDocId), {
-                    password: encryptedNewPassword
-                });
-                currentUser.password = encryptedNewPassword;
+                const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+                await reauthenticateWithCredential(auth.currentUser, credential);
+                await updatePassword(auth.currentUser, newPassword);
                 window.showToast('Password updated successfully!', 'success');
                 window.cancelChangePassword();
             } catch (error) {
                 console.error('Password update error:', error);
-                window.showToast('Failed to update password', 'error');
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    window.showToast('Current password is incorrect', 'error');
+                } else if (error.code === 'auth/requires-recent-login') {
+                    window.showToast('Please sign out and sign in again, then retry', 'error');
+                } else {
+                    window.showToast('Failed to update password: ' + error.message, 'error');
+                }
             }
         };
 
@@ -2550,7 +2329,7 @@
             const newName = document.getElementById('editName').value;
             const newPhone = document.getElementById('editPhone').value;
             const newWhatsapp = document.getElementById('editWhatsapp').value;
-            const newEmail = document.getElementById('editEmail').value;
+            const newEmail = document.getElementById('editEmail').value.trim();
             const newLocation = document.getElementById('editLocation').value;
             if (!newName || !newPhone || !newLocation) { window.showToast('Fill required fields', 'error'); return; }
             try {
@@ -2563,9 +2342,21 @@
                 if (newEmail) updateData.email = newEmail;
                 await updateDoc(doc(db, 'customers', currentUserDocId), updateData);
                 currentUser = { ...currentUser, name: newName, phone: newPhone, whatsapp: newWhatsapp, location: newLocation, email: newEmail };
-                if (customerSessionId && db) {
-                    await updateDoc(doc(db, 'customer_sessions', customerSessionId), { customer: currentUser });
+
+                // Sync email with Firebase Auth when changed
+                if (newEmail && auth && auth.currentUser && newEmail !== auth.currentUser.email) {
+                    try {
+                        await updateEmail(auth.currentUser, newEmail);
+                    } catch (emailErr) {
+                        console.error('Email update error:', emailErr);
+                        if (emailErr.code === 'auth/requires-recent-login') {
+                            window.showToast('Profile updated. Please re-login to apply email change.', 'success');
+                        } else {
+                            window.showToast('Profile updated, but email not changed: ' + emailErr.message, 'success');
+                        }
+                    }
                 }
+
                 window.showToast('Profile updated!', 'success');
                 window.cancelEdit();
                 window.loadProfileData();
@@ -2651,11 +2442,13 @@
                     });
                     progressBar += '</div>';
                     
-                    const ratingButton = o.status === 'delivered' && !o.product_rating ? 
+                    const isDelivered = (o.status || '').toLowerCase().trim() === 'delivered';
+                    const hasRated = !!o.rated_at;
+                    const ratingButton = isDelivered && !hasRated ? 
                         '<button onclick="window.openRatingModal(\'' + doc.id + '\')" style="margin-top:10px; background:#667eea; color:white; padding:8px; border:none; border-radius:8px; width:100%;">⭐ Rate This Order</button>' : '';
                     
-                    const ratingBadge = o.product_rating ? 
-                        '<span class="rated-badge">⭐ Rated ' + o.product_rating + '/5</span>' : '';
+                    const ratingBadge = hasRated ? 
+                        '<span class="rated-badge">⭐ Rated ' + (o.product_rating || o.delivery_rating || '') + '/5</span>' : '';
                     
                     html +=
                         '<div class="order-card">' +
@@ -3705,32 +3498,48 @@
             loadAdverts(config);
         }
 
-        // ----- SESSION VALIDATION -----
-        window.validateCustomerSession = async function() {
-            const sessionId = window.getCookie('jefram_session_id');
-            if (!sessionId || !db) return false;
+        // ----- AUTH STATE (Firebase Auth) -----
+        // Replaces the old custom-session cookie validation. Restores the
+        // signed-in customer on page load and keeps profile/cart/wishlist in sync.
+        window.handleAuthState = async function(user) {
+            if (!user) {
+                currentUser = null;
+                currentUserDocId = null;
+                window.updateCartCount();
+                return;
+            }
             try {
-                const sessionDoc = await getDoc(doc(db, 'customer_sessions', sessionId));
-                if (!sessionDoc.exists()) {
-                    window.deleteCookie('jefram_session_id');
-                    return false;
+                currentUserDocId = user.uid;
+                const userDocRef = doc(db, 'customers', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    currentUser = userDoc.data();
+                    currentUser.email = currentUser.email || user.email;
+                } else {
+                    currentUser = {
+                        name: user.email ? user.email.split('@')[0] : 'Customer',
+                        email: user.email,
+                        phone: '',
+                        whatsapp: '',
+                        location: '',
+                        wishlist: [],
+                        cart: [],
+                        registeredAt: new Date().toISOString()
+                    };
+                    try { await setDoc(userDocRef, currentUser); } catch (e) { console.error('Error creating profile:', e); }
                 }
-                const session = sessionDoc.data();
-                if (new Date(session.expiresAt) < new Date()) {
-                    await deleteDoc(doc(db, 'customer_sessions', sessionId));
-                    window.deleteCookie('jefram_session_id');
-                    return false;
-                }
-                currentUser = session.customer;
-                currentUserDocId = session.customerId;
-                customerSessionId = sessionId;
-                return true;
+                await window.loadWishlistFromFirebase();
+                await window.mergeWishlistIntoFirebase();
+                await window.mergeGuestCartIntoFirebase();
+                await window.loadCartFromFirebase();
+                await window.loadRecentlyViewedFromFirebase();
+                window.updateCartCount();
             } catch (error) {
-                console.error('Session validation error:', error);
-                window.deleteCookie('jefram_session_id');
-                return false;
+                console.error('Auth state error:', error);
             }
         };
+
+        onAuthStateChanged(auth, window.handleAuthState);
 
         // ----- INITIALIZATION -----
         let renderTimeout;
@@ -3749,13 +3558,7 @@
             await window.loadConfig();
             await window.fetchProducts();
             window.loadWishlistFromLocalStorage();
-            const isValid = await window.validateCustomerSession();
-            if (isValid) {
-                await window.loadWishlistFromFirebase();
-                await window.mergeWishlistIntoFirebase();
-                await window.loadCartFromFirebase();
-                await window.loadRecentlyViewedFromFirebase();
-            }
+            // Signed-in customer is restored asynchronously by onAuthStateChanged.
             window.updateCartCount();
             setupSearchAutocomplete();
             window.setupRatingStars();

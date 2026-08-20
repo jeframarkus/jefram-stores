@@ -1405,14 +1405,16 @@ label { color: var(--text); }
 <script type="importmap">
 {
 "imports": {
-"firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
-"firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
+ "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+ "firebase/firestore": "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js",
+ "firebase/auth": "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"
 }
 }
 </script>
 <script type="module">
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, deleteDoc, query, where, orderBy, getDoc, setDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
 const firebaseConfig = {
 apiKey: "AIzaSyAoNFbS548PhPO1XmfXfDBiSfHzJ5WRvDY",
@@ -1425,6 +1427,7 @@ appId: "1:669495715459:web:1d6bedbba9dc27cf8e1db6"
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // ===== TOAST NOTIFICATION FUNCTION =====
 window.showToast = function(message, type = 'success') {
@@ -1516,7 +1519,7 @@ let promoProducts = [];
 let advert1ImageBase64 = null;
 let advert2ImageBase64 = null;
 
-// Cookie helpers
+// Cookie helpers (kept for any legacy use; admin auth is now Firebase Auth)
 function setCookie(name, value, days) {
 const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
 document.cookie = `${name}=${value}; expires=${expires}; path=/`;
@@ -1531,49 +1534,63 @@ function deleteCookie(name) {
 document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
 }
 let currentAdmin = null;
-const sessionId = getCookie('admin_session_id');
-if (!sessionId) {
-window.location.href = 'login.html';
+let isMaster = false;
+let isSubAdmin = false;
+
+// ===== FIREBASE AUTH: ADMIN SESSION =====
+function initDashboard() {
+  if (isMaster) { loadStats(); loadOrders(); loadUsers(); loadSalesSummary(); loadAdmins(); }
+  loadDeliveryAgents();
+  loadProducts();
+  loadCoupons();
+  loadReviews();
+  loadSettings();
+  toggleSizeSection();
 }
-async function validateSession() {
-try {
-const sessionDoc = await getDoc(doc(db, 'admin_sessions', sessionId));
-if (!sessionDoc.exists()) {
-deleteCookie('admin_session_id');
-window.location.href = 'login.html';
-return false;
-}
-const session = sessionDoc.data();
-if (new Date(session.expiresAt) < new Date()) {
-await deleteDoc(doc(db, 'admin_sessions', sessionId));
-deleteCookie('admin_session_id');
-window.location.href = 'login.html';
-return false;
-}
-currentAdmin = { id: session.adminId, username: session.username, role: session.role };
-return true;
-} catch (error) {
-console.error('Session validation error:', error);
-deleteCookie('admin_session_id');
-window.location.href = 'login.html';
-return false;
-}
-}
-const isValid = await validateSession();
-if (!isValid) {
-window.location.href = 'login.html';
-}
-const isMaster = currentAdmin.role === 'master';
-const isSubAdmin = currentAdmin.role === 'subadmin';
-if (isSubAdmin) {
-document.getElementById('permissionBadge').innerHTML = '🔒 Products Only';
-document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-document.getElementById('products').classList.add('active');
-} else {
-document.getElementById('permissionBadge').innerHTML = '👑 Full Access';
-document.getElementById('navAdmins').style.display = 'flex';
-}
-document.getElementById('adminRole').innerHTML = `<i class="fas fa-shield-alt"></i> ${currentAdmin.role} Admin`;
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = 'login.html';
+    return;
+  }
+  try {
+    const adminSnap = await getDoc(doc(db, 'admins', user.uid));
+    if (!adminSnap.exists()) {
+      await signOut(auth);
+      window.location.href = 'login.html';
+      return;
+    }
+    const data = adminSnap.data();
+    currentAdmin = {
+      uid: user.uid,
+      username: data.username || user.email,
+      role: data.role || 'subadmin',
+      email: user.email
+    };
+    isMaster = currentAdmin.role === 'master';
+    isSubAdmin = currentAdmin.role === 'subadmin';
+
+    const permissionBadge = document.getElementById('permissionBadge');
+    const navAdmins = document.getElementById('navAdmins');
+    const adminRole = document.getElementById('adminRole');
+    if (isSubAdmin) {
+      if (permissionBadge) permissionBadge.innerHTML = '🔒 Products Only';
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      const products = document.getElementById('products');
+      if (products) products.classList.add('active');
+    } else {
+      if (permissionBadge) permissionBadge.innerHTML = '👑 Full Access';
+      if (navAdmins) navAdmins.style.display = 'flex';
+    }
+    if (adminRole) adminRole.innerHTML = `<i class="fas fa-shield-alt"></i> ${currentAdmin.role} Admin`;
+
+    initDashboard();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    try { await signOut(auth); } catch (e) {}
+    window.location.href = 'login.html';
+  }
+});
 
 window.switchToSection = function(sectionId) {
 const section = document.getElementById(sectionId);
@@ -3760,8 +3777,8 @@ function downloadXlsx(rows, filename) {
 }
 
 // --- Logout ---
-window.logout = function() {
-    deleteCookie('admin_session_id');
+window.logout = async function() {
+    try { if (auth) await signOut(auth); } catch (e) { console.error('Sign out error:', e); }
     window.location.href = 'login.html';
 };
 
@@ -4150,13 +4167,6 @@ async function hashPassword(password) {
         };
 
 // Initialize
-if (isMaster) { loadStats(); loadOrders(); loadUsers(); loadSalesSummary(); loadAdmins(); }
-loadDeliveryAgents();
-loadProducts();
-loadCoupons();
-loadReviews();
-loadSettings();
-toggleSizeSection();
 window.getDoc = async (ref) => { const { getDoc } = await import("firebase/firestore"); return getDoc(ref); };
 </script>
 </body>

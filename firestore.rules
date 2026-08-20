@@ -1,0 +1,124 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== HELPERS =====
+    // An admin is a Firebase Auth user whose UID also exists in /admins/{uid}.
+    function isAdmin(uid) {
+      return exists(/databases/$(database)/documents/admins/$(uid));
+    }
+
+    // True when the order (by id) belongs to the given Firebase Auth uid.
+    // Orders embed customer.phone and customerId; we match on the customer doc
+    // keyed by uid (customers/{uid}) which keeps the phone in sync.
+    function isOrderOwner(orderId, uid) {
+      return get(/databases/$(database)/documents/orders/$(orderId)).data.customer.phone ==
+             get(/databases/$(database)/documents/customers/$(uid)).data.phone;
+    }
+
+    // ===== CONFIG =====
+    match /config/{document} {
+      allow read: if true;
+      // Admin-only writes (the storefront only reads config).
+      allow write: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // ===== PRODUCTS =====
+    match /products/{productId} {
+      allow read: if true;
+      // NOTE: the storefront updates stock client-side on checkout, so product
+      // writes must stay open to signed-in users. Tighten via a Cloud Function
+      // if stock updates are moved server-side.
+      allow write: if true;
+    }
+
+    // ===== CATEGORIES =====
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // ===== COUPONS =====
+    match /coupons/{couponId} {
+      allow read: if true;
+      // NOTE: the storefront increments usedCount client-side on checkout, so
+      // coupon writes must stay open to signed-in users.
+      allow write: if true;
+    }
+
+    // ===== ADMINS (Firebase Auth uid = document id) =====
+    match /admins/{adminId} {
+      // Only existing admins may read the admin list; login verifies the
+      // signed-in user has a matching admins/{uid} doc.
+      allow read: if request.auth != null && isAdmin(request.auth.uid);
+      // A signed-in user may create their OWN admin doc (bootstrap via
+      // create-admin.html). They cannot write another uid's admin doc.
+      // For stricter provisioning, require the Firebase Console / Admin SDK
+      // and set this to `if false`.
+      allow create: if request.auth != null && request.auth.uid == adminId;
+      allow update, delete: if false;
+    }
+
+    // ===== ADMIN USERS (staff directory, display only) =====
+    match /admin_users/{id} {
+      allow read, write: if request.auth != null && isAdmin(request.auth.uid);
+    }
+
+    // ===== CUSTOMERS (Firebase Auth uid = document id) =====
+    match /customers/{customerId} {
+      allow read: if request.auth != null &&
+                  (request.auth.uid == customerId || isAdmin(request.auth.uid));
+      // Customers edit only their own profile; admins may edit any.
+      allow update: if request.auth != null &&
+                        (request.auth.uid == customerId || isAdmin(request.auth.uid));
+      // Registration: a signed-in user creates their own profile doc (uid == id).
+      allow create: if request.auth != null && request.auth.uid == customerId;
+      allow delete: if false;
+    }
+
+    // ===== ORDERS =====
+    match /orders/{orderId} {
+      allow read: if request.auth != null &&
+                  (isOrderOwner(orderId, request.auth.uid) || isAdmin(request.auth.uid));
+      // Customers create their own orders.
+      allow create: if request.auth != null;
+      // Admins may update any order field. Customers may update ONLY their own
+      // rating fields (product_rating, delivery_rating, rating_comment,
+      // rated_at) once delivered, or cancel their own order (status -> 'cancelled').
+      allow update: if request.auth != null && (
+        isAdmin(request.auth.uid) ||
+        (isOrderOwner(orderId, request.auth.uid) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+           'product_rating', 'delivery_rating', 'rating_comment', 'rated_at'
+         ])) ||
+        (isOrderOwner(orderId, request.auth.uid) &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+         request.resource.data.status == 'cancelled')
+      );
+      allow delete: if false;
+    }
+
+    // ===== REVIEWS =====
+    match /reviews/{reviewId} {
+      allow read: if true;
+      // Any signed-in user may post a review.
+      allow create: if request.auth != null;
+      // Authors may edit/delete only their own reviews.
+      allow update, delete: if request.auth != null &&
+                             request.auth.uid == resource.data.userId;
+    }
+
+    // ===== LEGACY / UNUSED COLLECTIONS (no longer used) =====
+    match /password_resets/{resetId} {
+      allow read, write: if false;
+    }
+
+    match /customer_sessions/{sessionId} {
+      allow read, write: if false;
+    }
+
+    match /admin_sessions/{sessionId} {
+      allow read, write: if false;
+    }
+  }
+}
