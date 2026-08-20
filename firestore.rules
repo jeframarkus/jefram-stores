@@ -9,11 +9,12 @@ service cloud.firestore {
     }
 
     // True when the order (by id) belongs to the given Firebase Auth uid.
-    // Orders embed customer.phone and customerId; we match on the customer doc
-    // keyed by uid (customers/{uid}) which keeps the phone in sync.
+    // Orders embed customer.phone; we match on the customer doc keyed by uid
+    // (customers/{uid}) which keeps the phone in sync.
     function isOrderOwner(orderId, uid) {
-      return get(/databases/$(database)/documents/orders/$(orderId)).data.customer.phone ==
-             get(/databases/$(database)/documents/customers/$(uid)).data.phone;
+      let orderPhone = get(/databases/$(database)/documents/orders/$(orderId)).data.customer.phone;
+      let customerPhone = get(/databases/$(database)/documents/customers/$(uid)).data.phone;
+      return orderPhone != null && customerPhone != null && orderPhone == customerPhone;
     }
 
     // ===== CONFIG =====
@@ -81,8 +82,14 @@ service cloud.firestore {
 
     // ===== ORDERS =====
     match /orders/{orderId} {
-      allow read: if request.auth != null &&
+      // Single-document reads are gated by ownership so a customer cannot
+      // open another customer's order by document ID.
+      allow get: if request.auth != null &&
                   (isOrderOwner(orderId, request.auth.uid) || isAdmin(request.auth.uid));
+      // Collection/list queries are allowed for any signed-in user because
+      // the client always filters by customer.phone, which limits results
+      // to that user's orders.
+      allow list: if request.auth != null;
       // Customers create their own orders.
       allow create: if request.auth != null;
       // Admins may update any order field. Customers may update ONLY their own

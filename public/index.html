@@ -2381,7 +2381,7 @@
             const ordersList = document.getElementById('ordersList');
             ordersList.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
             try {
-                const snapshot = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
+                const snapshot = await getDocs(query(collection(db, 'orders'), where("customerId", "==", currentUserDocId)));
                 if (snapshot.empty) { ordersList.innerHTML = '<div style="text-align:center; padding:2rem;">No orders found</div>'; return; }
                 let html = '';
                 snapshot.forEach(doc => {
@@ -2512,7 +2512,7 @@
             const trackingInfo = document.getElementById('trackingInfo');
             trackingInfo.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
             try {
-                const snapshot = await getDocs(query(collection(db, 'orders'), where("customer.phone", "==", currentUser.phone)));
+                const snapshot = await getDocs(query(collection(db, 'orders'), where("customerId", "==", currentUserDocId)));
                 if (snapshot.empty) { 
                     trackingInfo.innerHTML = '<div style="text-align:center; padding:2rem;">No orders to track</div>'; 
                     return; 
