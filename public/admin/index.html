@@ -1295,7 +1295,7 @@ label { color: var(--text); }
 </div>
 <div class="table-container">
 <table>
-<thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Action</th></tr></thead>
+<thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Created</th><th>Action</th></tr></thead>
 <tbody id="adminsList"></tbody>
 </table>
 </div>
@@ -1347,6 +1347,7 @@ label { color: var(--text); }
 <div id="addAdminModal" class="modal">
 <div class="modal-content">
 <h3>Add New Admin</h3>
+<input type="text" id="adminUsername" placeholder="Display Name" style="width:100%; margin-bottom:10px; padding:10px;">
 <input type="email" id="adminEmail" placeholder="Admin Email" style="width:100%; margin-bottom:10px; padding:10px;">
 <input type="password" id="adminPassword" placeholder="Password" style="width:100%; margin-bottom:10px; padding:10px;">
 <select id="newAdminRole" style="width:100%; margin-bottom:10px; padding:10px;">
@@ -3623,9 +3624,11 @@ window.loadAdmins = async function() {
                 const admin = doc.data();
                 adminsList.innerHTML += `
                     <tr>
+                        <td>${admin.username || 'N/A'}</td>
                         <td>${admin.email || 'N/A'}</td>
                         <td>${admin.role || 'admin'}</td>
                         <td>${new Date(admin.createdAt || Date.now()).toLocaleDateString()}</td>
+                        <td></td>
                     </tr>
                 `;
             });
@@ -3790,16 +3793,18 @@ window.showAddAdminModal = function() {
 window.closeAddAdminModal = function() {
     const modal = document.getElementById('addAdminModal');
     if (modal) modal.style.display = 'none';
+    const u = document.getElementById('adminUsername'); if (u) u.value = '';
     const e = document.getElementById('adminEmail'); if (e) e.value = '';
     const p = document.getElementById('adminPassword'); if (p) p.value = '';
 };
 
 window.addNewAdmin = async function() {
+    const username = document.getElementById('adminUsername').value.trim();
     const email = document.getElementById('adminEmail').value.trim();
     const password = document.getElementById('adminPassword').value;
     const role = document.getElementById('newAdminRole').value;
-    if (!email || !password) {
-        showToast('Email and password are required', 'error');
+    if (!username || !email || !password) {
+        showToast('Display name, email and password are required', 'error');
         return;
     }
     if (password.length < 6) {
@@ -3810,6 +3815,7 @@ window.addNewAdmin = async function() {
         const userCred = await createUserWithEmailAndPassword(auth, email, password);
         const uid = userCred.user.uid;
         await setDoc(doc(db, 'admins', uid), {
+            username: username,
             email: email,
             role: role,
             createdAt: new Date().toISOString()
