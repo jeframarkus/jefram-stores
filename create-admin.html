@@ -98,13 +98,6 @@
                     createdAt: new Date().toISOString()
                 });
 
-                // Keep the staff directory in sync (display only).
-                await setDoc(doc(db, 'admin_users', uid), {
-                    name: username,
-                    role: role,
-                    createdAt: new Date().toISOString()
-                });
-
                 // Don't leave the new admin signed in here.
                 await signOut(auth);
 

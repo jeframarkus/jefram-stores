@@ -51,11 +51,9 @@ service cloud.firestore {
       // Only existing admins may read the admin list; login verifies the
       // signed-in user has a matching admins/{uid} doc.
       allow read: if request.auth != null && isAdmin(request.auth.uid);
-      // A signed-in user may create their OWN admin doc (bootstrap via
-      // create-admin.html). They cannot write another uid's admin doc.
-      // For stricter provisioning, require the Firebase Console / Admin SDK
-      // and set this to `if false`.
-      allow create: if request.auth != null && request.auth.uid == adminId;
+      // Allow self-registration or creation by existing admins.
+      allow create: if request.auth != null && 
+                    (request.auth.uid == adminId || isAdmin(request.auth.uid));
       allow update, delete: if false;
     }
 
